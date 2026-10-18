@@ -143,12 +143,7 @@ public sealed class Client
             throw new DomainException("The refresh_token grant needs the authorization_code grant.");
         }
 
-        var scopes = allowedScopes.Select(s => Guard.NotBlank(s, "scope")).Distinct(StringComparer.Ordinal).ToList();
-        if (scopes.Any(s => s.Any(char.IsWhiteSpace)))
-        {
-            // A scope value is one token in a space-separated list.
-            throw new DomainException("A scope must not contain white space.");
-        }
+        var scopes = ScopeRules.Normalize(allowedScopes);
 
         var uris = redirectUris.Select(RedirectUriRules.Validate).Distinct(StringComparer.Ordinal).ToList();
         if (grants.Contains(GrantType.AuthorizationCode) && uris.Count == 0)

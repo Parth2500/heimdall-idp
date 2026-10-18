@@ -21,8 +21,8 @@ flowchart TB
         PORTS["Interfaces: stores, clock, hasher, key source"]
     end
     subgraph Dom["Heimdall.Domain"]
-        ENT["Entities: Tenant, User, Client, AuthorizationCode, TokenFamily, RefreshToken"]
-        RULES["Rules: Pkce, TokenHash, RedirectUriRules"]
+        ENT["Entities: Tenant, User, Client, AuthorizationCode, TokenFamily, RefreshToken, Session, Consent, SigningKey, AuditEvent"]
+        RULES["Rules: Pkce, TokenHash, ScopeRules, RedirectUriRules, SigningKeyRotation"]
     end
 
     Api --> App

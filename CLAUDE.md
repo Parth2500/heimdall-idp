@@ -37,6 +37,7 @@ src/Heimdall.Api             endpoints, composition root (refs Application + Inf
 tests/Heimdall.UnitTests
 docs/threat-model.md         Phase 0 deliverable
 docs/schema-design.md        Phase 0 deliverable (schema, atomic SQL, constraints)
+docs/domain-model.md         Rules that each Domain entity enforces. Update it with each Domain change.
 docs/diagrams/               Mermaid diagrams. Update them in the same commit as a design change.
 ```
 Dependencies point inward only. Domain must never import EF Core.
@@ -80,5 +81,8 @@ Grants: Authorization Code + PKCE, Client Credentials, Refresh Token.
 See `docs/threat-model.md`.
 
 ## Current state / next steps
-1. Done: solution scaffolded and builds; .gitignore, .editorconfig, docker-compose.yml (Postgres), Directory.Build.props, stub docs/threat-model.md.
-2. `/token`, refresh and JWKS STRIDE tables drafted (Claude wrote them at my request; I must read and be able to defend each row). Next: I review them, then `/revoke` and `/userinfo`, then design the EF Core schema.
+1. Done: Phase 0. Threat model (all endpoints, login, tenants), schema design, diagrams.
+2. Done: repository files (README, SECURITY, CI, Dependabot, global.json). Remote: github.com/Parth2500/heimdall-idp.
+3. Done: Domain layer, all entities, see `docs/domain-model.md`.
+4. Next: Application layer. Interfaces (clock, stores, password hasher, key source), platform limits (D16), then the code redemption use case tested with fakes.
+5. Then: Infrastructure. EF Core mapping, first migration, row-level security, the atomic SQL statements with a concurrency test against PostgreSQL.

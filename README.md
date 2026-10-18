@@ -2,7 +2,7 @@
 
 Heimdall is a custom OAuth 2.1 and OpenID Connect identity provider. It is a portfolio project built with strong attention to security. The plan is to reuse it as the login service for other projects.
 
-**Status:** early development. Phase 0 (threat model and design) is done. Phase 1 (core engine) is in progress. Do not use Heimdall in production.
+**Status:** early development. Phase 0 (threat model and design) is done. Phase 1 (core engine) is in progress: the Domain layer is done, the Application layer is next. Do not use Heimdall in production.
 
 ## Stack
 
@@ -26,6 +26,7 @@ Heimdall is a custom OAuth 2.1 and OpenID Connect identity provider. It is a por
 
 - [Threat model](docs/threat-model.md): STRIDE for each endpoint and trust boundary, with the security decisions (D1 to D21).
 - [Schema design](docs/schema-design.md): tables, constraints, and the atomic SQL statements.
+- [Domain model](docs/domain-model.md): the rules that each entity enforces, with references to the decisions.
 - [Diagrams](docs/diagrams/README.md): architecture, flows, data model, key rotation.
 
 ## Build and test

@@ -47,6 +47,22 @@ flowchart LR
     t0 --> t1 --> t2 --> t3
 ```
 
+## Order of steps in a rotation
+
+```mermaid
+flowchart TD
+    S(["Rotate current key to next key"]) --> T{"Same tenant?"}
+    T -- No --> E1["Reject"]
+    T -- Yes --> A{"Current key active?"}
+    A -- No --> E2["Reject"]
+    A -- Yes --> N{"Next key pending and signing_from reached?"}
+    N -- No --> E3["Reject. Current key stays active."]
+    N -- Yes --> ACT["Activate next key"]
+    ACT --> RET["Retire current key. remove_after = now + max token lifetime + clock skew"]
+```
+
+The next key is activated before the current key is retired. A failed rotation never leaves a tenant without a signing key.
+
 ## JWKS request path
 
 ```mermaid
