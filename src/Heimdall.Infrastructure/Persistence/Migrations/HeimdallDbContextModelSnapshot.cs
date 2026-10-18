@@ -353,6 +353,63 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Heimdall.Domain.Users.User", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("email");
+
+                    b.Property<string>("EmailNormalized")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("email_normalized");
+
+                    b.Property<DateTimeOffset>("PasswordChangedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("password_changed_at");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("password_hash");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_users");
+
+                    b.HasIndex("TenantId", "EmailNormalized")
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_tenant_id_email_normalized");
+
+                    b.ToTable("users", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_users_password_hash", "password_hash LIKE '$argon2id$%'");
+
+                            t.HasCheckConstraint("ck_users_status", "status IN ('active', 'disabled')");
+                        });
+                });
+
             modelBuilder.Entity("Heimdall.Infrastructure.Persistence.ClientSecretRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -414,6 +471,16 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_signing_keys_tenants_tenant_id");
+                });
+
+            modelBuilder.Entity("Heimdall.Domain.Users.User", b =>
+                {
+                    b.HasOne("Heimdall.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_users_tenants_tenant_id");
                 });
 
             modelBuilder.Entity("Heimdall.Infrastructure.Persistence.ClientSecretRecord", b =>

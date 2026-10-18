@@ -2,6 +2,7 @@ using Heimdall.Application.Clients;
 using Heimdall.Application.Keys;
 using Heimdall.Application.Settings;
 using Heimdall.Application.Tokens;
+using Heimdall.Application.Users;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -16,9 +17,11 @@ public static class DependencyInjection
     public static IServiceCollection AddHeimdallApplication(this IServiceCollection services)
     {
         services.TryAddSingleton(new PlatformLimits());
+        services.TryAddSingleton(new PasswordHashingOptions());
         services.AddScoped<ClientAuthenticator>();
         services.AddScoped<ClientCredentialsGrant>();
         services.AddScoped<SigningKeyService>();
+        services.AddScoped<UserAuthenticator>();
         return services;
     }
 }

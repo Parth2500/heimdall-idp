@@ -4,6 +4,7 @@ using Heimdall.Api.Jobs;
 using Heimdall.Application;
 using Heimdall.Application.Keys;
 using Heimdall.Application.Settings;
+using Heimdall.Application.Users;
 using Heimdall.Domain.Keys;
 using Heimdall.Infrastructure;
 using Heimdall.Infrastructure.Development;
@@ -49,6 +50,12 @@ builder.Services.AddOptions<PlatformLimits>()
     .Validate(limits => limits.Validate().Count == 0, "Invalid settings in " + PlatformLimits.SectionName + ".")
     .ValidateOnStart();
 builder.Services.AddSingleton(provider => provider.GetRequiredService<IOptions<PlatformLimits>>().Value);
+
+builder.Services.AddOptions<PasswordHashingOptions>()
+    .Bind(builder.Configuration.GetSection(PasswordHashingOptions.SectionName))
+    .Validate(options => options.Validate().Count == 0, "Invalid settings in " + PasswordHashingOptions.SectionName + ".")
+    .ValidateOnStart();
+builder.Services.AddSingleton(provider => provider.GetRequiredService<IOptions<PasswordHashingOptions>>().Value);
 
 // The password is not in any appsettings file. Set it with user-secrets or an environment variable.
 builder.Services.AddHeimdallApplication();
@@ -133,6 +140,13 @@ static async Task<int> SeedDevelopmentDataAsync(WebApplication app)
         Console.WriteLine($"  client_id:     {result.ClientId}");
         Console.WriteLine($"  client_secret: {result.ClientSecret}");
         Console.WriteLine($"  audience:      {result.Audience}");
+    }
+
+    if (result.UserPassword is not null)
+    {
+        Console.WriteLine("Development user created. The password is shown only now. Heimdall stores only its Argon2id hash.");
+        Console.WriteLine($"  email:         {result.UserEmail}");
+        Console.WriteLine($"  password:      {result.UserPassword}");
     }
     else
     {

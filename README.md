@@ -67,7 +67,7 @@ You need Docker for PostgreSQL.
    ```
    The command runs only in the Development environment. It prints the client secret once. Heimdall stores only its hash, so save the secret.
 
-   The command also creates the tenant's first signing key in `src/Heimdall.Api/.local/signing-keys.json`, which git ignores.
+   The command also creates the development user `alice@acme.localhost` and prints its password once. It also creates the tenant's first signing key in `src/Heimdall.Api/.local/signing-keys.json`, which git ignores.
 
 4. Start the server and request a token. The running server activates the signing key when its wait ends (35 seconds in Development):
    ```

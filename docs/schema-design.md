@@ -39,7 +39,7 @@ The document has no C# code. The entities and the migrations are written by hand
 | `tenant_id` | uuid | |
 | `email` | text | As the user typed it. |
 | `email_normalized` | text | Lowercase. **Unique with `tenant_id`.** |
-| `password_hash` | text | Argon2id with parameters in the string. |
+| `password_hash` | text | Argon2id with parameters in the string. Check: starts with `$argon2id$`, so a plain password or another algorithm cannot be stored. |
 | `status` | text | `active`, `disabled`. |
 | `created_at`, `password_changed_at` | timestamptz | `password_changed_at` ends older sessions. |
 

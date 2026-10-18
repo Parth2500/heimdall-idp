@@ -271,6 +271,8 @@ Platform limits (D16). A tenant or client value must be inside these ranges. The
 | Publish wait | 11 minutes | A new key waits the JWKS cache lifetime plus the server key cache lifetime before it signs. |
 | Key rotation interval | 90 days | The job creates the next key one publish wait before this time ends. Configuration: `Heimdall:SigningKeys:RotationInterval`. |
 | Clock skew | 5 minutes | Resource servers allow this difference when they check `exp`. |
+| Argon2id parameters | 64 MiB, 3 passes, 1 lane | Above the OWASP minimum (19 MiB, 2 passes). A sign-in upgrades an older hash. Configuration: `Heimdall:PasswordHashing`. |
+| Concurrent password hashes | One for each CPU core | Requests wait up to 5 seconds for a slot, then fail fast. |
 | Retired key overlap | 65 minutes | A retired key stays in the JWKS for the platform maximum access token lifetime (60 minutes) plus clock skew. |
 | Rate limit, `/token` | 10 requests each minute for each IP | Also limit for each `client_id`. |
 | Rate limit, login | 5 requests each minute for each IP | Also throttle for each account. |
@@ -279,4 +281,5 @@ A shared IP address (for example, an office) can reach these limits. The per-cli
 
 ## Open items
 
+- Choose the breached-password list for D14: a local list or the Have I Been Pwned range API (k-anonymity). Build it with registration and password change.
 - Add tables for registration, email verification, password reset, and account recovery.

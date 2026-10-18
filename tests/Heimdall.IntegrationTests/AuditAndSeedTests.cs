@@ -85,6 +85,8 @@ public sealed class AuditAndSeedTests
         Assert.Null(second.ClientSecret);
         Assert.Equal(first.Kid, second.Kid);
         Assert.Equal(SigningKeyStatus.Active, second.KeyStatus);
+        Assert.NotNull(first.UserPassword);
+        Assert.Null(second.UserPassword);
 
         await using (var services = _postgres.CreateServices())
         await using (var scope = services.CreateAsyncScope())

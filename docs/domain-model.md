@@ -20,7 +20,7 @@ The database enforces the most important rules a second time (unique indexes, ch
 |---|---|---|
 | `Tenant` | The host is a lowercase DNS name. No wildcard, port, or path. | D21 |
 | `TenantSettings` | All lifetimes are positive. An idle timeout is not longer than its absolute lifetime. `Default` holds the platform defaults. | D15, "Limits and lifetimes" |
-| `User` | The email is normalized to lowercase for the unique lookup. The domain holds only an Argon2id hash. A password change sets `PasswordChangedAt`, which ends older sessions. | D3, D14 |
+| `User` | The email is normalized to lowercase for the unique lookup. The domain holds only an Argon2id hash. A password change sets `PasswordChangedAt`, which ends older sessions. A hash upgrade (same password, stronger Argon2id parameters) does not change `PasswordChangedAt`. | D3, D14 |
 
 ## Clients
 

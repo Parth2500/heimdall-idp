@@ -79,6 +79,13 @@ public sealed class User
         PasswordChangedAt = now;
     }
 
+    /// <summary>
+    /// Replaces the hash of the same password with a hash that uses stronger parameters. The password did not
+    /// change, so <see cref="PasswordChangedAt"/> stays and the user's sessions stay valid.
+    /// </summary>
+    public void UpgradePasswordHash(string newPasswordHash) =>
+        PasswordHash = Guard.NotBlank(newPasswordHash, nameof(newPasswordHash));
+
     public void Disable() => Status = UserStatus.Disabled;
 
     public void Enable() => Status = UserStatus.Active;

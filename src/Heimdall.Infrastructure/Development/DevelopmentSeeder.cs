@@ -1,10 +1,12 @@
 using System.Buffers.Text;
 using System.Security.Cryptography;
 using Heimdall.Application.Keys;
+using Heimdall.Application.Users;
 using Heimdall.Domain.Clients;
 using Heimdall.Domain.Common;
 using Heimdall.Domain.Keys;
 using Heimdall.Domain.Tenants;
+using Heimdall.Domain.Users;
 using Heimdall.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,6 +16,8 @@ namespace Heimdall.Infrastructure.Development;
 /// <param name="Kid">The tenant's newest signing key.</param>
 /// <param name="KeyStatus">The status of that key after this run.</param>
 /// <param name="SigningFrom">The earliest time that key can sign.</param>
+/// <param name="UserEmail">The development user.</param>
+/// <param name="UserPassword">The user's password when this run created the user, else null.</param>
 public sealed record SeedResult(
     bool Created,
     string TenantHost,
@@ -22,7 +26,9 @@ public sealed record SeedResult(
     string Audience,
     string Kid,
     SigningKeyStatus KeyStatus,
-    DateTimeOffset SigningFrom);
+    DateTimeOffset SigningFrom,
+    string UserEmail,
+    string? UserPassword);
 
 /// <summary>
 /// Creates one tenant, one client, and the tenant's first signing key for local development. The caller must
@@ -34,12 +40,15 @@ public sealed class DevelopmentSeeder
     public const string TenantHost = "acme.localhost";
     public const string ClientId = "demo-service";
     public const string Audience = "https://api.acme.localhost";
+    public const string UserEmail = "alice@acme.localhost";
     private const string CorrelationId = "seed-dev";
 
     private readonly HeimdallDbContext _db;
     private readonly TenantScope _scope;
     private readonly SigningKeyService _keyService;
     private readonly ISigningKeyStore _keys;
+    private readonly IUserStore _users;
+    private readonly IPasswordHasher _hasher;
     private readonly TimeProvider _time;
 
     public DevelopmentSeeder(
@@ -47,12 +56,16 @@ public sealed class DevelopmentSeeder
         TenantScope scope,
         SigningKeyService keyService,
         ISigningKeyStore keys,
+        IUserStore users,
+        IPasswordHasher hasher,
         TimeProvider time)
     {
         _db = db;
         _scope = scope;
         _keyService = keyService;
         _keys = keys;
+        _users = users;
+        _hasher = hasher;
         _time = time;
     }
 
@@ -79,6 +92,8 @@ public sealed class DevelopmentSeeder
             (tenantId, secret) = await CreateTenantAndClientAsync(cancellationToken).ConfigureAwait(false);
         }
 
+        var userPassword = await EnsureUserAsync(tenantId, cancellationToken).ConfigureAwait(false);
+
         // Creates the first key, or activates it when its wait has ended. The running server's key job does the same.
         await _keyService.MaintainAsync(tenantId, CorrelationId, cancellationToken).ConfigureAwait(false);
 
@@ -94,7 +109,25 @@ public sealed class DevelopmentSeeder
             Audience,
             newest.Kid,
             newest.Status,
-            newest.SigningFrom);
+            newest.SigningFrom,
+            UserEmail,
+            userPassword);
+    }
+
+    /// <summary>Creates the development user when it is missing. Returns its new password, or null.</summary>
+    private async Task<string?> EnsureUserAsync(Guid tenantId, CancellationToken cancellationToken)
+    {
+        if (await _users.FindByEmailAsync(tenantId, User.NormalizeEmail(UserEmail), cancellationToken).ConfigureAwait(false) is not null)
+        {
+            return null;
+        }
+
+        // 24 random bytes give a 32-character password, inside the D14 length limits.
+        var password = Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(24));
+        var hash = await _hasher.HashAsync(password, cancellationToken).ConfigureAwait(false);
+        _users.Add(User.Create(Guid.CreateVersion7(), tenantId, UserEmail, hash, _time.GetUtcNow()));
+        await _users.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return password;
     }
 
     private async Task<(Guid TenantId, string Secret)> CreateTenantAndClientAsync(CancellationToken cancellationToken)
