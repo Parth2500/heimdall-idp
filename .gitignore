@@ -489,3 +489,6 @@ $RECYCLE.BIN/
 
 # Claude Code local settings (per machine)
 .claude/settings.local.json
+
+# Private working notes (audits, ideas). Never committed.
+.notes/
