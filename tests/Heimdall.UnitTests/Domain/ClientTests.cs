@@ -12,7 +12,8 @@ public class ClientTests
         ClientType type = ClientType.Confidential,
         GrantType[]? grants = null,
         string[]? redirectUris = null,
-        ClientTokenOverrides? overrides = null) =>
+        ClientTokenOverrides? overrides = null,
+        string[]? audiences = null) =>
         Client.Create(
             Guid.CreateVersion7(),
             Guid.CreateVersion7(),
@@ -24,7 +25,8 @@ public class ClientTests
             redirectUris ?? ["https://app.example.com/callback"],
             requireConsent: true,
             overrides,
-            Now);
+            Now,
+            audiences);
 
     [Fact]
     public void Public_client_does_not_authenticate()
@@ -87,9 +89,54 @@ public class ClientTests
     [Fact]
     public void Client_credentials_client_needs_no_redirect_uri()
     {
-        var client = CreateClient(grants: [GrantType.ClientCredentials], redirectUris: []);
+        var client = CreateClient(grants: [GrantType.ClientCredentials], redirectUris: [], audiences: ["https://api.example.com"]);
 
         Assert.False(client.RefreshEnabled);
+    }
+
+    [Fact]
+    public void Client_credentials_client_needs_an_audience()
+    {
+        Assert.Throws<DomainException>(() => CreateClient(grants: [GrantType.ClientCredentials], redirectUris: []));
+    }
+
+    [Theory]
+    [InlineData("api.example.com")]
+    [InlineData("http://api.example.com")]
+    [InlineData("https://api.example.com/#x")]
+    [InlineData("https://api.example.com/?tenant=1")]
+    [InlineData("https://user@api.example.com")]
+    public void Invalid_audience_is_rejected(string audience)
+    {
+        Assert.Throws<DomainException>(() => CreateClient(audiences: [audience]));
+    }
+
+    [Fact]
+    public void Single_audience_is_the_default()
+    {
+        var client = CreateClient(audiences: ["https://api.example.com"]);
+
+        Assert.Equal("https://api.example.com", client.ResolveAudience(null));
+    }
+
+    [Fact]
+    public void Several_audiences_need_an_explicit_resource()
+    {
+        var client = CreateClient(audiences: ["https://billing.example.com", "https://orders.example.com"]);
+
+        Assert.Null(client.ResolveAudience(null));
+        Assert.Equal("https://orders.example.com", client.ResolveAudience("https://orders.example.com"));
+    }
+
+    [Theory]
+    [InlineData("https://api.example.com/")]
+    [InlineData("https://API.example.com")]
+    [InlineData("https://evil.example.com")]
+    public void Resource_must_match_an_audience_exactly(string resource)
+    {
+        var client = CreateClient(audiences: ["https://api.example.com"]);
+
+        Assert.Null(client.ResolveAudience(resource));
     }
 
     [Theory]

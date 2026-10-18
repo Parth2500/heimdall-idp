@@ -32,7 +32,8 @@ public class ClientAuthenticatorTests
             [],
             requireConsent: false,
             overrides: null,
-            Now);
+            Now,
+            ["https://api.example.com"]);
         if (approve)
         {
             client.Approve();

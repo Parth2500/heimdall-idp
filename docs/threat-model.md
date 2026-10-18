@@ -16,6 +16,7 @@ Each term has one meaning in this document. Do not use a synonym.
 | Public client | A client that cannot keep a secret (single-page app, mobile app). |
 | Confidential client | A client that can keep a secret (server application). |
 | Resource server | An API that accepts Heimdall access tokens. |
+| Audience | The resource server that a token is for. It is the `aud` claim. A client asks for one with the `resource` parameter (RFC 8707). |
 | Subject | The user that an access token or ID token identifies. |
 | Code | An authorization code. It is single-use and short-lived. |
 | Redeem | To exchange a code for tokens at `/token`. |
@@ -60,6 +61,7 @@ These decisions apply to every endpoint. The tables below refer to them by ID.
 | D8 | Sign access tokens as JWTs with `RS256` only. Do not negotiate `alg`. Put `kid` in the header. Set the lifetime to 5 minutes. Make refresh tokens opaque. | A short lifetime limits the damage from theft. A fixed `alg` stops `none` and HS256 confusion attacks. |
 | D9 | Add `iss` to the authorization response (RFC 9207). | This stops mix-up attacks. |
 | D10 | In version 1, confidential clients use `client_secret_basic`. Public clients use no authentication and PKCE. Add `private_key_jwt` in Phase 2. | Start with the smallest correct surface. |
+| D22 | Each client has a list of allowed audiences. A token has exactly one audience. The client names it with the `resource` parameter (RFC 8707). If the client has only one audience, that audience is the default. An unknown resource returns `invalid_target`. | A token for one API cannot be replayed at another API. |
 
 ## `GET /oauth/v1/authorize` (worked example)
 | STRIDE | Threat | Mitigation |
@@ -101,6 +103,8 @@ Grants: `authorization_code`, `client_credentials`, `refresh_token`. Boundary: B
 | **Elevation of privilege** | Two requests redeem the same code at the same time (race). Both get tokens. | The atomic conditional update above, with a unique index on `CodeHash`. A check in application code, followed by an update, is not allowed. |
 | Elevation of privilege | An attacker replays a captured code after redemption. | The conditional update affects zero rows on a redeemed code. Heimdall treats this as reuse. In one transaction, it revokes the family that came from that code. It writes an audit event and raises an alert. It does not revoke all sessions of the user and client pair. |
 | Elevation of privilege | A client requests a grant it may not use, such as `client_credentials` from a public client. | Each client has an `AllowedGrantTypes` list, checked here. Only confidential clients can use `client_credentials`. |
+| Elevation of privilege | A token for one resource server is replayed at another resource server. | Each token has exactly one audience from the client's allowed list (D22). Resource servers check `aud`. |
+| Elevation of privilege | A `client_credentials` client requests user scopes such as `openid`. | Heimdall returns `invalid_scope`. A token without a user cannot carry user scopes. |
 | Elevation of privilege | A client requests more scope at `/token` than the user approved. | The issued scope is the overlap of the code's approved scope and the client's `AllowedScopes`. Refresh can only reduce scope. |
 | Elevation of privilege | A client redeems a code with a different `redirect_uri` or `client_id`. | Heimdall compares with the stored values by exact match. A mismatch returns `invalid_grant` (D5). |
 

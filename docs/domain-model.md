@@ -1,6 +1,6 @@
 # Heimdall Domain Model
 
-This document lists the rules that the Domain layer (`src/Heimdall.Domain`) enforces. Each rule refers to a decision in `docs/threat-model.md` (D1 to D21) or a table in `docs/schema-design.md`.
+This document lists the rules that the Domain layer (`src/Heimdall.Domain`) enforces. Each rule refers to a decision in `docs/threat-model.md` (D1 to D22) or a table in `docs/schema-design.md`.
 
 The Domain layer has no dependencies. It has no EF Core types. Each entity is created by a factory method that checks its rules. A broken rule throws `DomainException`.
 
@@ -34,6 +34,9 @@ The database enforces the most important rules a second time (unique indexes, ch
 | A redirect URI matches by exact ordinal string. No normalization, no prefix match. | `/authorize`, Spoofing |
 | A new client is `pending` until an admin approves it. Approval does not enable a disabled client. | `/authorize`, Spoofing |
 | Token lifetimes: the client value wins, and the tenant value applies if the client has none. The result must have idle not longer than absolute. | D15 |
+| An audience is an absolute URI with `https` (plain `http` only for loopback), and no query, fragment, or user information. | D22, RFC 8707 |
+| A client with the `client_credentials` grant needs at least one audience. | D22 |
+| A requested resource must match an allowed audience by exact string. With no request, the only audience is the default. With two or more audiences, the client must name one. | D22 |
 
 ## Codes and tokens
 

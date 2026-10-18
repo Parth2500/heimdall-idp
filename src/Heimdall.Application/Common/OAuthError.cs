@@ -13,6 +13,9 @@ public sealed record OAuthError(string Code, string? AuditDetail = null)
     public const string UnsupportedGrantTypeCode = "unsupported_grant_type";
     public const string InvalidScopeCode = "invalid_scope";
 
+    /// <summary>RFC 8707: the requested resource is not valid for this client.</summary>
+    public const string InvalidTargetCode = "invalid_target";
+
     public static OAuthError InvalidRequest(string auditDetail) => new(InvalidRequestCode, auditDetail);
 
     public static OAuthError InvalidClient(string auditDetail) => new(InvalidClientCode, auditDetail);
@@ -24,4 +27,6 @@ public sealed record OAuthError(string Code, string? AuditDetail = null)
     public static OAuthError UnsupportedGrantType(string auditDetail) => new(UnsupportedGrantTypeCode, auditDetail);
 
     public static OAuthError InvalidScope(string auditDetail) => new(InvalidScopeCode, auditDetail);
+
+    public static OAuthError InvalidTarget(string auditDetail) => new(InvalidTargetCode, auditDetail);
 }

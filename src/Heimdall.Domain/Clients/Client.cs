@@ -38,6 +38,7 @@ public sealed class Client
     private readonly List<GrantType> _allowedGrantTypes;
     private readonly List<string> _allowedScopes;
     private readonly List<string> _redirectUris;
+    private readonly List<string> _allowedAudiences;
 
     private Client(
         Guid id,
@@ -48,10 +49,12 @@ public sealed class Client
         List<GrantType> allowedGrantTypes,
         List<string> allowedScopes,
         List<string> redirectUris,
+        List<string> allowedAudiences,
         bool requireConsent,
         ClientTokenOverrides overrides,
         DateTimeOffset createdAt)
     {
+        _allowedAudiences = allowedAudiences;
         Id = id;
         TenantId = tenantId;
         ClientId = clientId;
@@ -89,6 +92,9 @@ public sealed class Client
 
     public IReadOnlyList<string> RedirectUris => _redirectUris;
 
+    /// <summary>The resource servers this client may get tokens for. Each one is a value for the <c>aud</c> claim (D22).</summary>
+    public IReadOnlyList<string> AllowedAudiences => _allowedAudiences;
+
     public bool RequireConsent { get; private set; }
 
     public ClientTokenOverrides TokenOverrides { get; private set; }
@@ -111,7 +117,8 @@ public sealed class Client
         IEnumerable<string> redirectUris,
         bool requireConsent,
         ClientTokenOverrides? overrides,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        IEnumerable<string>? allowedAudiences = null)
     {
         Guard.NotEmpty(id, nameof(id));
         Guard.NotEmpty(tenantId, nameof(tenantId));
@@ -151,6 +158,13 @@ public sealed class Client
             throw new DomainException("A client with the authorization_code grant needs a redirect URI.");
         }
 
+        var audiences = (allowedAudiences ?? []).Select(AudienceRules.Validate).Distinct(StringComparer.Ordinal).ToList();
+        if (grants.Contains(GrantType.ClientCredentials) && audiences.Count == 0)
+        {
+            // A client_credentials token is only useful at a resource server, so it must name one.
+            throw new DomainException("A client with the client_credentials grant needs at least one audience.");
+        }
+
         return new Client(
             id,
             tenantId,
@@ -160,6 +174,7 @@ public sealed class Client
             grants,
             scopes,
             uris,
+            audiences,
             requireConsent,
             overrides ?? ClientTokenOverrides.None,
             now);
@@ -172,6 +187,21 @@ public sealed class Client
         redirectUri is not null && _redirectUris.Contains(redirectUri, StringComparer.Ordinal);
 
     public bool IsGrantAllowed(GrantType grantType) => _allowedGrantTypes.Contains(grantType);
+
+    /// <summary>
+    /// Chooses the <c>aud</c> value for a token (RFC 8707, D22). A requested resource must match an allowed
+    /// audience exactly. With no request, the only allowed audience is the default. Returns null when no
+    /// audience fits; the caller then returns <c>invalid_target</c>.
+    /// </summary>
+    public string? ResolveAudience(string? requestedResource)
+    {
+        if (requestedResource is null)
+        {
+            return _allowedAudiences.Count == 1 ? _allowedAudiences[0] : null;
+        }
+
+        return _allowedAudiences.Contains(requestedResource, StringComparer.Ordinal) ? requestedResource : null;
+    }
 
     /// <summary>Returns the scopes that the client may receive from the requested ones.</summary>
     public IReadOnlyList<string> FilterAllowedScopes(IEnumerable<string> requested) =>

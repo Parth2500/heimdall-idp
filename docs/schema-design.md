@@ -1,6 +1,6 @@
 # Heimdall Schema Design (Phase 0)
 
-This document defines the PostgreSQL schema. It uses the terms in the glossary of `docs/threat-model.md`. Decision IDs (D1 to D21) refer to that document.
+This document defines the PostgreSQL schema. It uses the terms in the glossary of `docs/threat-model.md`. Decision IDs (D1 to D22) refer to that document.
 
 The document has no C# code. The entities and the migrations are written by hand, from this design.
 
@@ -54,6 +54,7 @@ The document has no C# code. The entities and the migrations are written by hand
 | `token_endpoint_auth_method` | text | `none`, `client_secret_basic` in version 1. Check: `none` only for `public`. |
 | `allowed_grant_types` | text[] | Check: `client_credentials` only for `confidential`. A client can refresh when this list has `refresh_token`. There is no separate flag. |
 | `allowed_scopes` | text[] | |
+| `allowed_audiences` | text[] | D22. Absolute URIs, https except loopback, no query or fragment. Check: not empty when `allowed_grant_types` has `client_credentials`. |
 | `require_consent` | bool | |
 | `status` | text | `pending`, `active`, `disabled`. A client is `pending` until an admin approves it. |
 | `access_token_seconds`, `refresh_idle_seconds`, `refresh_absolute_seconds` | int, null | Null means: use the tenant value (D15). Check constraints give the hard bounds. |

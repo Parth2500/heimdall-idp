@@ -45,6 +45,7 @@ erDiagram
         text type
         text status
         text_array allowed_grant_types
+        text_array allowed_audiences
     }
     client_redirect_uris {
         uuid id PK
