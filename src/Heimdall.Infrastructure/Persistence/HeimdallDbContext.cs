@@ -29,6 +29,10 @@ public sealed class HeimdallDbContext : DbContext
 
     public DbSet<AuthorizationCode> AuthorizationCodes => Set<AuthorizationCode>();
 
+    public DbSet<TokenFamily> TokenFamilies => Set<TokenFamily>();
+
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
     public DbSet<Client> Clients => Set<Client>();
 
     public DbSet<ClientSecretRecord> ClientSecrets => Set<ClientSecretRecord>();
@@ -50,6 +54,8 @@ public sealed class HeimdallDbContext : DbContext
         modelBuilder.Entity<Session>().HasQueryFilter(s => s.TenantId == CurrentTenantId);
         modelBuilder.Entity<AuthorizationRequest>().HasQueryFilter(r => r.TenantId == CurrentTenantId);
         modelBuilder.Entity<AuthorizationCode>().HasQueryFilter(c => c.TenantId == CurrentTenantId);
+        modelBuilder.Entity<TokenFamily>().HasQueryFilter(f => f.TenantId == CurrentTenantId);
+        modelBuilder.Entity<RefreshToken>().HasQueryFilter(t => t.TenantId == CurrentTenantId);
         modelBuilder.Entity<Client>().HasQueryFilter(c => c.TenantId == CurrentTenantId);
         modelBuilder.Entity<ClientSecretRecord>().HasQueryFilter(s => s.TenantId == CurrentTenantId);
         modelBuilder.Entity<SigningKey>().HasQueryFilter(k => k.TenantId == CurrentTenantId);

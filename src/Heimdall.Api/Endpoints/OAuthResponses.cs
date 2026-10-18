@@ -44,7 +44,13 @@ internal static class OAuthResponses
         NoStore(context.Response);
         context.Response.StatusCode = StatusCodes.Status200OK;
         return context.Response.WriteAsJsonAsync(
-            new TokenBody(token.AccessToken, token.TokenType, token.ExpiresIn, string.IsNullOrEmpty(token.Scope) ? null : token.Scope),
+            new TokenBody(
+                token.AccessToken,
+                token.TokenType,
+                token.ExpiresIn,
+                string.IsNullOrEmpty(token.Scope) ? null : token.Scope,
+                token.RefreshToken,
+                token.IdToken),
             Json,
             context.RequestAborted);
     }
@@ -55,5 +61,7 @@ internal static class OAuthResponses
         [property: JsonPropertyName("access_token")] string AccessToken,
         [property: JsonPropertyName("token_type")] string TokenType,
         [property: JsonPropertyName("expires_in")] int ExpiresIn,
-        [property: JsonPropertyName("scope")] string? Scope);
+        [property: JsonPropertyName("scope")] string? Scope,
+        [property: JsonPropertyName("refresh_token")] string? RefreshToken,
+        [property: JsonPropertyName("id_token")] string? IdToken);
 }

@@ -17,6 +17,12 @@ public enum FamilyRevocationReason
 /// </summary>
 public sealed class TokenFamily
 {
+#pragma warning disable CS8618 // EF Core sets the properties after it calls this constructor.
+    private TokenFamily()
+    {
+    }
+#pragma warning restore CS8618
+
     private TokenFamily(
         Guid id,
         Guid tenantId,

@@ -21,18 +21,25 @@ internal static class WellKnownEndpoints
     private static readonly JsonSerializerOptions Json = new() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
 
     /// <summary>
-    /// Lists only what Heimdall supports today. Fields for <c>/authorize</c> and ID tokens come with those features,
-    /// so a client never relies on a capability that does not exist.
+    /// Lists only what Heimdall supports today, so a client never relies on a capability that does not exist.
+    /// <c>userinfo_endpoint</c> and the <c>refresh_token</c> grant come with those features.
     /// </summary>
     public static Task DiscoveryAsync(HttpContext context, SigningKeyOptions keyOptions)
     {
         var issuer = TenantResolutionMiddleware.GetRequestContext(context).Issuer;
         var document = new DiscoveryDocument(
             issuer,
+            issuer + AuthorizeEndpoint.Path,
             issuer + TokenEndpoint.Path,
             issuer + JwksPath,
-            ["client_credentials"],
-            ["client_secret_basic"]);
+            ["code"],
+            ["query"],
+            ["authorization_code", "client_credentials"],
+            ["client_secret_basic", "none"],
+            ["S256"],
+            ["public"],
+            ["RS256"],
+            AuthorizationResponseIssParameterSupported: true);
 
         return WriteCacheableAsync(context, JsonSerializer.SerializeToUtf8Bytes(document, Json), keyOptions.JwksCacheLifetime);
     }
@@ -71,10 +78,17 @@ internal static class WellKnownEndpoints
 
     private sealed record DiscoveryDocument(
         [property: JsonPropertyName("issuer")] string Issuer,
+        [property: JsonPropertyName("authorization_endpoint")] string AuthorizationEndpoint,
         [property: JsonPropertyName("token_endpoint")] string TokenEndpoint,
         [property: JsonPropertyName("jwks_uri")] string JwksUri,
+        [property: JsonPropertyName("response_types_supported")] string[] ResponseTypesSupported,
+        [property: JsonPropertyName("response_modes_supported")] string[] ResponseModesSupported,
         [property: JsonPropertyName("grant_types_supported")] string[] GrantTypesSupported,
-        [property: JsonPropertyName("token_endpoint_auth_methods_supported")] string[] TokenEndpointAuthMethodsSupported);
+        [property: JsonPropertyName("token_endpoint_auth_methods_supported")] string[] TokenEndpointAuthMethodsSupported,
+        [property: JsonPropertyName("code_challenge_methods_supported")] string[] CodeChallengeMethodsSupported,
+        [property: JsonPropertyName("subject_types_supported")] string[] SubjectTypesSupported,
+        [property: JsonPropertyName("id_token_signing_alg_values_supported")] string[] IdTokenSigningAlgValuesSupported,
+        [property: JsonPropertyName("authorization_response_iss_parameter_supported")] bool AuthorizationResponseIssParameterSupported);
 
     private sealed record JwkSet([property: JsonPropertyName("keys")] IReadOnlyList<RsaPublicJwk> Keys);
 }

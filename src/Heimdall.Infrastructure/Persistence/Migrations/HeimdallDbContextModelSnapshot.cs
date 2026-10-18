@@ -474,6 +474,9 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                     b.HasIndex("ClientPk")
                         .HasDatabaseName("ix_authorization_codes_client_pk");
 
+                    b.HasIndex("FamilyId")
+                        .HasDatabaseName("ix_authorization_codes_family_id");
+
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_authorization_codes_user_id");
 
@@ -558,6 +561,126 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                     b.ToTable("authorization_requests", null, t =>
                         {
                             t.HasCheckConstraint("ck_authorization_requests_max_age", "max_age_seconds IS NULL OR max_age_seconds >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("Heimdall.Domain.Tokens.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<byte[]>("Hash")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("bytea")
+                        .HasColumnName("token_hash");
+
+                    b.Property<Guid?>("ReplacedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("replaced_by_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTimeOffset?>("UsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("used_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_refresh_tokens");
+
+                    b.HasIndex("FamilyId")
+                        .HasDatabaseName("ix_refresh_tokens_family_id");
+
+                    b.HasIndex("ReplacedById")
+                        .HasDatabaseName("ix_refresh_tokens_replaced_by_id");
+
+                    b.HasIndex("TenantId", "FamilyId")
+                        .HasDatabaseName("ix_refresh_tokens_tenant_id_family_id");
+
+                    b.HasIndex("TenantId", "Hash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_refresh_tokens_tenant_id_token_hash");
+
+                    b.ToTable("refresh_tokens", (string)null);
+                });
+
+            modelBuilder.Entity("Heimdall.Domain.Tokens.TokenFamily", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AbsoluteExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("absolute_expires_at");
+
+                    b.Property<Guid>("ClientPk")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_pk");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("IdleExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("idle_expires_at");
+
+                    b.Property<string>("RevocationReason")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("revoked_reason");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("scope");
+
+                    b.Property<Guid>("SourceCodeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_code_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_token_families");
+
+                    b.HasAlternateKey("TenantId", "Id")
+                        .HasName("ak_token_families_tenant_id_id");
+
+                    b.HasIndex("ClientPk")
+                        .HasDatabaseName("ix_token_families_client_pk");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_token_families_user_id");
+
+                    b.ToTable("token_families", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_token_families_idle", "idle_expires_at <= absolute_expires_at");
+
+                            t.HasCheckConstraint("ck_token_families_revoked_reason", "revoked_reason IS NULL OR revoked_reason IN ('reuse_detected', 'user_logout', 'admin', 'user_disabled', 'consent_removed')");
                         });
                 });
 
@@ -707,6 +830,12 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_authorization_codes_clients_client_pk");
 
+                    b.HasOne("Heimdall.Domain.Tokens.TokenFamily", null)
+                        .WithMany()
+                        .HasForeignKey("FamilyId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_authorization_codes_token_families_family_id");
+
                     b.HasOne("Heimdall.Domain.Tenants.Tenant", null)
                         .WithMany()
                         .HasForeignKey("TenantId")
@@ -737,6 +866,54 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_authorization_requests_tenants_tenant_id");
+                });
+
+            modelBuilder.Entity("Heimdall.Domain.Tokens.RefreshToken", b =>
+                {
+                    b.HasOne("Heimdall.Domain.Tokens.RefreshToken", null)
+                        .WithMany()
+                        .HasForeignKey("ReplacedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_refresh_tokens_refresh_tokens_replaced_by_id");
+
+                    b.HasOne("Heimdall.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_refresh_tokens_tenants_tenant_id");
+
+                    b.HasOne("Heimdall.Domain.Tokens.TokenFamily", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "FamilyId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_refresh_tokens_token_families_tenant_id_family_id");
+                });
+
+            modelBuilder.Entity("Heimdall.Domain.Tokens.TokenFamily", b =>
+                {
+                    b.HasOne("Heimdall.Domain.Clients.Client", null)
+                        .WithMany()
+                        .HasForeignKey("ClientPk")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_token_families_clients_client_pk");
+
+                    b.HasOne("Heimdall.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_token_families_tenants_tenant_id");
+
+                    b.HasOne("Heimdall.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_token_families_users_user_id");
                 });
 
             modelBuilder.Entity("Heimdall.Domain.Users.User", b =>

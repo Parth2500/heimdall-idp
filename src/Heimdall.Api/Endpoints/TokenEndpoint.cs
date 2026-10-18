@@ -9,7 +9,7 @@ using Microsoft.Extensions.Primitives;
 namespace Heimdall.Api.Endpoints;
 
 /// <summary>
-/// <c>POST /oauth/v1/token</c>. Only the <c>client_credentials</c> grant exists so far.
+/// <c>POST /oauth/v1/token</c>: the <c>client_credentials</c> and <c>authorization_code</c> grants.
 /// Every check before the grant runs needs no database, so a malformed request is cheap to reject.
 /// </summary>
 /// <remarks>
@@ -33,7 +33,11 @@ internal static partial class TokenEndpoint
 
     private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
-    public static async Task HandleAsync(HttpContext context, ClientCredentialsGrant clientCredentials, ILoggerFactory loggers)
+    public static async Task HandleAsync(
+        HttpContext context,
+        ClientCredentialsGrant clientCredentials,
+        AuthorizationCodeGrant authorizationCode,
+        ILoggerFactory loggers)
     {
         var logger = loggers.CreateLogger(typeof(TokenEndpoint));
         var parsed = await ParseAsync(context).ConfigureAwait(false);
@@ -45,25 +49,37 @@ internal static partial class TokenEndpoint
         }
 
         var form = parsed.Form!;
-        var grantType = form["grant_type"].ToString();
-        if (grantType != "client_credentials")
+        var requestContext = TenantResolutionMiddleware.GetRequestContext(context);
+        Result<TokenResponse> result;
+        switch (form["grant_type"].ToString())
         {
-            // authorization_code and refresh_token come in later steps.
-            var unsupported = OAuthError.UnsupportedGrantType("grant type not supported");
-            LogRejected(logger, unsupported.Code, unsupported.AuditDetail!);
-            await OAuthResponses.WriteErrorAsync(context, unsupported).ConfigureAwait(false);
-            return;
+            case "client_credentials":
+                result = await clientCredentials.HandleAsync(
+                    requestContext,
+                    new ClientCredentialsRequest(parsed.ClientId, parsed.ClientSecret, NullIfEmpty(form["scope"]), NullIfEmpty(form["resource"])),
+                    context.RequestAborted).ConfigureAwait(false);
+                break;
+
+            case "authorization_code":
+                result = await authorizationCode.HandleAsync(
+                    requestContext,
+                    new AuthorizationCodeRequest(
+                        parsed.ClientId,
+                        parsed.ClientSecret,
+                        NullIfEmpty(form["code"]),
+                        NullIfEmpty(form["code_verifier"]),
+                        NullIfEmpty(form["redirect_uri"]),
+                        NullIfEmpty(form["resource"])),
+                    context.RequestAborted).ConfigureAwait(false);
+                break;
+
+            default:
+                // refresh_token comes in the next step.
+                var unsupported = OAuthError.UnsupportedGrantType("grant type not supported");
+                LogRejected(logger, unsupported.Code, unsupported.AuditDetail!);
+                await OAuthResponses.WriteErrorAsync(context, unsupported).ConfigureAwait(false);
+                return;
         }
-
-        var request = new ClientCredentialsRequest(
-            parsed.ClientId,
-            parsed.ClientSecret,
-            NullIfEmpty(form["scope"]),
-            NullIfEmpty(form["resource"]));
-
-        var result = await clientCredentials
-            .HandleAsync(TenantResolutionMiddleware.GetRequestContext(context), request, context.RequestAborted)
-            .ConfigureAwait(false);
 
         if (result.IsSuccess)
         {

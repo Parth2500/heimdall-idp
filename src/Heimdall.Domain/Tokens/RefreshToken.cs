@@ -13,6 +13,12 @@ public enum RefreshTokenUseResult
 /// <summary>A single-use refresh token. Each use replaces it with a new one (rotation).</summary>
 public sealed class RefreshToken
 {
+#pragma warning disable CS8618 // EF Core sets the properties after it calls this constructor.
+    private RefreshToken()
+    {
+    }
+#pragma warning restore CS8618
+
     private RefreshToken(Guid id, Guid tenantId, Guid familyId, TokenHash hash, DateTimeOffset createdAt)
     {
         Id = id;

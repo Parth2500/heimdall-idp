@@ -55,17 +55,15 @@ flowchart TD
     CA -- Yes --> G{"Grant allowed for this client?"}
     G -- No --> E3["unauthorized_client"]
     G -- Yes --> GT{"grant_type"}
-    GT -- authorization_code --> RC["Atomic UPDATE: redeem code"]
+    GT -- authorization_code --> RC["Atomic UPDATE: redeem code<br/>WHERE client, redirect_uri, PKCE challenge match"]
     GT -- refresh_token --> RT["See refresh diagram"]
     GT -- client_credentials --> SC["Check scope against AllowedScopes"]
     RC --> OK1{"One row returned?"}
     OK1 -- No --> RU{"Code exists and already redeemed?"}
     RU -- Yes --> REV["Revoke family from that code, audit event, alert"]
-    RU -- No --> E4["invalid_grant"]
+    RU -- No --> E4["invalid_grant (unknown, expired, or mismatch)"]
     REV --> E4
-    OK1 -- Yes --> CB{"client_id, redirect_uri, PKCE verifier match?"}
-    CB -- No --> E4
-    CB -- Yes --> ISS["Issue tokens"]
+    OK1 -- Yes --> ISS["Sign tokens, insert family and refresh token, commit"]
     SC --> ISS
 ```
 

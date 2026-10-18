@@ -42,6 +42,7 @@ public sealed class PostgresFixture : IAsyncLifetime
     {
         var services = new ServiceCollection();
         services.AddSingleton(time ?? TimeProvider.System);
+        services.AddLogging();
         services.AddSingleton(keyOptions ?? new SigningKeyOptions());
         services.AddHeimdallApplication();
         services.AddHeimdallInfrastructure(ConnectionString);

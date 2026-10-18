@@ -229,6 +229,9 @@ public class ClientCredentialsGrantTests
             Signed.Add((tenantId, claims));
             return Task.FromResult("signed." + claims.JwtId);
         }
+
+        public Task<string> SignIdTokenAsync(Guid tenantId, IdTokenClaims claims, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
     }
 
     private sealed class FakeAuditLog : IAuditLog

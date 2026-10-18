@@ -32,7 +32,9 @@ internal sealed class AuthorizationCodeConfiguration : IEntityTypeConfiguration<
         builder.Property(c => c.ExpiresAt);
         builder.Property(c => c.RedeemedAt);
 
-        // The foreign key to token_families comes with that table (redemption step).
-        builder.Property(c => c.FamilyId);
+        // ON DELETE SET NULL: a code survives its family for the purge delay (docs/schema-design.md, "Purge job").
+        // The migration makes this key DEFERRABLE INITIALLY DEFERRED: the redemption UPDATE sets family_id before the
+        // family row is inserted in the same transaction, and the check runs at commit.
+        builder.HasOne<TokenFamily>().WithMany().HasForeignKey(c => c.FamilyId).OnDelete(DeleteBehavior.SetNull);
     }
 }

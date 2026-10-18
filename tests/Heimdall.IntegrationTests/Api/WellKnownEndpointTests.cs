@@ -18,7 +18,7 @@ public sealed class WellKnownEndpointTests
     }
 
     [DockerFact]
-    public async Task Discovery_lists_only_what_exists_today()
+    public async Task Discovery_lists_what_exists_today()
     {
         await using var api = new HeimdallApiFactory(_postgres);
         var tenant = await api.AddTenantAsync();
@@ -32,8 +32,13 @@ public sealed class WellKnownEndpointTests
         Assert.Equal(tenant.Issuer, root.GetProperty("issuer").GetString());
         Assert.Equal(tenant.Issuer + "/oauth/v1/token", root.GetProperty("token_endpoint").GetString());
         Assert.Equal(tenant.Issuer + "/.well-known/jwks.json", root.GetProperty("jwks_uri").GetString());
-        Assert.Equal(["client_credentials"], root.GetProperty("grant_types_supported").EnumerateArray().Select(e => e.GetString()));
-        Assert.False(root.TryGetProperty("authorization_endpoint", out _));
+        Assert.Equal(tenant.Issuer + "/oauth/v1/authorize", root.GetProperty("authorization_endpoint").GetString());
+        Assert.Equal(["authorization_code", "client_credentials"], root.GetProperty("grant_types_supported").EnumerateArray().Select(e => e.GetString()));
+        Assert.Equal(["S256"], root.GetProperty("code_challenge_methods_supported").EnumerateArray().Select(e => e.GetString()));
+        Assert.True(root.GetProperty("authorization_response_iss_parameter_supported").GetBoolean());
+
+        // Not built yet, so not listed.
+        Assert.False(root.TryGetProperty("userinfo_endpoint", out _));
         Assert.True(response.Headers.CacheControl?.Public);
         Assert.Equal(api.KeyOptions.JwksCacheLifetime, response.Headers.CacheControl?.MaxAge);
     }

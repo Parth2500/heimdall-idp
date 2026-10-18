@@ -84,7 +84,7 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
             requireConsent,
             overrides: null,
             Time.GetUtcNow(),
-            []);
+            ["https://api.example.com"]);
         client.Approve();
 
         await using var scope = Services.CreateAsyncScope();

@@ -198,12 +198,18 @@ These statements are the core of the security design. Each one is a single SQL c
 **Redeem a code** (`/token`, `authorization_code`). The application creates `@family_id` and inserts the family in the same transaction.
 ```sql
 UPDATE authorization_codes
-SET    redeemed_at = now(), family_id = @family_id
+SET    redeemed_at = @now, family_id = @family_id
 WHERE  tenant_id = @tenant AND code_hash = @hash
-  AND  redeemed_at IS NULL AND expires_at > now()
-RETURNING id, client_pk, user_id, redirect_uri, scope, code_challenge, nonce, auth_time;
+  AND  client_pk = @client AND redirect_uri = @redirect_uri
+  AND  code_challenge = @challenge          -- BASE64URL(SHA256(code_verifier))
+  AND  redeemed_at IS NULL AND expires_at > @now
+RETURNING *;
 ```
-One row means success. Zero rows means: unknown, expired, or reused. Then the application reads the row by hash. If `redeemed_at` is set, it is a reuse. Heimdall revokes `family_id` of that row, writes an audit event, and raises an alert. A second request waits on the row lock of the first. It sees the committed `family_id`, so the revocation reaches the right family.
+Every binding is in the `WHERE` clause. A code is consumed only by the right client, with the right redirect URI and PKCE verifier. A request with a stolen code and no verifier matches no row, so it cannot burn the code for the real client. `@now` comes from the application clock, so every time rule uses one clock. The foreign key from `family_id` to `token_families` is `DEFERRABLE INITIALLY DEFERRED`, because this statement sets `family_id` before the family row exists. PostgreSQL checks it at commit.
+
+The transaction also signs the tokens. If no key can sign, the transaction rolls back and the code stays usable.
+
+One row means success. Zero rows means: unknown, expired, reused, or a binding that does not match. Then the application reads the row by hash, outside the transaction. If `redeemed_at` is set, it is a reuse. Heimdall revokes `family_id` of that row, writes an audit event, and raises an alert. A second request waits on the row lock of the first. It sees the committed `family_id`, so the revocation reaches the right family.
 
 **Rotate a refresh token** (`/token`, `refresh_token`).
 ```sql
@@ -259,7 +265,7 @@ The platform limits (minimum and maximum for each setting) live in configuration
 
 The first migration (`InitialCreate`) creates `tenants`, `clients`, `client_secrets`, `signing_keys`, and `audit_events`, with the constraints and indexes above. Integration tests in `tests/Heimdall.IntegrationTests` check the constraints against PostgreSQL with raw SQL.
 
-Not built yet: the other tables (users, codes, families, refresh tokens, sessions, consents, authorization requests), row-level security, the role rights on `audit_events`, and the purge job.
+Later migrations add `users`, `sessions`, `authorization_requests`, `authorization_codes`, `token_families`, and `refresh_tokens`. Not built yet: `consents`, row-level security, the role rights on `audit_events`, and the purge job.
 
 ## Row-level security (D20)
 

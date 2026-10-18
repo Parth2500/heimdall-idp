@@ -22,6 +22,7 @@ public static class DependencyInjection
         services.TryAddSingleton(new PasswordHashingOptions());
         services.AddScoped<ClientAuthenticator>();
         services.AddScoped<ClientCredentialsGrant>();
+        services.AddScoped<AuthorizationCodeGrant>();
         services.AddScoped<SigningKeyService>();
         services.AddScoped<UserAuthenticator>();
         services.AddScoped<SessionService>();
