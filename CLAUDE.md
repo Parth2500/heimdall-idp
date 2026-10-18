@@ -20,6 +20,14 @@ Stack: .NET 10 (LTS), PostgreSQL, EF Core, Clean Architecture. Later: React/Next
 - In tables, write short full sentences in the mitigation column, not fragments.
 - Text that the user wrote is changed only when the user agrees.
 
+## Performance and abuse principles
+- Heimdall is a login API. It is slow on purpose where it must be (Argon2id), and it checks everything before it lets a user in. It is **not** designed for 1M req/s on login or `/token`.
+- High request volume applies to JWKS, discovery, and offline token checks at resource servers. Those need a cache or a CDN, not extra code paths.
+- Write code that scales out: stateless servers, async I/O, no database call on hot read paths (cache client config and keys with explicit invalidation), hot-path SQL as single atomic statements.
+- Reject bad traffic cheaply, before the database and before Argon2id.
+- Throttle failed attempts. Do not hard-lock accounts, because a lock lets an attacker deny service to a victim. Layered abuse controls (per-IP, per-account backoff, challenge, temporary IP block) are a Phase 2 item.
+- Measure before tuning. Set numeric targets after the first k6 run (Phase 4).
+
 ## Project layout
 ```
 src/Heimdall.Domain          entities, no dependencies
