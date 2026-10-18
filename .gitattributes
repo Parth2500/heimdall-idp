@@ -1,0 +1,6 @@
+# Store text files with LF in the repository. Git converts on checkout if needed.
+* text=auto
+
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
