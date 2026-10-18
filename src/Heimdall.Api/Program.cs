@@ -43,6 +43,7 @@ builder.Services.AddOptions<SigningKeyOptions>()
     .ValidateOnStart();
 builder.Services.AddSingleton(provider => provider.GetRequiredService<IOptions<SigningKeyOptions>>().Value);
 builder.Services.AddOptions<IssuerOptions>().Bind(builder.Configuration.GetSection(IssuerOptions.SectionName));
+builder.Services.AddOptions<UiOptions>().Bind(builder.Configuration.GetSection(UiOptions.SectionName));
 
 // D16: the platform limits. A minimum of zero, or a minimum above its maximum, stops the server at startup.
 builder.Services.AddOptions<PlatformLimits>()
@@ -128,6 +129,7 @@ app.MapPost(TokenEndpoint.Path, TokenEndpoint.HandleAsync);
 app.MapGet(WellKnownEndpoints.DiscoveryPath, WellKnownEndpoints.DiscoveryAsync);
 app.MapGet(WellKnownEndpoints.JwksPath, WellKnownEndpoints.JwksAsync);
 SessionEndpoints.Map(app);
+AuthorizeEndpoint.Map(app);
 
 await app.RunAsync();
 return 0;

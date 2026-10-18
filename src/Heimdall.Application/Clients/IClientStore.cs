@@ -17,4 +17,10 @@ public interface IClientStore
         string clientId,
         DateTimeOffset now,
         CancellationToken cancellationToken);
+
+    /// <summary>The client with this public ID in the tenant, without secrets, or null.</summary>
+    Task<Client?> FindAsync(Guid tenantId, string clientId, CancellationToken cancellationToken);
+
+    /// <summary>The client with this primary key in the tenant, without secrets, or null.</summary>
+    Task<Client?> FindByPkAsync(Guid tenantId, Guid clientPk, CancellationToken cancellationToken);
 }

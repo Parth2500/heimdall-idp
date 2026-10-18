@@ -19,6 +19,12 @@ public sealed class AuthorizationCode
 {
     public static readonly TimeSpan Lifetime = TimeSpan.FromMinutes(5);
 
+#pragma warning disable CS8618 // EF Core sets the properties after it calls this constructor.
+    private AuthorizationCode()
+    {
+    }
+#pragma warning restore CS8618
+
     private AuthorizationCode(
         Guid id,
         Guid tenantId,

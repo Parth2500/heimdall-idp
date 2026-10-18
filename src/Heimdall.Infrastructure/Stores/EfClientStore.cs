@@ -1,4 +1,5 @@
 using Heimdall.Application.Clients;
+using Heimdall.Domain.Clients;
 using Heimdall.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -38,4 +39,10 @@ internal sealed class EfClientStore : IClientStore
 
         return row is null ? null : new ClientWithSecrets(row.Client, row.Secrets);
     }
+
+    public Task<Client?> FindAsync(Guid tenantId, string clientId, CancellationToken cancellationToken) =>
+        _db.Clients.AsNoTracking().SingleOrDefaultAsync(c => c.TenantId == tenantId && c.ClientId == clientId, cancellationToken);
+
+    public Task<Client?> FindByPkAsync(Guid tenantId, Guid clientPk, CancellationToken cancellationToken) =>
+        _db.Clients.AsNoTracking().SingleOrDefaultAsync(c => c.TenantId == tenantId && c.Id == clientPk, cancellationToken);
 }

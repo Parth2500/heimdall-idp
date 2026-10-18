@@ -400,6 +400,167 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Heimdall.Domain.Tokens.AuthorizationCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AuthTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("auth_time");
+
+                    b.Property<Guid>("ClientPk")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_pk");
+
+                    b.Property<string>("CodeChallenge")
+                        .IsRequired()
+                        .HasMaxLength(43)
+                        .HasColumnType("character(43)")
+                        .HasColumnName("code_challenge")
+                        .IsFixedLength();
+
+                    b.Property<byte[]>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("bytea")
+                        .HasColumnName("code_hash");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<Guid?>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<string>("Nonce")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("nonce");
+
+                    b.Property<DateTimeOffset?>("RedeemedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("redeemed_at");
+
+                    b.Property<string>("RedirectUri")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("redirect_uri");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("scope");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_authorization_codes");
+
+                    b.HasIndex("ClientPk")
+                        .HasDatabaseName("ix_authorization_codes_client_pk");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_authorization_codes_user_id");
+
+                    b.HasIndex("TenantId", "CodeHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_authorization_codes_tenant_id_code_hash");
+
+                    b.ToTable("authorization_codes", (string)null);
+                });
+
+            modelBuilder.Entity("Heimdall.Domain.Tokens.AuthorizationRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ClientPk")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_pk");
+
+                    b.Property<string>("CodeChallenge")
+                        .IsRequired()
+                        .HasMaxLength(43)
+                        .HasColumnType("character(43)")
+                        .HasColumnName("code_challenge")
+                        .IsFixedLength();
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<bool>("ForceLogin")
+                        .HasColumnType("boolean")
+                        .HasColumnName("force_login");
+
+                    b.Property<int?>("MaxAge")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_age_seconds");
+
+                    b.Property<string>("Nonce")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("nonce");
+
+                    b.Property<string>("RedirectUri")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("redirect_uri");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("scope");
+
+                    b.Property<string>("State")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("state");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_authorization_requests");
+
+                    b.HasIndex("ClientPk")
+                        .HasDatabaseName("ix_authorization_requests_client_pk");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_authorization_requests_expires_at");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_authorization_requests_tenant_id");
+
+                    b.ToTable("authorization_requests", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_authorization_requests_max_age", "max_age_seconds IS NULL OR max_age_seconds >= 0");
+                        });
+                });
+
             modelBuilder.Entity("Heimdall.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -535,6 +696,47 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_sessions_users_user_id");
+                });
+
+            modelBuilder.Entity("Heimdall.Domain.Tokens.AuthorizationCode", b =>
+                {
+                    b.HasOne("Heimdall.Domain.Clients.Client", null)
+                        .WithMany()
+                        .HasForeignKey("ClientPk")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_authorization_codes_clients_client_pk");
+
+                    b.HasOne("Heimdall.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_authorization_codes_tenants_tenant_id");
+
+                    b.HasOne("Heimdall.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_authorization_codes_users_user_id");
+                });
+
+            modelBuilder.Entity("Heimdall.Domain.Tokens.AuthorizationRequest", b =>
+                {
+                    b.HasOne("Heimdall.Domain.Clients.Client", null)
+                        .WithMany()
+                        .HasForeignKey("ClientPk")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_authorization_requests_clients_client_pk");
+
+                    b.HasOne("Heimdall.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_authorization_requests_tenants_tenant_id");
                 });
 
             modelBuilder.Entity("Heimdall.Domain.Users.User", b =>

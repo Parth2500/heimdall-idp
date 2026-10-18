@@ -75,7 +75,10 @@ These decisions apply to every endpoint. The tables below refer to them by ID.
 | Repudiation | A user says they did not grant consent. | Heimdall stores a timestamped consent record for each user, client, and scope. |
 | Information disclosure | A code leaks through browser history, the referrer header, or logs. | A code is single-use and expires after 5 minutes. Heimdall never writes a full code to a log (D7). |
 | Denial of service | A flood of `/authorize` requests uses all database resources. | Rate limit for each IP and each `client_id`. |
-| Elevation of privilege | A client requests more scope than it is allowed. | Heimdall checks the requested scope on the server against the `AllowedScopes` of the client. |
+| Elevation of privilege | A client requests more scope than it is allowed. | Heimdall checks the requested scope on the server against the `AllowedScopes` of the client. It refuses extra scope. It does not reduce it. |
+| Tampering | Open redirect: an attacker puts an unregistered `redirect_uri` in the link, so an error carries the user to the attacker's site. | Until `client_id` and `redirect_uri` pass the exact-match check, Heimdall shows its own error and never redirects (RFC 6749, section 4.1.2.1). A repeated parameter also gets this error. |
+| Spoofing | Mix-up: a client that uses several servers sends a code to the wrong one. | Every redirect from `/authorize` carries `iss`, on success and on error (RFC 9207, D9). |
+| Tampering | The browser changes the request between login and the code. | Heimdall stores the checked request. The login page and the resume step get only the request ID. One request gives one code, enforced by the `DELETE` in the code transaction. |
 
 ## `POST /oauth/v1/token`
 

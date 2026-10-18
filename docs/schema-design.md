@@ -85,8 +85,12 @@ Heimdall stores the pending `/authorize` request here while the user signs in an
 |---|---|---|
 | `id` | uuid PK | |
 | `tenant_id`, `client_pk` | uuid | |
-| `redirect_uri`, `scope`, `state`, `nonce`, `code_challenge` | text | The checked request. `code_challenge_method` is always `S256`, so there is no column. |
-| `expires_at` | timestamptz | Short, for example 10 minutes. |
+| `redirect_uri`, `scope`, `state`, `nonce`, `code_challenge` | text | The checked request. `code_challenge_method` is always `S256`, so there is no column. `state` and `nonce` have at most 512 characters. |
+| `force_login` | boolean | `prompt=login`: only a sign-in after `created_at` counts. |
+| `max_age_seconds` | integer, null | The OpenID Connect `max_age`. Check: not negative. |
+| `created_at`, `expires_at` | timestamptz | `expires_at` is `created_at` plus 10 minutes. |
+
+Heimdall deletes the row in the same transaction that inserts the code. If two requests resume the same row, the second `DELETE` matches no row, and that transaction rolls back. One stored request gives one code.
 
 ### `authorization_codes`
 | Column | Type | Note |
@@ -98,7 +102,7 @@ Heimdall stores the pending `/authorize` request here while the user signs in an
 | `scope` | text | The approved scope. |
 | `code_challenge` | text | |
 | `nonce`, `auth_time` | | For the ID token. |
-| `family_id` | uuid, null | Set at redemption. This is the link from a code to its family. Foreign key with `ON DELETE SET NULL`. |
+| `family_id` | uuid, null | Set at redemption. This is the link from a code to its family. Foreign key with `ON DELETE SET NULL`, added with the `token_families` table. |
 | `created_at`, `expires_at` | timestamptz | `expires_at` is `created_at` plus 5 minutes. |
 | `redeemed_at` | timestamptz, null | |
 

@@ -1,3 +1,4 @@
+using Heimdall.Application.Authorization;
 using Heimdall.Application.Clients;
 using Heimdall.Application.Keys;
 using Heimdall.Application.Sessions;
@@ -24,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<SigningKeyService>();
         services.AddScoped<UserAuthenticator>();
         services.AddScoped<SessionService>();
+        services.AddScoped<AuthorizationService>();
         return services;
     }
 }

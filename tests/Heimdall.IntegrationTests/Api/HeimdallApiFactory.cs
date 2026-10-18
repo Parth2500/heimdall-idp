@@ -4,6 +4,7 @@ using Heimdall.Api.Hosting;
 using Heimdall.Application.Keys;
 using Heimdall.Application.Tenants;
 using Heimdall.Application.Users;
+using Heimdall.Domain.Clients;
 using Heimdall.Domain.Tenants;
 using Heimdall.Domain.Users;
 using Heimdall.Infrastructure;
@@ -65,6 +66,34 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
             AllowAutoRedirect = false,
             HandleCookies = handleCookies,
         });
+
+    /// <summary>
+    /// Adds a public browser client (a SPA): authorization code with PKCE and refresh tokens, no secret.
+    /// </summary>
+    public async Task<Client> AddWebClientAsync(TestTenant tenant, string clientId = "web-app", bool requireConsent = false, params string[] redirectUris)
+    {
+        var client = Client.Create(
+            Guid.CreateVersion7(),
+            tenant.Tenant.Id,
+            clientId,
+            "Web app",
+            ClientType.Public,
+            [GrantType.AuthorizationCode, GrantType.RefreshToken],
+            ["openid", "profile", "offline_access"],
+            redirectUris.Length > 0 ? redirectUris : ["https://app.example.com/callback"],
+            requireConsent,
+            overrides: null,
+            Time.GetUtcNow(),
+            []);
+        client.Approve();
+
+        await using var scope = Services.CreateAsyncScope();
+        scope.ServiceProvider.GetRequiredService<TenantScope>().Set(tenant.Tenant.Id);
+        var db = scope.ServiceProvider.GetRequiredService<HeimdallDbContext>();
+        db.Clients.Add(client);
+        await db.SaveChangesAsync();
+        return client;
+    }
 
     /// <summary>Adds a user to the tenant with the real hasher.</summary>
     public async Task<User> AddUserAsync(TestTenant tenant, string email, string password)

@@ -35,4 +35,10 @@ internal sealed class InMemoryClientStore : IClientStore
 
         return Task.FromResult<ClientWithSecrets?>(new ClientWithSecrets(entry.Client, valid));
     }
+
+    public Task<Client?> FindAsync(Guid tenantId, string clientId, CancellationToken cancellationToken) =>
+        Task.FromResult<Client?>(_entries.Select(e => e.Client).FirstOrDefault(c => c.TenantId == tenantId && c.ClientId == clientId));
+
+    public Task<Client?> FindByPkAsync(Guid tenantId, Guid clientPk, CancellationToken cancellationToken) =>
+        Task.FromResult<Client?>(_entries.Select(e => e.Client).FirstOrDefault(c => c.TenantId == tenantId && c.Id == clientPk));
 }

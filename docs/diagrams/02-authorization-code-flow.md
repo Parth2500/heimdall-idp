@@ -17,10 +17,13 @@ sequenceDiagram
     B->>H: GET /authorize (client_id, redirect_uri, scope, state, code_challenge)
     H->>DB: Load client, check redirect_uri (exact match), check scope
     alt No valid session
-        H->>B: Show login page
+        H->>DB: Store the checked request (10 minutes)
+        H->>B: 302 to /login?request_id=...
         U->>B: Enter credentials
-        B->>H: POST login
+        B->>H: POST /session/v1/login (JSON, antiforgery)
         H->>H: Argon2id check, new session ID, set cookie
+        B->>H: GET /oauth/v1/authorize/resume?request_id=...
+        H->>DB: Load the stored request
     end
     alt Consent missing
         H->>B: Show consent page (data from stored request)
@@ -28,7 +31,7 @@ sequenceDiagram
         B->>H: POST consent (anti-forgery token)
         H->>DB: Save consent
     end
-    H->>DB: Insert code hash (expires in 5 minutes)
+    H->>DB: Insert code hash (expires in 5 minutes) and delete the stored request, in one transaction
     H->>B: Redirect to redirect_uri (code, state, iss)
     B->>C: GET callback
     C->>H: POST /token (grant_type, code, code_verifier, redirect_uri, client auth)

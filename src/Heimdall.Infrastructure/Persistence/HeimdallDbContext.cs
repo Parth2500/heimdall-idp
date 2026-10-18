@@ -3,6 +3,7 @@ using Heimdall.Domain.Clients;
 using Heimdall.Domain.Keys;
 using Heimdall.Domain.Sessions;
 using Heimdall.Domain.Tenants;
+using Heimdall.Domain.Tokens;
 using Heimdall.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,6 +25,10 @@ public sealed class HeimdallDbContext : DbContext
 
     public DbSet<Session> Sessions => Set<Session>();
 
+    public DbSet<AuthorizationRequest> AuthorizationRequests => Set<AuthorizationRequest>();
+
+    public DbSet<AuthorizationCode> AuthorizationCodes => Set<AuthorizationCode>();
+
     public DbSet<Client> Clients => Set<Client>();
 
     public DbSet<ClientSecretRecord> ClientSecrets => Set<ClientSecretRecord>();
@@ -43,6 +48,8 @@ public sealed class HeimdallDbContext : DbContext
         // The tenants table has no filter: the host lookup runs before the tenant is known.
         modelBuilder.Entity<User>().HasQueryFilter(u => u.TenantId == CurrentTenantId);
         modelBuilder.Entity<Session>().HasQueryFilter(s => s.TenantId == CurrentTenantId);
+        modelBuilder.Entity<AuthorizationRequest>().HasQueryFilter(r => r.TenantId == CurrentTenantId);
+        modelBuilder.Entity<AuthorizationCode>().HasQueryFilter(c => c.TenantId == CurrentTenantId);
         modelBuilder.Entity<Client>().HasQueryFilter(c => c.TenantId == CurrentTenantId);
         modelBuilder.Entity<ClientSecretRecord>().HasQueryFilter(s => s.TenantId == CurrentTenantId);
         modelBuilder.Entity<SigningKey>().HasQueryFilter(k => k.TenantId == CurrentTenantId);
