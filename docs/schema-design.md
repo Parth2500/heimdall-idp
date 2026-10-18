@@ -169,7 +169,7 @@ D19: each tenant has its own keys.
 | `signing_from` | timestamptz | At least one JWKS cache lifetime after `published_at`. |
 | `retired_at`, `remove_after` | timestamptz, null | `remove_after` is the last signed token's expiry plus clock skew. |
 
-Rules: a tenant has at most one `active` key. A key is in the JWKS when it is `pending` and published, `active`, or `retired` and before `remove_after`.
+Rules: a tenant has at most one `active` key and at most one `pending` key. A key is in the JWKS when it is `pending` and published, `active`, or `retired` and before `remove_after`.
 
 Each status change is one conditional statement: `UPDATE signing_keys SET status = @new WHERE id = @id AND status = @old`. EF Core writes it, because `status` is a concurrency token. When two servers change the same key, the second update matches no row. That server changes nothing and writes no audit event. The unique index covers the other case, where two servers activate two different keys.
 
@@ -245,6 +245,7 @@ After a successful rotation, the application checks that the family is not revok
 | Setting values inside the hard bounds | `CHECK` | Platform limits from configuration (D16) |
 | At most two valid secrets for a client | | Admin use case |
 | One `active` signing key for each tenant | Partial unique index on `(tenant_id) WHERE status = 'active'` | Key rotation use case |
+| One `pending` signing key for each tenant | Partial unique index `ux_signing_keys_one_pending` on `(tenant_id) WHERE status = 'pending'` | Two servers cannot both create the next key |
 | Audit events cannot change | Role rights (planned) | No update or delete code path |
 | PKCE `S256`, `RS256` only (D17) | No column for the method. `algorithm` is `NOT NULL` with `CHECK (algorithm = 'RS256')`. `NOT NULL` matters, because a `CHECK` passes on `NULL`. | |
 

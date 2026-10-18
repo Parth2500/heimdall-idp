@@ -78,6 +78,14 @@ You need Docker for PostgreSQL.
    ```
    Heimdall finds the tenant from the host name, so the request must use `acme.localhost`. It refuses plain HTTP.
 
+## Operations
+
+Emergency removal of a stolen signing key (see `docs/threat-model.md`, JWKS):
+```
+dotnet run --project src/Heimdall.Api -- remove-key <tenant host> <kid>
+```
+The key leaves the JWKS at once, and tokens it signed stop working. Token issuance stops until the replacement key is active, at most one publish wait.
+
 To create a migration, use the pinned tool: `dotnet dotnet-ef migrations add <Name> --project src/Heimdall.Infrastructure --startup-project src/Heimdall.Api --output-dir Persistence/Migrations`.
 
 ## Roadmap

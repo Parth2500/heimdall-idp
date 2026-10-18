@@ -21,8 +21,11 @@ internal sealed class FakeKeyMaterialStore : IKeyMaterialStore
         throw new NotSupportedException();
 }
 
+/// <summary>Enforces the same rules as the database: one active and one pending key for each tenant.</summary>
 internal sealed class InMemorySigningKeyStore : ISigningKeyStore
 {
+    private readonly List<SigningKey> _unsaved = [];
+
     public List<SigningKey> Keys { get; } = [];
 
     public int SaveCount { get; private set; }
@@ -33,19 +36,32 @@ internal sealed class InMemorySigningKeyStore : ISigningKeyStore
     public Task<IReadOnlyList<SigningKey>> ListAsync(Guid tenantId, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<SigningKey>>(Keys.Where(k => k.TenantId == tenantId).ToList());
 
-    public Task<IReadOnlyList<Guid>> ListTenantsAwaitingActivationAsync(DateTimeOffset now, CancellationToken cancellationToken) =>
+    public Task<IReadOnlyList<Guid>> ListTenantsNeedingKeyWorkAsync(
+        DateTimeOffset now,
+        DateTimeOffset activeSigningSince,
+        CancellationToken cancellationToken) =>
         throw new NotSupportedException();
 
-    public void Add(SigningKey key) => Keys.Add(key);
+    public void Add(SigningKey key)
+    {
+        Keys.Add(key);
+        _unsaved.Add(key);
+    }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken)
     {
-        if (LoseNextSave)
+        var broken = Keys
+            .GroupBy(k => (k.TenantId, k.Status))
+            .Any(g => g.Key.Status != SigningKeyStatus.Retired && g.Count() > 1);
+        if (LoseNextSave || broken)
         {
             LoseNextSave = false;
+            Keys.RemoveAll(_unsaved.Contains);
+            _unsaved.Clear();
             throw new ConcurrentUpdateException();
         }
 
+        _unsaved.Clear();
         SaveCount++;
         return Task.CompletedTask;
     }

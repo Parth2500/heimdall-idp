@@ -270,6 +270,11 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_signing_keys_one_active")
                         .HasFilter("status = 'active'");
 
+                    b.HasIndex(new[] { "TenantId" }, "ux_signing_keys_one_pending")
+                        .IsUnique()
+                        .HasDatabaseName("ux_signing_keys_one_pending")
+                        .HasFilter("status = 'pending'");
+
                     b.ToTable("signing_keys", null, t =>
                         {
                             t.HasCheckConstraint("ck_signing_keys_algorithm", "algorithm = 'RS256'");

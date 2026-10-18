@@ -28,6 +28,8 @@ stateDiagram-v2
 
 ## Rotation over time
 
+The signing key job runs on every server. It creates the next key one publish wait before the rotation interval ends (90 days by default). At the end of the interval, the next key is ready and the job rotates. The old key stays in the JWKS for 65 minutes: the longest access token lifetime plus clock skew.
+
 ```mermaid
 flowchart LR
     subgraph t0["Before rotation"]

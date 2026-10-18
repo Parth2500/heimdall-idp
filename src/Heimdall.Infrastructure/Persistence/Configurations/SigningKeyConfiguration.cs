@@ -45,6 +45,12 @@ internal sealed class SigningKeyConfiguration : IEntityTypeConfiguration<Signing
             .HasFilter("status = 'active'")
             .HasDatabaseName("ux_signing_keys_one_active");
 
+        // A tenant has at most one pending key: the next key. Two servers cannot both create it.
+        builder.HasIndex([nameof(SigningKey.TenantId)], "ux_signing_keys_one_pending")
+            .IsUnique()
+            .HasFilter("status = 'pending'")
+            .HasDatabaseName("ux_signing_keys_one_pending");
+
         builder.Ignore(k => k.CanSign);
     }
 }

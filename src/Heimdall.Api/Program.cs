@@ -3,10 +3,13 @@ using Heimdall.Api.Hosting;
 using Heimdall.Api.Jobs;
 using Heimdall.Application;
 using Heimdall.Application.Keys;
+using Heimdall.Application.Settings;
 using Heimdall.Domain.Keys;
 using Heimdall.Infrastructure;
 using Heimdall.Infrastructure.Development;
 using Heimdall.Infrastructure.Keys;
+using Heimdall.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -40,6 +43,13 @@ builder.Services.AddOptions<SigningKeyOptions>()
 builder.Services.AddSingleton(provider => provider.GetRequiredService<IOptions<SigningKeyOptions>>().Value);
 builder.Services.AddOptions<IssuerOptions>().Bind(builder.Configuration.GetSection(IssuerOptions.SectionName));
 
+// D16: the platform limits. A minimum of zero, or a minimum above its maximum, stops the server at startup.
+builder.Services.AddOptions<PlatformLimits>()
+    .Bind(builder.Configuration.GetSection(PlatformLimits.SectionName))
+    .Validate(limits => limits.Validate().Count == 0, "Invalid settings in " + PlatformLimits.SectionName + ".")
+    .ValidateOnStart();
+builder.Services.AddSingleton(provider => provider.GetRequiredService<IOptions<PlatformLimits>>().Value);
+
 // The password is not in any appsettings file. Set it with user-secrets or an environment variable.
 builder.Services.AddHeimdallApplication();
 builder.Services.AddHeimdallInfrastructure(provider =>
@@ -62,8 +72,8 @@ builder.Services.AddSingleton<IKeyMaterialStore>(provider =>
     return new DevelopmentKeyFile(Path.Combine(environment.ContentRootPath, path));
 });
 
-builder.Services.AddSingleton<SigningKeyActivationJob>();
-builder.Services.AddHostedService(provider => provider.GetRequiredService<SigningKeyActivationJob>());
+builder.Services.AddSingleton<SigningKeyJob>();
+builder.Services.AddHostedService(provider => provider.GetRequiredService<SigningKeyJob>());
 
 var app = builder.Build();
 
@@ -75,6 +85,11 @@ _ = app.Configuration.GetConnectionString("Heimdall")
 if (args.Contains("seed-dev", StringComparer.Ordinal))
 {
     return await SeedDevelopmentDataAsync(app);
+}
+
+if (args.Length > 0 && args[0] == "remove-key")
+{
+    return await RemoveCompromisedKeyAsync(app, args);
 }
 
 // The developer exception page shows details in Development only. Elsewhere a failure is an empty 500.
@@ -129,6 +144,49 @@ static async Task<int> SeedDevelopmentDataAsync(WebApplication app)
     if (result.KeyStatus == SigningKeyStatus.Pending)
     {
         Console.WriteLine($"  The key can sign from {result.SigningFrom:u}. The running server activates it then.");
+    }
+
+    return 0;
+}
+
+// Emergency procedure (threat model, JWKS, Elevation of privilege): remove-key <tenant host> <kid>.
+// The admin portal (Phase 3) replaces this command. It runs in any environment, with the operator's database access.
+static async Task<int> RemoveCompromisedKeyAsync(WebApplication app, string[] args)
+{
+    if (args.Length != 3)
+    {
+        await Console.Error.WriteLineAsync("Usage: remove-key <tenant host> <kid>");
+        return 2;
+    }
+
+    using var scope = app.Services.CreateScope();
+    var host = args[1].Trim().ToLowerInvariant();
+    var tenantId = await scope.ServiceProvider.GetRequiredService<HeimdallDbContext>().Tenants
+        .Where(t => t.Host == host)
+        .Select(t => (Guid?)t.Id)
+        .SingleOrDefaultAsync();
+    if (tenantId is not { } id)
+    {
+        await Console.Error.WriteLineAsync($"No tenant has the host '{host}'.");
+        return 1;
+    }
+
+    scope.ServiceProvider.GetRequiredService<TenantScope>().Set(id);
+    var result = await scope.ServiceProvider.GetRequiredService<SigningKeyService>()
+        .RemoveCompromisedKeyAsync(id, args[2], "cli-remove-key-" + Guid.NewGuid().ToString("N"), CancellationToken.None);
+
+    if (!result.Found)
+    {
+        await Console.Error.WriteLineAsync($"Tenant '{host}' has no key with kid '{args[2]}'.");
+        return 1;
+    }
+
+    Console.WriteLine($"Key {args[2]} is out of the JWKS. Tokens it signed no longer verify.");
+    if (result.WasActive)
+    {
+        Console.WriteLine($"It was the active key. Replacement: {result.Replacement.ToString().ToLowerInvariant()}.");
+        Console.WriteLine("Token issuance stops until the replacement key is active (one publish wait).");
+        Console.WriteLine("Running servers stop using the removed key within one server cache lifetime.");
     }
 
     return 0;

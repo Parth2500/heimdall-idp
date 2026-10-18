@@ -24,6 +24,7 @@ Each term has one meaning in this document. Do not use a synonym.
 | Refresh token | An opaque token that a client exchanges for new tokens. |
 | Family | All refresh tokens that come from one code redemption. Each family has one `TokenFamilyId`. |
 | Rotate | To replace a refresh token with a new one each time the client uses it. |
+| Key rotation | To replace a tenant's active signing key with the next key on a schedule. The old key stays in the JWKS until its last token expires. |
 | Reuse | A second use of a code or refresh token that is already used. |
 | Revoke | To make a token or family permanently invalid. |
 | Bearer | A token that gives access to anyone who holds it. |
@@ -143,7 +144,7 @@ Boundary: B5. The endpoint is public, unauthenticated, read-only, and has high r
 | Information disclosure | Retired-key data or key store details leak. | The JWKS lists only active keys and keys in the overlap period. It shows no internal identifier except `kid`. |
 | Denial of service | Many requests hit the database for each call. | Heimdall caches the keys in memory and refreshes the cache on rotation. It sends `Cache-Control: public, max-age=...` and an `ETag`. A CDN or reverse proxy sits in front on deployment. An IP rate limit is the backstop. |
 | Denial of service | All resource servers refetch the JWKS at the same time after a rotation. | `max-age` spreads the refetch times. Resource servers throttle refetches for an unknown `kid`. The documentation states this. |
-| Elevation of privilege | An attacker steals a signing key and creates valid tokens. | Emergency procedure: remove the key's `kid` from the JWKS at once. Tokens that this key signed stop working. This cost is accepted. Then add a new key. Key Vault or KMS keeps private keys non-exportable. Each server reloads its active key within the server key cache lifetime. Until then, another server can still sign with the removed key. Resource servers reject those tokens after their JWKS cache expires. |
+| Elevation of privilege | An attacker steals a signing key and creates valid tokens. | Emergency procedure: an operator runs `remove-key <tenant host> <kid>`. The key leaves the JWKS at once. Tokens that this key signed stop working. This cost is accepted. Heimdall then activates a ready next key, or creates a new key. Token issuance stops until the new key is active, at most one publish wait. Key Vault or KMS keeps private keys non-exportable. Each server reloads its active key within the server key cache lifetime. Until then, another server can still sign with the removed key. Resource servers reject those tokens after their JWKS cache expires. |
 | Elevation of privilege | Rotation breaks live tokens. Or a new key signs before caches know it. | Publish the new key in the JWKS at least one cache lifetime before it signs a token. The wait also covers the server key cache lifetime, because another server can serve the old JWKS for that long. Keep the old `kid` listed until its last token expires (token lifetime plus clock skew). |
 
 ## `POST /oauth/v1/revoke` (RFC 7009)
@@ -268,6 +269,9 @@ Platform limits (D16). A tenant or client value must be inside these ranges. The
 | JWKS cache lifetime (`max-age`) | 10 minutes | Configuration: `Heimdall:SigningKeys:JwksCacheLifetime`. Discovery uses the same `max-age`. |
 | Server key cache lifetime | 1 minute | A key or tenant change on one server reaches every other server within this time. |
 | Publish wait | 11 minutes | A new key waits the JWKS cache lifetime plus the server key cache lifetime before it signs. |
+| Key rotation interval | 90 days | The job creates the next key one publish wait before this time ends. Configuration: `Heimdall:SigningKeys:RotationInterval`. |
+| Clock skew | 5 minutes | Resource servers allow this difference when they check `exp`. |
+| Retired key overlap | 65 minutes | A retired key stays in the JWKS for the platform maximum access token lifetime (60 minutes) plus clock skew. |
 | Rate limit, `/token` | 10 requests each minute for each IP | Also limit for each `client_id`. |
 | Rate limit, login | 5 requests each minute for each IP | Also throttle for each account. |
 

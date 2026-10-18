@@ -79,14 +79,8 @@ public sealed class DevelopmentSeeder
             (tenantId, secret) = await CreateTenantAndClientAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        // A tenant seeded before signing keys existed gets its first key now.
-        var keys = await _keys.ListAsync(tenantId, cancellationToken).ConfigureAwait(false);
-        if (keys.Count == 0)
-        {
-            await _keyService.CreateKeyAsync(tenantId, CorrelationId, cancellationToken).ConfigureAwait(false);
-        }
-
-        await _keyService.ActivateFirstKeyAsync(tenantId, CorrelationId, cancellationToken).ConfigureAwait(false);
+        // Creates the first key, or activates it when its wait has ended. The running server's key job does the same.
+        await _keyService.MaintainAsync(tenantId, CorrelationId, cancellationToken).ConfigureAwait(false);
 
         var newest = (await _keys.ListAsync(tenantId, cancellationToken).ConfigureAwait(false))
             .OrderByDescending(k => k.PublishedAt)

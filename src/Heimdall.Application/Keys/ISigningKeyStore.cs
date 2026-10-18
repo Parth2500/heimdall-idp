@@ -9,16 +9,21 @@ public interface ISigningKeyStore
     Task<IReadOnlyList<SigningKey>> ListAsync(Guid tenantId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// The tenants that have no active key but have a pending key whose wait has ended. This is a platform query
-    /// across tenants, for the activation job only.
+    /// The tenants whose keys need work: no active or pending key, a pending key ready to activate with no active key,
+    /// or an active key that signs since <paramref name="activeSigningSince"/> or earlier. This is a platform query
+    /// across tenants, for the key job only.
     /// </summary>
-    Task<IReadOnlyList<Guid>> ListTenantsAwaitingActivationAsync(DateTimeOffset now, CancellationToken cancellationToken);
+    Task<IReadOnlyList<Guid>> ListTenantsNeedingKeyWorkAsync(
+        DateTimeOffset now,
+        DateTimeOffset activeSigningSince,
+        CancellationToken cancellationToken);
 
     void Add(SigningKey key);
 
     /// <summary>
-    /// Saves the changes. The database allows one active key for each tenant. When a concurrent caller activated a
-    /// key first, this throws <see cref="Common.ConcurrentUpdateException"/> and saves nothing.
+    /// Saves the changes. The database allows one active key and one pending key for each tenant, and a status
+    /// change succeeds only from the status that was read. When a concurrent caller changed the keys first, this
+    /// throws <see cref="Common.ConcurrentUpdateException"/> and saves nothing.
     /// </summary>
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

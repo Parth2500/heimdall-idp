@@ -23,16 +23,28 @@ internal sealed class EfSigningKeyStore : ISigningKeyStore
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-    public async Task<IReadOnlyList<Guid>> ListTenantsAwaitingActivationAsync(DateTimeOffset now, CancellationToken cancellationToken) =>
+    public async Task<IReadOnlyList<Guid>> ListTenantsNeedingKeyWorkAsync(
+        DateTimeOffset now,
+        DateTimeOffset activeSigningSince,
+        CancellationToken cancellationToken)
+    {
         // A platform query across tenants, so it skips the tenant filter on purpose. It returns tenant IDs only.
-        await _db.SigningKeys
-            .IgnoreQueryFilters()
-            .Where(k => k.Status == SigningKeyStatus.Pending && k.SigningFrom <= now)
-            .Where(k => !_db.SigningKeys.IgnoreQueryFilters().Any(a => a.TenantId == k.TenantId && a.Status == SigningKeyStatus.Active))
-            .Select(k => k.TenantId)
-            .Distinct()
+        var keys = _db.SigningKeys.IgnoreQueryFilters();
+        return await _db.Tenants
+            .Where(t =>
+                // No key signs or waits to sign: create one.
+                !keys.Any(k => k.TenantId == t.Id && (k.Status == SigningKeyStatus.Active || k.Status == SigningKeyStatus.Pending))
+
+                // No active key, and a pending key is ready: activate it.
+                || (!keys.Any(k => k.TenantId == t.Id && k.Status == SigningKeyStatus.Active)
+                    && keys.Any(k => k.TenantId == t.Id && k.Status == SigningKeyStatus.Pending && k.SigningFrom <= now))
+
+                // The active key is near or past its rotation time: create the next key, or rotate.
+                || keys.Any(k => k.TenantId == t.Id && k.Status == SigningKeyStatus.Active && k.SigningFrom <= activeSigningSince))
+            .Select(t => t.Id)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+    }
 
     public void Add(SigningKey key) => _db.SigningKeys.Add(key);
 
@@ -47,7 +59,7 @@ internal sealed class EfSigningKeyStore : ISigningKeyStore
             || exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
         {
             // Concurrency: another server changed the status of this key first.
-            // Unique violation: another server activated a different key of this tenant first.
+            // Unique violation: another server activated a different key, or created the pending key, first.
             // Forget the refused changes, so a later save in this scope does not send them again.
             _db.ChangeTracker.Clear();
             throw new ConcurrentUpdateException("A concurrent change won. This change was not saved.", exception);

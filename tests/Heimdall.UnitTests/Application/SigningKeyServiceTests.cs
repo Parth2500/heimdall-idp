@@ -1,4 +1,6 @@
+using Heimdall.Application.Common;
 using Heimdall.Application.Keys;
+using Heimdall.Application.Settings;
 using Heimdall.Domain.Audit;
 using Heimdall.Domain.Keys;
 using Microsoft.Extensions.Time.Testing;
@@ -32,6 +34,7 @@ public class SigningKeyServiceTests
             _cache,
             _audit,
             Options,
+            new PlatformLimits(),
             _time);
     }
 
@@ -124,20 +127,6 @@ public class SigningKeyServiceTests
     }
 
     [Fact]
-    public async Task The_oldest_ready_key_is_activated()
-    {
-        var older = await Create();
-        _time.Advance(TimeSpan.FromMinutes(1));
-        var newer = await Create();
-        _time.Advance(Wait);
-
-        var activated = await Activate();
-
-        Assert.Same(older, activated);
-        Assert.Equal(SigningKeyStatus.Pending, newer.Status);
-    }
-
-    [Fact]
     public async Task Keys_of_another_tenant_are_not_activated()
     {
         await Create();
@@ -173,9 +162,167 @@ public class SigningKeyServiceTests
             JwksCacheLifetime = TimeSpan.Zero,
             ServerCacheLifetime = TimeSpan.FromSeconds(-1),
             ActivationCheckInterval = TimeSpan.Zero,
+            ClockSkew = TimeSpan.FromSeconds(-1),
         };
 
-        Assert.Equal(3, options.Validate().Count);
+        Assert.Equal(4, options.Validate().Count);
         Assert.Empty(new SigningKeyOptions().Validate());
+    }
+
+    [Fact]
+    public void Rotation_interval_must_be_longer_than_the_publish_wait()
+    {
+        var options = new SigningKeyOptions { RotationInterval = TimeSpan.FromMinutes(11) };
+
+        Assert.Single(options.Validate());
+    }
+
+    [Fact]
+    public async Task Second_pending_key_is_refused()
+    {
+        await Create();
+
+        await Assert.ThrowsAsync<ConcurrentUpdateException>(Create);
+        Assert.Single(_keys.Keys);
+    }
+
+    private Task<KeyMaintenanceAction> Maintain() => _service.MaintainAsync(_tenantId, "corr-m", CancellationToken.None);
+
+    /// <summary>A tenant with an active key that started to sign now.</summary>
+    private async Task<SigningKey> ActiveKey()
+    {
+        Assert.Equal(KeyMaintenanceAction.Created, await Maintain());
+        _time.Advance(Wait);
+        Assert.Equal(KeyMaintenanceAction.Activated, await Maintain());
+        return _keys.Keys.Single(k => k.Status == SigningKeyStatus.Active);
+    }
+
+    [Fact]
+    public async Task Maintain_creates_then_activates_the_first_key()
+    {
+        Assert.Equal(KeyMaintenanceAction.Created, await Maintain());
+        Assert.Equal(KeyMaintenanceAction.None, await Maintain());
+
+        _time.Advance(Wait);
+
+        Assert.Equal(KeyMaintenanceAction.Activated, await Maintain());
+        Assert.Equal(SigningKeyStatus.Active, Assert.Single(_keys.Keys).Status);
+    }
+
+    [Fact]
+    public async Task Maintain_creates_the_next_key_one_publish_wait_before_rotation()
+    {
+        await ActiveKey();
+
+        _time.Advance(Options.RotationInterval - Wait - TimeSpan.FromSeconds(1));
+        Assert.Equal(KeyMaintenanceAction.None, await Maintain());
+
+        _time.Advance(TimeSpan.FromSeconds(1));
+        Assert.Equal(KeyMaintenanceAction.Created, await Maintain());
+        var next = _keys.Keys.Single(k => k.Status == SigningKeyStatus.Pending);
+
+        // The next key is ready exactly when rotation is due.
+        Assert.Equal(_time.GetUtcNow() + Wait, next.SigningFrom);
+    }
+
+    [Fact]
+    public async Task Rotation_activates_the_next_key_and_retires_the_old_one_with_an_overlap()
+    {
+        var old = await ActiveKey();
+        _time.Advance(Options.RotationInterval - Wait);
+        await Maintain();
+        var next = _keys.Keys.Single(k => k.Status == SigningKeyStatus.Pending);
+        _time.Advance(Wait - TimeSpan.FromSeconds(1));
+        Assert.Equal(KeyMaintenanceAction.None, await Maintain());
+        _time.Advance(TimeSpan.FromSeconds(1));
+        var auditBefore = _audit.Events.Count;
+
+        Assert.Equal(KeyMaintenanceAction.Rotated, await Maintain());
+
+        var now = _time.GetUtcNow();
+        Assert.Equal(SigningKeyStatus.Active, next.Status);
+        Assert.Equal(SigningKeyStatus.Retired, old.Status);
+
+        // 60 minutes (the platform's longest access token) plus 5 minutes of clock skew.
+        Assert.Equal(now + TimeSpan.FromMinutes(65), old.RemoveAfter);
+        Assert.True(old.IsPublished(now + TimeSpan.FromMinutes(64)));
+        Assert.False(old.IsPublished(now + TimeSpan.FromMinutes(65)));
+        Assert.Equal(
+            [AuditEventTypes.KeyActivated, AuditEventTypes.KeyRetired],
+            _audit.Events.Skip(auditBefore).Select(e => e.Type));
+        Assert.Equal(old.Kid, _audit.Events[^1].Data["kid"]);
+        Assert.True(_audit.Events[^1].Data.ContainsKey("remove_after"));
+    }
+
+    [Fact]
+    public async Task Keys_stay_valid_over_a_long_simulation()
+    {
+        // Run the job every hour for 400 days, over four rotations.
+        await ActiveKey();
+        var rotations = 0;
+        for (var hour = 0; hour < 400 * 24; hour++)
+        {
+            _time.Advance(TimeSpan.FromHours(1));
+            if (await Maintain() == KeyMaintenanceAction.Rotated)
+            {
+                rotations++;
+            }
+
+            var now = _time.GetUtcNow();
+            var active = Assert.Single(_keys.Keys, k => k.Status == SigningKeyStatus.Active);
+            Assert.True(_keys.Keys.Count(k => k.Status == SigningKeyStatus.Pending) <= 1);
+
+            // The signing key is always published, and has signed for at most one interval plus one job period.
+            Assert.True(active.IsPublished(now));
+            Assert.True(now - active.SigningFrom <= Options.RotationInterval + TimeSpan.FromHours(1));
+        }
+
+        Assert.Equal(4, rotations);
+        Assert.Equal(4, _keys.Keys.Count(k => k.Status == SigningKeyStatus.Retired));
+    }
+
+    [Fact]
+    public async Task Removing_the_active_key_takes_it_out_at_once_and_starts_a_replacement()
+    {
+        var key = await ActiveKey();
+        var auditBefore = _audit.Events.Count;
+
+        var result = await _service.RemoveCompromisedKeyAsync(_tenantId, key.Kid, "corr-r", CancellationToken.None);
+
+        Assert.True(result.Found);
+        Assert.True(result.WasActive);
+        Assert.Equal(KeyMaintenanceAction.Created, result.Replacement);
+        Assert.False(key.IsPublished(_time.GetUtcNow()));
+        Assert.False(key.CanSign);
+        Assert.Equal(
+            [AuditEventTypes.KeyRemoved, AuditEventTypes.KeyCreated],
+            _audit.Events.Skip(auditBefore).Select(e => e.Type));
+        Assert.Single(_keys.Keys, k => k.Status == SigningKeyStatus.Pending);
+    }
+
+    [Fact]
+    public async Task Removing_the_active_key_activates_a_ready_next_key_at_once()
+    {
+        var key = await ActiveKey();
+        _time.Advance(Options.RotationInterval - Wait);
+        await Maintain();
+        _time.Advance(Wait);
+
+        var result = await _service.RemoveCompromisedKeyAsync(_tenantId, key.Kid, "corr-r", CancellationToken.None);
+
+        Assert.Equal(KeyMaintenanceAction.Activated, result.Replacement);
+        Assert.Single(_keys.Keys, k => k.Status == SigningKeyStatus.Active);
+    }
+
+    [Fact]
+    public async Task Removing_an_unknown_kid_changes_nothing()
+    {
+        await ActiveKey();
+        var auditBefore = _audit.Events.Count;
+
+        var result = await _service.RemoveCompromisedKeyAsync(_tenantId, "no-such-kid", "corr-r", CancellationToken.None);
+
+        Assert.False(result.Found);
+        Assert.Equal(auditBefore, _audit.Events.Count);
     }
 }

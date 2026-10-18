@@ -17,6 +17,15 @@ public sealed class SigningKeyOptions
     /// <summary>How often the activation job looks for pending keys whose wait has ended.</summary>
     public TimeSpan ActivationCheckInterval { get; set; } = TimeSpan.FromSeconds(30);
 
+    /// <summary>How long a key signs before the next key replaces it.</summary>
+    public TimeSpan RotationInterval { get; set; } = TimeSpan.FromDays(90);
+
+    /// <summary>
+    /// The clock difference that resource servers allow when they check <c>exp</c>. A retired key stays in the JWKS
+    /// this much longer than its last token.
+    /// </summary>
+    public TimeSpan ClockSkew { get; set; } = TimeSpan.FromMinutes(5);
+
     /// <summary>
     /// How long a new key waits before it signs. Another server can serve the old JWKS for one server cache lifetime,
     /// and a resource server can then cache that JWKS for one JWKS cache lifetime. The wait covers both, so every
@@ -41,6 +50,17 @@ public sealed class SigningKeyOptions
         if (ActivationCheckInterval <= TimeSpan.Zero)
         {
             errors.Add($"{nameof(ActivationCheckInterval)}: the value must be greater than zero.");
+        }
+
+        // The next key is created one publish wait before rotation. A shorter interval would never let it get ready.
+        if (RotationInterval <= PublishWait)
+        {
+            errors.Add($"{nameof(RotationInterval)}: the value must be longer than the publish wait ({PublishWait}).");
+        }
+
+        if (ClockSkew < TimeSpan.Zero)
+        {
+            errors.Add($"{nameof(ClockSkew)}: the value must not be negative.");
         }
 
         return errors;
