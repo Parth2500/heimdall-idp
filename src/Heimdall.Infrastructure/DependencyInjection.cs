@@ -5,13 +5,14 @@ using Heimdall.Application.Clients;
 using Heimdall.Application.Keys;
 using Heimdall.Application.Sessions;
 using Heimdall.Application.Tenants;
+using Heimdall.Application.Tokens;
 using Heimdall.Application.UserInfo;
 using Heimdall.Application.Users;
-using Heimdall.Application.Tokens;
 using Heimdall.Infrastructure.Alerts;
 using Heimdall.Infrastructure.Development;
 using Heimdall.Infrastructure.Keys;
 using Heimdall.Infrastructure.Persistence;
+using Heimdall.Infrastructure.Purge;
 using Heimdall.Infrastructure.Stores;
 using Heimdall.Infrastructure.Tenants;
 using Heimdall.Infrastructure.Users;
@@ -57,6 +58,8 @@ public static class DependencyInjection
         services.AddSingleton<ISigningKeyCache, SigningKeyCache>();
         services.AddSingleton<ITokenSigner, JwtTokenSigner>();
         services.AddSingleton<IAccessTokenValidator, AccessTokenValidator>();
+        services.TryAddSingleton(new PurgeOptions());
+        services.AddScoped<DataPurger>();
         services.AddScoped<DevelopmentSeeder>();
         return services;
     }

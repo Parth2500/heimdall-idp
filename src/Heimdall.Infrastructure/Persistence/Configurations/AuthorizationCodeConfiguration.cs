@@ -36,5 +36,8 @@ internal sealed class AuthorizationCodeConfiguration : IEntityTypeConfiguration<
         // The migration makes this key DEFERRABLE INITIALLY DEFERRED: the redemption UPDATE sets family_id before the
         // family row is inserted in the same transaction, and the check runs at commit.
         builder.HasOne<TokenFamily>().WithMany().HasForeignKey(c => c.FamilyId).OnDelete(DeleteBehavior.SetNull);
+
+        // The purge job deletes expired codes with no family.
+        builder.HasIndex(c => c.ExpiresAt).HasFilter("family_id IS NULL");
     }
 }

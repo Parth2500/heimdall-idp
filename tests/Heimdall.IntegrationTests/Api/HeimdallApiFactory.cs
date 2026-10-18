@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using Heimdall.Api.Hosting;
+using Heimdall.Api.Jobs;
 using Heimdall.Application.Keys;
 using Heimdall.Application.Tenants;
 using Heimdall.Application.Users;
@@ -15,6 +16,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Heimdall.IntegrationTests.Api;
@@ -53,6 +55,12 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
         builder.ConfigureTestServices(services =>
         {
             services.AddSingleton<TimeProvider>(Time);
+
+            // The fake clock jumps days in some tests. The purge loop must not run in the background then.
+            foreach (var job in services.Where(d => d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(PurgeJob)).ToList())
+            {
+                services.Remove(job);
+            }
             services.RemoveAll<IKeyMaterialStore>();
             services.AddDevelopmentKeyFile(_postgres.KeyFilePath);
             services.Configure<IssuerOptions>(options => options.Port = null);

@@ -323,6 +323,13 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                     b.HasKey("IdHash")
                         .HasName("pk_sessions");
 
+                    b.HasIndex("AbsoluteExpiresAt")
+                        .HasDatabaseName("ix_sessions_absolute_expires_at");
+
+                    b.HasIndex("RevokedAt")
+                        .HasDatabaseName("ix_sessions_revoked_at")
+                        .HasFilter("revoked_at IS NOT NULL");
+
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_sessions_user_id");
 
@@ -473,6 +480,10 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ClientPk")
                         .HasDatabaseName("ix_authorization_codes_client_pk");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_authorization_codes_expires_at")
+                        .HasFilter("family_id IS NULL");
 
                     b.HasIndex("FamilyId")
                         .HasDatabaseName("ix_authorization_codes_family_id");
@@ -682,6 +693,13 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ClientPk")
                         .HasDatabaseName("ix_token_families_client_pk");
+
+                    b.HasIndex("IdleExpiresAt")
+                        .HasDatabaseName("ix_token_families_idle_expires_at");
+
+                    b.HasIndex("RevokedAt")
+                        .HasDatabaseName("ix_token_families_revoked_at")
+                        .HasFilter("revoked_at IS NOT NULL");
 
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_token_families_user_id");

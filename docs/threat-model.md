@@ -284,6 +284,10 @@ Platform limits (D16). A tenant or client value must be inside these ranges. The
 | Argon2id parameters | 64 MiB, 3 passes, 1 lane | Above the OWASP minimum (19 MiB, 2 passes). A sign-in upgrades an older hash. Configuration: `Heimdall:PasswordHashing`. |
 | Concurrent password hashes | One for each CPU core | Requests wait up to 5 seconds for a slot, then fail fast. |
 | Retired key overlap | 65 minutes | A retired key stays in the JWKS for the platform maximum access token lifetime (60 minutes) plus clock skew. |
+| Purge job interval | 1 hour | Configuration: `Heimdall:Purge`. Also the batch size (1000) and the retentions below. |
+| Retention of an ended family | 7 days | A reused token of a recent family still causes a revocation and an alert. |
+| Retention of an expired code with no family | 24 hours | A replayed code still shows as redeemed. |
+| Retention of an ended session | 7 days | For an investigation. |
 | Rate limit, `/token` | 10 requests each minute for each IP | Also limit for each `client_id`. |
 | Rate limit, login | 5 requests each minute for each IP | Also throttle for each account. |
 

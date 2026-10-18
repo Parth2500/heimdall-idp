@@ -44,5 +44,9 @@ internal sealed class TokenFamilyConfiguration : IEntityTypeConfiguration<TokenF
         // Revoke all families of a user or a client.
         builder.HasIndex(f => f.UserId);
         builder.HasIndex(f => f.ClientPk);
+
+        // The purge job finds ended families by these columns.
+        builder.HasIndex(f => f.IdleExpiresAt);
+        builder.HasIndex(f => f.RevokedAt).HasFilter("revoked_at IS NOT NULL");
     }
 }

@@ -10,6 +10,7 @@ using Heimdall.Infrastructure;
 using Heimdall.Infrastructure.Development;
 using Heimdall.Infrastructure.Keys;
 using Heimdall.Infrastructure.Persistence;
+using Heimdall.Infrastructure.Purge;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -91,6 +92,13 @@ builder.Services.AddAntiforgery(options =>
 
 builder.Services.AddSingleton<SigningKeyJob>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<SigningKeyJob>());
+
+builder.Services.AddOptions<PurgeOptions>()
+    .Bind(builder.Configuration.GetSection(PurgeOptions.SectionName))
+    .Validate(options => options.Validate().Count == 0, "Invalid settings in " + PurgeOptions.SectionName + ".")
+    .ValidateOnStart();
+builder.Services.AddSingleton(provider => provider.GetRequiredService<IOptions<PurgeOptions>>().Value);
+builder.Services.AddHostedService<PurgeJob>();
 
 var app = builder.Build();
 

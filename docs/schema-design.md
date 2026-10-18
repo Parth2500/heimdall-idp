@@ -271,7 +271,7 @@ The platform limits (minimum and maximum for each setting) live in configuration
 
 The first migration (`InitialCreate`) creates `tenants`, `clients`, `client_secrets`, `signing_keys`, and `audit_events`, with the constraints and indexes above. Integration tests in `tests/Heimdall.IntegrationTests` check the constraints against PostgreSQL with raw SQL.
 
-Later migrations add `users`, `sessions`, `authorization_requests`, `authorization_codes`, `token_families`, and `refresh_tokens`. Not built yet: `consents`, row-level security, the role rights on `audit_events`, and the purge job.
+Later migrations add `users`, `sessions`, `authorization_requests`, `authorization_codes`, `token_families`, and `refresh_tokens`. Later migrations also add the consent decision columns and the purge indexes. Not built yet: `consents`, row-level security, and the role rights on `audit_events`.
 
 ## Row-level security (D20)
 
@@ -279,26 +279,30 @@ The application sets the tenant for each transaction with `SET LOCAL app.tenant_
 
 ## Purge job
 
-A background service deletes old rows in batches. It runs every hour. It deletes at most 1000 rows in each statement and repeats until no rows remain. Batches keep transactions short, so the job does not block `/token`.
+A background service (`PurgeJob`, `DataPurger`) deletes old rows in batches. It runs every hour. It deletes at most 1000 rows in each statement and repeats until no rows remain. Batches keep transactions short, so the job does not block `/token`. The values are in configuration (`Heimdall:Purge`).
 
 ```sql
 DELETE FROM token_families
 WHERE id IN (
     SELECT id FROM token_families
-    WHERE  LEAST(absolute_expires_at, idle_expires_at) < now() - interval '7 days'
-       OR  revoked_at < now() - interval '7 days'
-    LIMIT  1000
+    WHERE  idle_expires_at < @now - @family_retention
+       OR  revoked_at < @now - @family_retention
+    LIMIT  @batch
     FOR UPDATE SKIP LOCKED);
 ```
 
+The check constraint `idle_expires_at <= absolute_expires_at` makes `idle_expires_at` the end of an unrevoked family. So the statement needs no `LEAST`, and an index on each column serves it. The application sends `@now` from its clock, so tests can control the time.
+
 `SKIP LOCKED` lets two instances of the job run together without waiting for each other.
+
+Indexes for the job: `token_families (idle_expires_at)`, `token_families (revoked_at) WHERE revoked_at IS NOT NULL`, `authorization_codes (expires_at) WHERE family_id IS NULL`, `sessions (absolute_expires_at)`, `sessions (revoked_at) WHERE revoked_at IS NOT NULL`, and `authorization_requests (expires_at)`.
 
 | Table | Delete when | Reason for the delay |
 |---|---|---|
 | `token_families` (and its `refresh_tokens`, by `ON DELETE CASCADE`) | The family ended more than 7 days ago | A reused token from a recent family must still cause a revocation and an alert. The delay also helps an investigation. |
 | `authorization_codes` | `expires_at` is more than 24 hours ago, and the code has no family | A replayed code must still show as `redeemed` for a short time after expiry. |
 | `authorization_requests` | `expires_at` has passed | |
-| `sessions` | The session ended (expired or revoked) more than 7 days ago | |
+| `sessions` | `absolute_expires_at` or `revoked_at` is more than 7 days ago | A session that ended by its idle timeout stays until this time. The idle timeout is a tenant setting, so this rule keeps the statement on one table. |
 
 Order: delete families first, then codes. `authorization_codes.family_id` has `ON DELETE SET NULL`, so a code survives its family for the 24-hour delay. `token_families.source_code_id` is a plain column with no foreign key. It is an audit reference only. This avoids a circular foreign key between the two tables.
 

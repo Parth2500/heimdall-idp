@@ -27,5 +27,9 @@ internal sealed class SessionConfiguration : IEntityTypeConfiguration<Session>
         builder.Property(s => s.AuthTime);
         builder.Property(s => s.AbsoluteExpiresAt);
         builder.Property(s => s.RevokedAt);
+
+        // The purge job finds ended sessions by these columns.
+        builder.HasIndex(s => s.AbsoluteExpiresAt);
+        builder.HasIndex(s => s.RevokedAt).HasFilter("revoked_at IS NOT NULL");
     }
 }
