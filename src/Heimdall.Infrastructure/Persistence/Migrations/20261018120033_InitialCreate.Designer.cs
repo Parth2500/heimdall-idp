@@ -157,6 +157,23 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(32)")
                         .HasColumnName("type");
 
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "TokenOverrides", "Heimdall.Domain.Clients.Client.TokenOverrides#ClientTokenOverrides", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<int?>("AccessToken")
+                                .HasColumnType("integer")
+                                .HasColumnName("access_token_seconds");
+
+                            b1.Property<int?>("RefreshAbsolute")
+                                .HasColumnType("integer")
+                                .HasColumnName("refresh_absolute_seconds");
+
+                            b1.Property<int?>("RefreshIdle")
+                                .HasColumnType("integer")
+                                .HasColumnName("refresh_idle_seconds");
+                        });
+
                     b.HasKey("Id")
                         .HasName("pk_clients");
 
@@ -292,6 +309,31 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(32)")
                         .HasColumnName("status");
 
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Settings", "Heimdall.Domain.Tenants.Tenant.Settings#TenantSettings", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<int>("AccessToken")
+                                .HasColumnType("integer")
+                                .HasColumnName("access_token_seconds");
+
+                            b1.Property<int>("RefreshAbsolute")
+                                .HasColumnType("integer")
+                                .HasColumnName("refresh_absolute_seconds");
+
+                            b1.Property<int>("RefreshIdle")
+                                .HasColumnType("integer")
+                                .HasColumnName("refresh_idle_seconds");
+
+                            b1.Property<int>("SessionAbsolute")
+                                .HasColumnType("integer")
+                                .HasColumnName("session_absolute_seconds");
+
+                            b1.Property<int>("SessionIdle")
+                                .HasColumnType("integer")
+                                .HasColumnName("session_idle_seconds");
+                        });
+
                     b.HasKey("Id")
                         .HasName("pk_tenants");
 
@@ -358,36 +400,6 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_clients_tenants_tenant_id");
-
-                    b.OwnsOne("Heimdall.Domain.Clients.ClientTokenOverrides", "TokenOverrides", b1 =>
-                        {
-                            b1.Property<Guid>("ClientId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
-
-                            b1.Property<int?>("AccessToken")
-                                .HasColumnType("integer")
-                                .HasColumnName("access_token_seconds");
-
-                            b1.Property<int?>("RefreshAbsolute")
-                                .HasColumnType("integer")
-                                .HasColumnName("refresh_absolute_seconds");
-
-                            b1.Property<int?>("RefreshIdle")
-                                .HasColumnType("integer")
-                                .HasColumnName("refresh_idle_seconds");
-
-                            b1.HasKey("ClientId");
-
-                            b1.ToTable("clients");
-
-                            b1.WithOwner()
-                                .HasForeignKey("ClientId")
-                                .HasConstraintName("fk_clients_clients_id");
-                        });
-
-                    b.Navigation("TokenOverrides")
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Heimdall.Domain.Keys.SigningKey", b =>
@@ -398,47 +410,6 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_signing_keys_tenants_tenant_id");
-                });
-
-            modelBuilder.Entity("Heimdall.Domain.Tenants.Tenant", b =>
-                {
-                    b.OwnsOne("Heimdall.Domain.Tenants.TenantSettings", "Settings", b1 =>
-                        {
-                            b1.Property<Guid>("TenantId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("id");
-
-                            b1.Property<int>("AccessToken")
-                                .HasColumnType("integer")
-                                .HasColumnName("access_token_seconds");
-
-                            b1.Property<int>("RefreshAbsolute")
-                                .HasColumnType("integer")
-                                .HasColumnName("refresh_absolute_seconds");
-
-                            b1.Property<int>("RefreshIdle")
-                                .HasColumnType("integer")
-                                .HasColumnName("refresh_idle_seconds");
-
-                            b1.Property<int>("SessionAbsolute")
-                                .HasColumnType("integer")
-                                .HasColumnName("session_absolute_seconds");
-
-                            b1.Property<int>("SessionIdle")
-                                .HasColumnType("integer")
-                                .HasColumnName("session_idle_seconds");
-
-                            b1.HasKey("TenantId");
-
-                            b1.ToTable("tenants");
-
-                            b1.WithOwner()
-                                .HasForeignKey("TenantId")
-                                .HasConstraintName("fk_tenants_tenants_id");
-                        });
-
-                    b.Navigation("Settings")
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Heimdall.Infrastructure.Persistence.ClientSecretRecord", b =>

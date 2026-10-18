@@ -71,15 +71,13 @@ internal sealed class ClientConfiguration : IEntityTypeConfiguration<Client>
 
         builder.Ignore(c => c.RefreshEnabled);
 
+        // A complex property is a value without identity, so two clients can share one instance.
         // All three columns null means "use the tenant value" (D15).
-        builder.OwnsOne(c => c.TokenOverrides, o =>
+        builder.ComplexProperty(c => c.TokenOverrides, o =>
         {
             o.Property(p => p.AccessToken).HasColumnName("access_token_seconds").HasConversion(Converters.Seconds);
             o.Property(p => p.RefreshIdle).HasColumnName("refresh_idle_seconds").HasConversion(Converters.Seconds);
             o.Property(p => p.RefreshAbsolute).HasColumnName("refresh_absolute_seconds").HasConversion(Converters.Seconds);
         });
-        builder.Navigation(c => c.TokenOverrides)
-            .HasField("_tokenOverrides")
-            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

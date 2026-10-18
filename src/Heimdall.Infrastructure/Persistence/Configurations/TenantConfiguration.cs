@@ -29,7 +29,9 @@ internal sealed class TenantConfiguration : IEntityTypeConfiguration<Tenant>
         builder.Property(t => t.Status).HasConversion(new SnakeCaseEnumConverter<TenantStatus>()).HasMaxLength(32);
         builder.Property(t => t.CreatedAt);
 
-        builder.OwnsOne(t => t.Settings, s =>
+        // A complex property, not an owned entity: EF Core tracks an owned entity by reference,
+        // so tenants that share TenantSettings.Default in one SaveChanges would lose their values.
+        builder.ComplexProperty(t => t.Settings, s =>
         {
             s.Property(p => p.SessionIdle).HasColumnName("session_idle_seconds").HasConversion(Converters.Seconds);
             s.Property(p => p.SessionAbsolute).HasColumnName("session_absolute_seconds").HasConversion(Converters.Seconds);
@@ -37,6 +39,5 @@ internal sealed class TenantConfiguration : IEntityTypeConfiguration<Tenant>
             s.Property(p => p.RefreshIdle).HasColumnName("refresh_idle_seconds").HasConversion(Converters.Seconds);
             s.Property(p => p.RefreshAbsolute).HasColumnName("refresh_absolute_seconds").HasConversion(Converters.Seconds);
         });
-        builder.Navigation(t => t.Settings).IsRequired();
     }
 }

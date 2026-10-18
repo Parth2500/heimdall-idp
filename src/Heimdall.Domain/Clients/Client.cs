@@ -41,10 +41,6 @@ public sealed class Client
     private List<string> _redirectUris = [];
     private List<string> _allowedAudiences = [];
 
-    // Null means "no override". A shared ClientTokenOverrides.None instance must not be stored, because
-    // EF Core tracks an owned value for each owner.
-    private ClientTokenOverrides? _tokenOverrides;
-
 #pragma warning disable CS8618 // EF Core sets the properties after it calls this constructor.
     private Client()
     {
@@ -78,7 +74,7 @@ public sealed class Client
         _allowedScopes = allowedScopes;
         _redirectUris = redirectUris;
         RequireConsent = requireConsent;
-        _tokenOverrides = Normalize(overrides);
+        TokenOverrides = overrides;
         Status = ClientStatus.Pending;
         CreatedAt = createdAt;
     }
@@ -108,7 +104,7 @@ public sealed class Client
 
     public bool RequireConsent { get; private set; }
 
-    public ClientTokenOverrides TokenOverrides => _tokenOverrides ?? ClientTokenOverrides.None;
+    public ClientTokenOverrides TokenOverrides { get; private set; }
 
     public ClientStatus Status { get; private set; }
 
@@ -239,7 +235,7 @@ public sealed class Client
     public void UpdateTokenOverrides(ClientTokenOverrides overrides)
     {
         ArgumentNullException.ThrowIfNull(overrides);
-        _tokenOverrides = Normalize(overrides);
+        TokenOverrides = overrides;
     }
 
     public void Approve()
@@ -251,7 +247,4 @@ public sealed class Client
     }
 
     public void Disable() => Status = ClientStatus.Disabled;
-
-    private static ClientTokenOverrides? Normalize(ClientTokenOverrides overrides) =>
-        overrides == ClientTokenOverrides.None ? null : overrides;
 }
