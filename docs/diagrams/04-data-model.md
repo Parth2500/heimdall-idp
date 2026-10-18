@@ -9,7 +9,6 @@ erDiagram
     tenants ||--o{ clients : has
     tenants ||--o{ signing_keys : has
     tenants ||--o{ sessions : has
-    clients ||--o{ client_redirect_uris : lists
     clients ||--o{ client_secrets : "has (max 2 valid)"
     clients ||--o{ authorization_requests : receives
     clients ||--o{ authorization_codes : receives
@@ -45,12 +44,8 @@ erDiagram
         text type
         text status
         text_array allowed_grant_types
+        text_array redirect_uris
         text_array allowed_audiences
-    }
-    client_redirect_uris {
-        uuid id PK
-        uuid client_pk FK
-        text uri UK
     }
     client_secrets {
         uuid id PK

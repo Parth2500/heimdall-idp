@@ -18,6 +18,12 @@ public sealed class Tenant
         RegexOptions.CultureInvariant,
         TimeSpan.FromMilliseconds(100));
 
+#pragma warning disable CS8618 // EF Core sets the properties after it calls this constructor.
+    private Tenant()
+    {
+    }
+#pragma warning restore CS8618
+
     private Tenant(
         Guid id,
         string host,

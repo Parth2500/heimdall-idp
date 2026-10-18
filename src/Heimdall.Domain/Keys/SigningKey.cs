@@ -22,6 +22,12 @@ public sealed class SigningKey
 {
     public const string Algorithm = "RS256";
 
+#pragma warning disable CS8618 // EF Core sets the properties after it calls this constructor.
+    private SigningKey()
+    {
+    }
+#pragma warning restore CS8618
+
     private SigningKey(
         Guid id,
         Guid tenantId,

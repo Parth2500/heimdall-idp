@@ -11,7 +11,7 @@ The document has no C# code. The entities and the migrations are written by hand
 | Primary keys are UUIDv7 (`Guid.CreateVersion7()` in .NET). | Time-ordered keys keep index inserts local. They do not reveal counts. |
 | Every tenant-owned table has `tenant_id` (not null, foreign key to `tenants`). | D20. |
 | Every unique index and foreign key of a tenant-owned table includes `tenant_id`. | The database refuses a link between two tenants. Use composite foreign keys `(tenant_id, x_id)`. |
-| Time columns are `timestamptz`. Expiry checks use the database clock (`now()`). | One clock. No drift between application servers. |
+| Time columns are `timestamptz`. The atomic statements check expiry with the database clock (`now()`). Other reads pass the time from `TimeProvider`, so tests can control it. | The atomic statements must not depend on the clock of one application server. |
 | Secrets, codes, and tokens are stored as `bytea` SHA-256 hashes. | D3. |
 | Enums are `text` with a `CHECK` constraint. | Easier to change than a native enum type. |
 | The Domain project has no EF Core types. All mapping is in `Infrastructure` with `IEntityTypeConfiguration`. | Dependencies point inward only. |
@@ -51,21 +51,18 @@ The document has no C# code. The entities and the migrations are written by hand
 | `client_id` | text | The public identifier. **Unique with `tenant_id`.** |
 | `name` | text | |
 | `type` | text | `public`, `confidential`. |
-| `token_endpoint_auth_method` | text | `none`, `client_secret_basic` in version 1. Check: `none` only for `public`. |
-| `allowed_grant_types` | text[] | Check: `client_credentials` only for `confidential`. A client can refresh when this list has `refresh_token`. There is no separate flag. |
+| `token_endpoint_auth_method` | text | `none`, `client_secret_basic` in version 1. Check: `none` for `public` and `client_secret_basic` for `confidential`. |
+| `allowed_grant_types` | text[] | Check: not empty, only known values, and `client_credentials` only for `confidential`. A client can refresh when this list has `refresh_token`. There is no separate flag. |
 | `allowed_scopes` | text[] | |
+| `redirect_uris` | text[] | Stored exactly. Matching is by exact string, in the application, after the client is loaded. The Domain removes duplicates. |
 | `allowed_audiences` | text[] | D22. Absolute URIs, https except loopback, no query or fragment. Check: not empty when `allowed_grant_types` has `client_credentials`. |
 | `require_consent` | bool | |
 | `status` | text | `pending`, `active`, `disabled`. A client is `pending` until an admin approves it. |
 | `access_token_seconds`, `refresh_idle_seconds`, `refresh_absolute_seconds` | int, null | Null means: use the tenant value (D15). Check constraints give the hard bounds. |
-| `created_at`, `approved_by`, `approved_at` | | |
+| `created_at` | timestamptz | |
+| `approved_by`, `approved_at` | | Not in the first migration. They come with the admin approval use case. |
 
-### `client_redirect_uris`
-| Column | Type | Note |
-|---|---|---|
-| `id` | uuid PK | |
-| `tenant_id`, `client_pk` | uuid | Composite foreign key to `clients`. |
-| `uri` | text | Stored exactly. **Unique with `client_pk`.** Matching is by exact string. |
+Redirect URIs are a `text[]` column on `clients`, not a separate table. The first design had a `client_redirect_uris` table. A client has few redirect URIs, the application always loads them with the client, and the lookup is an exact string match in memory. A separate table added a join and gave no extra protection.
 
 ### `client_secrets`
 Two rows can be valid at the same time. This gives rotation without downtime.
@@ -238,15 +235,24 @@ After a successful rotation, the application checks that the family is not revok
 | Rule | Database | Application |
 |---|---|---|
 | A code redeems only once | Unique hash and the conditional `UPDATE` | Handles the zero-row result. |
-| Tenant isolation | Composite foreign keys, row-level security | EF Core global query filter |
-| Public clients cannot use `client_credentials` | `CHECK` | Validation message for the admin |
+| Tenant isolation | Composite foreign keys. Row-level security is planned (see below). | EF Core global query filter. With no tenant set, no rows match. |
+| Public clients cannot use `client_credentials` | `CHECK` | Domain rule in `Client.Create` |
+| A `client_credentials` client has an audience | `CHECK` | Domain rule in `Client.Create` (D22) |
+| A secret belongs to a client of the same tenant | Composite foreign key `(tenant_id, client_pk)` | |
+| A private key reference holds no key material | `CHECK` | Domain rule in `SigningKey.Create` |
 | Setting values inside the hard bounds | `CHECK` | Platform limits from configuration (D16) |
 | At most two valid secrets for a client | | Admin use case |
 | One `active` signing key for each tenant | Partial unique index on `(tenant_id) WHERE status = 'active'` | Key rotation use case |
-| Audit events cannot change | Role rights | |
-| PKCE `S256`, `RS256` only (D17) | No column for the method. `CHECK (algorithm = 'RS256')` | |
+| Audit events cannot change | Role rights (planned) | No update or delete code path |
+| PKCE `S256`, `RS256` only (D17) | No column for the method. `algorithm` is `NOT NULL` with `CHECK (algorithm = 'RS256')`. `NOT NULL` matters, because a `CHECK` passes on `NULL`. | |
 
 The platform limits (minimum and maximum for each setting) live in configuration and are checked by the application. The database `CHECK` constraints hold only the outer bounds. They are the last defense if the application has a bug. They are wide on purpose, so a change in the limits does not need a migration.
+
+## Implementation status
+
+The first migration (`InitialCreate`) creates `tenants`, `clients`, `client_secrets`, `signing_keys`, and `audit_events`, with the constraints and indexes above. Integration tests in `tests/Heimdall.IntegrationTests` check the constraints against PostgreSQL with raw SQL.
+
+Not built yet: the other tables (users, codes, families, refresh tokens, sessions, consents, authorization requests), row-level security, the role rights on `audit_events`, and the purge job.
 
 ## Row-level security (D20)
 

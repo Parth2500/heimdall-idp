@@ -34,7 +34,8 @@ src/Heimdall.Domain          entities, no dependencies
 src/Heimdall.Application     use cases, interfaces (refs Domain)
 src/Heimdall.Infrastructure  EF Core, Postgres, key storage (refs Application)
 src/Heimdall.Api             endpoints, composition root (refs Application + Infrastructure)
-tests/Heimdall.UnitTests
+tests/Heimdall.UnitTests          no database
+tests/Heimdall.IntegrationTests   PostgreSQL via Testcontainers; skipped without Docker, required in CI
 docs/threat-model.md         Phase 0 deliverable
 docs/schema-design.md        Phase 0 deliverable (schema, atomic SQL, constraints)
 docs/domain-model.md         Rules that each Domain entity enforces. Update it with each Domain change.
@@ -83,5 +84,5 @@ See `docs/threat-model.md`.
 1. Done: Phase 0. Threat model (all endpoints, login, tenants), schema design, diagrams.
 2. Done: repository files (README, SECURITY, CI, Dependabot, global.json). Remote: github.com/Parth2500/heimdall-idp.
 3. Done: Domain layer, all entities, see `docs/domain-model.md`.
-4. In progress: Application layer, `client_credentials` slice first (shortest path to a testable API). Done: `ClientAuthenticator`, platform limits (D16), `Result`/`OAuthError`, per-client audiences (D22), `ClientCredentialsGrant` with `ITokenSigner` and `IAuditLog`. `TimeProvider` is the clock (no custom `IClock`). Next: Infrastructure (EF Core, first migration, dev seed), then JWT signing, then the Api endpoints.
-5. Then: Infrastructure. EF Core mapping, first migration, row-level security, the atomic SQL statements with a concurrency test against PostgreSQL.
+4. Done: Application layer for `client_credentials` (`ClientAuthenticator`, platform limits D16, audiences D22, `ClientCredentialsGrant`, `ITokenSigner`, `IAuditLog`). `TimeProvider` is the clock.
+5. In progress: Infrastructure. Done: EF Core mapping and the first migration (tenants, clients, client_secrets, signing_keys, audit_events), tenant query filter, `EfClientStore`, `EfAuditLog`, dev seed (`dotnet run --project src/Heimdall.Api -- seed-dev`), integration tests. Next: JWT signing with the dev key file, then the Api endpoints (`/token`, discovery, JWKS). Later: the other tables, row-level security, the atomic SQL statements with a concurrency test.

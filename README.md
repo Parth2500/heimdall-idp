@@ -19,7 +19,8 @@ Heimdall is a custom OAuth 2.1 and OpenID Connect identity provider. It is a por
 | `src/Heimdall.Application` | Use cases and interfaces. |
 | `src/Heimdall.Infrastructure` | EF Core, PostgreSQL, key storage. |
 | `src/Heimdall.Api` | Endpoints and composition root. |
-| `tests/Heimdall.UnitTests` | Unit tests. |
+| `tests/Heimdall.UnitTests` | Unit tests. No database. |
+| `tests/Heimdall.IntegrationTests` | Tests against PostgreSQL in a Testcontainers container. They need Docker. Without Docker they are skipped, except in CI, where they must run. |
 | `docs/` | Threat model, schema design, diagrams. |
 
 ## Documents
@@ -38,12 +39,26 @@ dotnet build Heimdall.slnx
 dotnet test Heimdall.slnx
 ```
 
-## Run PostgreSQL for development
+## Run locally
 
-```
-cp .env.example .env        # then set POSTGRES_PASSWORD
-docker compose up -d
-```
+You need Docker for PostgreSQL.
+
+1. Start PostgreSQL:
+   ```
+   cp .env.example .env        # then set POSTGRES_PASSWORD
+   docker compose up -d
+   ```
+2. Give the API the connection string. The password is never in an appsettings file:
+   ```
+   dotnet user-secrets set "ConnectionStrings:Heimdall" "Host=localhost;Port=5432;Database=heimdall;Username=heimdall;Password=<POSTGRES_PASSWORD>" --project src/Heimdall.Api
+   ```
+3. Apply the migrations and create the development tenant and client:
+   ```
+   dotnet run --project src/Heimdall.Api -- seed-dev
+   ```
+   The command runs only in the Development environment. It prints the client secret once. Heimdall stores only its hash, so save the secret.
+
+To create a migration, use the pinned tool: `dotnet dotnet-ef migrations add <Name> --project src/Heimdall.Infrastructure --startup-project src/Heimdall.Api --output-dir Persistence/Migrations`.
 
 ## Roadmap
 

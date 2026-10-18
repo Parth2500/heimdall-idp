@@ -35,10 +35,21 @@ public enum ClientStatus
 /// </summary>
 public sealed class Client
 {
-    private readonly List<GrantType> _allowedGrantTypes;
-    private readonly List<string> _allowedScopes;
-    private readonly List<string> _redirectUris;
-    private readonly List<string> _allowedAudiences;
+    // Not readonly: EF Core writes these fields when it loads a client.
+    private List<GrantType> _allowedGrantTypes = [];
+    private List<string> _allowedScopes = [];
+    private List<string> _redirectUris = [];
+    private List<string> _allowedAudiences = [];
+
+    // Null means "no override". A shared ClientTokenOverrides.None instance must not be stored, because
+    // EF Core tracks an owned value for each owner.
+    private ClientTokenOverrides? _tokenOverrides;
+
+#pragma warning disable CS8618 // EF Core sets the properties after it calls this constructor.
+    private Client()
+    {
+    }
+#pragma warning restore CS8618
 
     private Client(
         Guid id,
@@ -67,7 +78,7 @@ public sealed class Client
         _allowedScopes = allowedScopes;
         _redirectUris = redirectUris;
         RequireConsent = requireConsent;
-        TokenOverrides = overrides;
+        _tokenOverrides = Normalize(overrides);
         Status = ClientStatus.Pending;
         CreatedAt = createdAt;
     }
@@ -97,7 +108,7 @@ public sealed class Client
 
     public bool RequireConsent { get; private set; }
 
-    public ClientTokenOverrides TokenOverrides { get; private set; }
+    public ClientTokenOverrides TokenOverrides => _tokenOverrides ?? ClientTokenOverrides.None;
 
     public ClientStatus Status { get; private set; }
 
@@ -228,7 +239,7 @@ public sealed class Client
     public void UpdateTokenOverrides(ClientTokenOverrides overrides)
     {
         ArgumentNullException.ThrowIfNull(overrides);
-        TokenOverrides = overrides;
+        _tokenOverrides = Normalize(overrides);
     }
 
     public void Approve()
@@ -240,4 +251,7 @@ public sealed class Client
     }
 
     public void Disable() => Status = ClientStatus.Disabled;
+
+    private static ClientTokenOverrides? Normalize(ClientTokenOverrides overrides) =>
+        overrides == ClientTokenOverrides.None ? null : overrides;
 }

@@ -6,6 +6,7 @@
     <Project Path="src/Heimdall.Infrastructure/Heimdall.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Heimdall.IntegrationTests/Heimdall.IntegrationTests.csproj" />
     <Project Path="tests/Heimdall.UnitTests/Heimdall.UnitTests.csproj" />
   </Folder>
 </Solution>

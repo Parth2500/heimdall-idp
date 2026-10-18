@@ -35,6 +35,9 @@ public readonly struct TokenHash : IEquatable<TokenHash>
 
     public ReadOnlySpan<byte> AsSpan() => _bytes;
 
+    /// <summary>A copy of the hash bytes, for storage.</summary>
+    public byte[] ToArray() => _bytes is null ? [] : (byte[])_bytes.Clone();
+
     public bool Equals(TokenHash other) =>
         _bytes is not null && other._bytes is not null && CryptographicOperations.FixedTimeEquals(_bytes, other._bytes);
 

@@ -41,6 +41,12 @@ public sealed class AuditEvent
     // Keys that suggest a secret value. D7: secrets never go into the audit log.
     private static readonly string[] ForbiddenKeyParts = ["password", "secret", "token", "verifier", "assertion", "cookie"];
 
+#pragma warning disable CS8618 // EF Core sets the properties after it calls this constructor.
+    private AuditEvent()
+    {
+    }
+#pragma warning restore CS8618
+
     private AuditEvent(
         Guid id,
         Guid? tenantId,
