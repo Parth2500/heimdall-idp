@@ -32,11 +32,20 @@ Heimdall is a custom OAuth 2.1 and OpenID Connect identity provider. It is a por
 
 ## Build and test
 
-You need the .NET 10 SDK.
+You need the .NET 10 SDK, feature band 10.0.400 or later. `global.json` pins the version.
 
 ```
 dotnet build Heimdall.slnx
 dotnet test Heimdall.slnx
+```
+
+The integration tests start PostgreSQL with Testcontainers. Without Docker, they are skipped. CI requires them.
+
+To use rootless Podman instead of Docker on Linux, start its socket and set two variables:
+```
+systemctl --user start podman.socket
+export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock
+export TESTCONTAINERS_RYUK_DISABLED=true   # Ryuk often fails under rootless Podman
 ```
 
 ## Run locally
