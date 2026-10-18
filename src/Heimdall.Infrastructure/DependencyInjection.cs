@@ -1,24 +1,47 @@
 using Heimdall.Application.Audit;
 using Heimdall.Application.Clients;
+using Heimdall.Application.Keys;
+using Heimdall.Application.Tokens;
 using Heimdall.Infrastructure.Development;
+using Heimdall.Infrastructure.Keys;
 using Heimdall.Infrastructure.Persistence;
 using Heimdall.Infrastructure.Stores;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Heimdall.Infrastructure;
 
 public static class DependencyInjection
 {
+    /// <summary>
+    /// Registers the database, the stores, and the token signer. The caller must also register a key store
+    /// (<see cref="IKeyMaterialStore"/>). Without one, the service provider fails to build.
+    /// </summary>
     public static IServiceCollection AddHeimdallInfrastructure(this IServiceCollection services, string connectionString)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
 
+        services.TryAddSingleton(new SigningKeyOptions());
         services.AddScoped<TenantScope>();
         services.AddDbContext<HeimdallDbContext>(options => ConfigureDbContext(options, connectionString));
         services.AddScoped<IClientStore, EfClientStore>();
         services.AddScoped<IAuditLog, EfAuditLog>();
+        services.AddScoped<ISigningKeyStore, EfSigningKeyStore>();
+        services.AddSingleton<ISigningKeyCache, SigningKeyCache>();
+        services.AddSingleton<ITokenSigner, JwtTokenSigner>();
         services.AddScoped<DevelopmentSeeder>();
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the development key file as the key store. Call it only in the Development environment
+    /// (docs/schema-design.md, "Local development signing keys").
+    /// </summary>
+    public static IServiceCollection AddDevelopmentKeyFile(this IServiceCollection services, string path)
+    {
+        // A factory, so the container owns and disposes the instance.
+        services.AddSingleton<IKeyMaterialStore>(_ => new DevelopmentKeyFile(path));
         return services;
     }
 

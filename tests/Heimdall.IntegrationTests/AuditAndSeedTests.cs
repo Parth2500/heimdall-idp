@@ -1,11 +1,14 @@
 using System.Net;
 using Heimdall.Application.Audit;
 using Heimdall.Application.Clients;
+using Heimdall.Application.Keys;
 using Heimdall.Domain.Audit;
+using Heimdall.Domain.Keys;
 using Heimdall.Infrastructure.Development;
 using Heimdall.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Heimdall.IntegrationTests;
 
@@ -55,15 +58,21 @@ public sealed class AuditAndSeedTests
     [DockerFact]
     public async Task Seeded_client_authenticates_with_the_secret_that_was_shown_once()
     {
+        var time = new FakeTimeProvider(DateTimeOffset.UtcNow);
+        var keyOptions = new SigningKeyOptions();
+
         SeedResult first;
-        await using (var services = _postgres.CreateServices())
+        await using (var services = _postgres.CreateServices(time, keyOptions))
         await using (var scope = services.CreateAsyncScope())
         {
             first = await scope.ServiceProvider.GetRequiredService<DevelopmentSeeder>().SeedAsync(CancellationToken.None);
         }
 
+        // The first key waits one JWKS cache lifetime. A later run activates it.
+        time.Advance(keyOptions.JwksCacheLifetime);
+
         SeedResult second;
-        await using (var services = _postgres.CreateServices())
+        await using (var services = _postgres.CreateServices(time, keyOptions))
         await using (var scope = services.CreateAsyncScope())
         {
             second = await scope.ServiceProvider.GetRequiredService<DevelopmentSeeder>().SeedAsync(CancellationToken.None);
@@ -71,8 +80,11 @@ public sealed class AuditAndSeedTests
 
         Assert.True(first.Created);
         Assert.NotNull(first.ClientSecret);
+        Assert.Equal(SigningKeyStatus.Pending, first.KeyStatus);
         Assert.False(second.Created);
         Assert.Null(second.ClientSecret);
+        Assert.Equal(first.Kid, second.Kid);
+        Assert.Equal(SigningKeyStatus.Active, second.KeyStatus);
 
         await using (var services = _postgres.CreateServices())
         await using (var scope = services.CreateAsyncScope())

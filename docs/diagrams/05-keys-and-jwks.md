@@ -74,3 +74,17 @@ flowchart LR
 ```
 
 The app server never reads the database for each JWKS request. The response has `Cache-Control: public, max-age=...` and an `ETag`.
+
+## Token signing path
+
+```mermaid
+flowchart LR
+    GRANT["Grant use case"] --> SIGNER["JWT signer"]
+    SIGNER -->|"tenant ID"| CACHE["In-memory active key<br/>(one entry for each tenant)"]
+    CACHE -.load on miss or after 1 minute.-> DB[("signing_keys")]
+    SIGNER -->|"private_key_ref, header.payload"| STORE["Key store<br/>(Key Vault, KMS, or dev file)"]
+    STORE -->|"RS256 signature"| SIGNER
+```
+
+The signer builds a fixed header (`alg` = RS256, `kid`, `typ` = `at+jwt`). It sends only the bytes to sign to the key store. The private key never reaches the app server, except from the development key file.
+A key change on this server clears the cache entry at once. A key change on another server reaches this server when the entry expires.

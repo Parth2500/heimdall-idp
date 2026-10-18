@@ -163,7 +163,7 @@ D19: each tenant has its own keys.
 | `kid` | text | **Unique with `tenant_id`.** |
 | `algorithm` | text | Check: `RS256`. |
 | `public_jwk` | jsonb | |
-| `private_key_ref` | text | A Key Vault or KMS reference. For local development, an encrypted blob. Never a plain key. |
+| `private_key_ref` | text | A Key Vault or KMS reference. For local development, a `devfile:` reference to an entry in the development key file. Never a plain key. |
 | `status` | text | `pending`, `active`, `retired`. |
 | `published_at` | timestamptz | When the key enters the JWKS. |
 | `signing_from` | timestamptz | At least one JWKS cache lifetime after `published_at`. |
@@ -297,7 +297,9 @@ Order: delete families first, then codes. `authorization_codes.family_id` has `O
 
 The file `.local/signing-keys.json` holds the development keys. Rules:
 - `.gitignore` excludes `.local/`.
-- Heimdall reads this file only when the environment is `Development`. In any other environment, startup fails if `private_key_ref` points to a file.
-- Heimdall creates the file and a first key if the file is missing.
+- Heimdall reads this file only when the environment is `Development`. In any other environment, the server does not start, because no other key store exists yet.
+- The file store rejects a reference without the `devfile:` prefix. A Key Vault or KMS reference never falls back to a file key.
+- `seed-dev` creates the first key of the development tenant. The store creates the file when it writes the first key.
+- The file holds plain PKCS#8 keys. On Unix, Heimdall creates the folder with mode 0700 and the file with mode 0600. A FAT or NTFS drive ignores these modes.
 - A real key never goes into the repository, a chat, or a log. The development keys are not trusted outside the local machine.
-- The `SecurityKey` abstraction in `Application` hides the source. Key Vault or KMS replaces the file on deployment, with no change to the signing code.
+- `IKeyMaterialStore` in `Application` hides the source. It creates a key and signs data. The private key never leaves the store. Key Vault or KMS replaces the file on deployment, with no change to the signing code.

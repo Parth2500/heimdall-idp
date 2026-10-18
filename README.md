@@ -67,6 +67,8 @@ You need Docker for PostgreSQL.
    ```
    The command runs only in the Development environment. It prints the client secret once. Heimdall stores only its hash, so save the secret.
 
+   The command also creates the tenant's first signing key in `src/Heimdall.Api/.local/signing-keys.json`, which git ignores. The key waits one JWKS cache lifetime (30 seconds in Development) before it can sign. Run `seed-dev` again after that time to activate it.
+
 To create a migration, use the pinned tool: `dotnet dotnet-ef migrations add <Name> --project src/Heimdall.Infrastructure --startup-project src/Heimdall.Api --output-dir Persistence/Migrations`.
 
 ## Roadmap

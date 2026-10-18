@@ -30,7 +30,8 @@ Each term has one meaning in this document. Do not use a synonym.
 | PKCE | Proof Key for Code Exchange. It binds a code to the client that asked for it. |
 | Verifier, challenge | The `code_verifier` is a secret from the client. The `code_challenge` is its SHA-256 hash. |
 | JWKS | The public key set that Heimdall publishes. Resource servers use it to check signatures. |
-| `kid` | The key identifier. It tells a verifier which key in the JWKS signed a token. |
+| `kid` | The key identifier. It tells a verifier which key in the JWKS signed a token. Heimdall uses the RFC 7638 thumbprint of the public key. |
+| Key store | The component that holds the private signing keys and signs with them. The keys never leave it. Key Vault or KMS on deployment. A local file in development. |
 | Hash | A one-way digest of a secret. Heimdall stores hashes, not secrets. |
 | Throttle | To slow or limit requests. It does not lock out the caller. |
 | Audit log | An append-only record of security events. |
@@ -139,7 +140,7 @@ Boundary: B5. The endpoint is public, unauthenticated, read-only, and has high r
 | Information disclosure | Retired-key data or key store details leak. | The JWKS lists only active keys and keys in the overlap period. It shows no internal identifier except `kid`. |
 | Denial of service | Many requests hit the database for each call. | Heimdall caches the keys in memory and refreshes the cache on rotation. It sends `Cache-Control: public, max-age=...` and an `ETag`. A CDN or reverse proxy sits in front on deployment. An IP rate limit is the backstop. |
 | Denial of service | All resource servers refetch the JWKS at the same time after a rotation. | `max-age` spreads the refetch times. Resource servers throttle refetches for an unknown `kid`. The documentation states this. |
-| Elevation of privilege | An attacker steals a signing key and creates valid tokens. | Emergency procedure: remove the key's `kid` from the JWKS at once. Tokens that this key signed stop working. This cost is accepted. Then add a new key. Key Vault or KMS keeps private keys non-exportable. |
+| Elevation of privilege | An attacker steals a signing key and creates valid tokens. | Emergency procedure: remove the key's `kid` from the JWKS at once. Tokens that this key signed stop working. This cost is accepted. Then add a new key. Key Vault or KMS keeps private keys non-exportable. Each server reloads its active key within the server key cache lifetime. Until then, another server can still sign with the removed key. Resource servers reject those tokens after their JWKS cache expires. |
 | Elevation of privilege | Rotation breaks live tokens. Or a new key signs before caches know it. | Publish the new key in the JWKS at least one cache lifetime before it signs a token. Keep the old `kid` listed until its last token expires (token lifetime plus clock skew). |
 
 ## `POST /oauth/v1/revoke` (RFC 7009)
@@ -261,6 +262,8 @@ Platform limits (D16). A tenant or client value must be inside these ranges. The
 | Refresh token family, idle timeout | 7 days | Rotation does not extend it beyond the absolute lifetime. |
 | Login session, idle timeout | 30 minutes | |
 | Login session, absolute lifetime | 12 hours | |
+| JWKS cache lifetime (`max-age`) | 10 minutes | A new key waits this long before it signs. Configuration: `Heimdall:SigningKeys:JwksCacheLifetime`. |
+| Server key cache lifetime | 1 minute | A key change on one server reaches every other server within this time. |
 | Rate limit, `/token` | 10 requests each minute for each IP | Also limit for each `client_id`. |
 | Rate limit, login | 5 requests each minute for each IP | Also throttle for each account. |
 
@@ -268,6 +271,4 @@ A shared IP address (for example, an office) can reach these limits. The per-cli
 
 ## Open items
 
-- Choose the key store for local development (database or file). Design the Key Vault and KMS abstraction in `Application`.
 - Add tables for registration, email verification, password reset, and account recovery.
-- Next document: the EF Core schema (entities, constraints, indexes).
