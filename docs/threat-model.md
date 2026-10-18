@@ -169,9 +169,61 @@ Boundary: B2 and B5. The endpoint needs a bearer access token. It returns the cl
 | Elevation of privilege | A disabled or deleted user, or removed consent, still gets data until the token expires. | Heimdall loads the user on each call. It rejects an inactive user or missing consent. This check is stricter than a JWT check alone. |
 | Elevation of privilege | A token with only the `openid` scope reads profile claims. | Heimdall maps scopes to claims on the server. |
 
+## User login, session, and consent pages
+
+Boundary: B1. Heimdall shows these pages in the user's browser. `/authorize` sends the user here when no valid session exists, or when consent is missing.
+
+Additional decisions for this boundary:
+
+| ID | Decision | Reason |
+|---|---|---|
+| D11 | The session cookie uses the `__Host-` prefix and the flags `Secure`, `HttpOnly`, and `SameSite=Lax`. It has no `Domain` attribute. | `Lax` is required. A client sends the user to `/authorize` with a top-level cross-site navigation. `Strict` would drop the cookie, and the user would appear signed out. |
+| D12 | The cookie holds a random 256-bit session ID. The server stores the session and a hash of the ID. | The browser holds no user data. The server can end a session at any time. |
+| D13 | Heimdall issues a new session ID at sign-in. | This stops session fixation. |
+| D14 | A password has at least 12 characters and at most 128. Heimdall rejects passwords from a breached-password list. It has no composition rules. | This follows NIST SP 800-63B. Length and the breach check protect users better than character rules. |
+
+| STRIDE | Threat | Mitigation |
+|---|---|---|
+| **Spoofing** | Credential stuffing: an attacker tries leaked passwords from other sites. | Heimdall throttles failures for each account and each IP. It does not lock the account (see denial of service). It checks passwords against a breached-password list (D14). Multi-factor authentication with WebAuthn comes in Phase 3. |
+| Spoofing | An attacker learns which accounts exist from the login error or the response time. | Heimdall returns one generic error for an unknown user and a wrong password. For an unknown user, it still computes an Argon2id hash against a dummy value, so the response time is the same. |
+| Spoofing | Session fixation: an attacker sets a known session ID before sign-in. | Heimdall issues a new session ID at sign-in (D13). It never accepts a session ID from the URL. |
+| Spoofing | An attacker steals the session cookie. | `HttpOnly` blocks script access. `Secure` and HSTS (D1) block network capture. The session has an idle timeout and an absolute lifetime. |
+| Spoofing | Login CSRF: an attacker signs the victim in to the attacker's account. | The login form has an anti-forgery token. `SameSite=Lax` also applies (D11). |
+| **Tampering** | CSRF on the consent form: an attacker's page submits consent for the victim. | The consent form has an anti-forgery token. A POST is required. Heimdall links the form to the pending authorization request stored on the server. The browser cannot change the client or the scope. |
+| Tampering | A user or script changes the client or scope in the consent form. | Heimdall reads the client and scope from the stored request. It ignores form fields for them. |
+| Tampering | Open redirect: the post-login return URL sends the user to an attacker's site. | Heimdall returns only to a stored `/authorize` request. It accepts no free-form return URL. |
+| Tampering | Clickjacking: an attacker frames the login or consent page and tricks the user into a click. | Heimdall sends `Content-Security-Policy: frame-ancestors 'none'` and `X-Frame-Options: DENY` on these pages. |
+| **Repudiation** | A user says they did not sign in, or did not log out. | Heimdall writes an audit event for each sign-in, failure, consent, and logout. The event has the session ID hash, IP, user agent, and correlation ID. |
+| **Information disclosure** | The password, session ID, or CSRF token appears in logs or URLs. | D7. Heimdall sends the password only in a POST body over TLS. The session ID is only in the cookie. |
+| Information disclosure | Cross-site scripting (XSS) on a Heimdall page reads page data or acts as the user. | Heimdall encodes all output. It sends a strict `Content-Security-Policy`. It uses no inline script. |
+| Information disclosure | The consent page shows client data that an attacker controls, such as the client name. | Heimdall encodes the name. An admin approves the client registration (see `/authorize`). Heimdall shows the registered redirect URI host. |
+| **Denial of service** | An attacker sends failed logins on purpose to lock out a victim. | Heimdall throttles. It does not lock. The real user can still sign in. |
+| Denial of service | Argon2id costs much CPU and memory. An attacker sends many login requests. | Rate limit for each IP before the hash runs. A limit on the number of concurrent hash operations. |
+| **Elevation of privilege** | A session stays valid after a password change or account disable. | Heimdall ends all sessions of the user on password change and on disable. It checks the user status on each `/authorize` request. |
+| Elevation of privilege | Logout CSRF: an attacker's page ends the victim's session. | Logout needs a POST with an anti-forgery token. |
+| Elevation of privilege | A session never ends. | The session has an idle timeout and an absolute lifetime. Neither one extends the other. |
+
+Out of scope for now: registration, email verification, password reset, and account recovery. Each one needs its own table. They are the most common route to account takeover, so add them before any public deployment.
+
+## Limits and lifetimes
+
+These values are the starting point. Change them only with a recorded reason. Store each one in configuration, not in code.
+
+| Item | Value | Note |
+|---|---|---|
+| Code lifetime | 5 minutes | Single-use. |
+| Access token lifetime | 5 minutes | D8. |
+| Refresh token family, absolute lifetime | 30 days | Rotation does not extend it. |
+| Refresh token family, idle timeout | 7 days | Rotation does not extend it beyond the absolute lifetime. |
+| Login session, idle timeout | 30 minutes | |
+| Login session, absolute lifetime | 12 hours | |
+| Rate limit, `/token` | 10 requests each minute for each IP | Also limit for each `client_id`. |
+| Rate limit, login | 5 requests each minute for each IP | Also throttle for each account. |
+
+A shared IP address (for example, an office) can reach these limits. The per-client and per-account limits are the main controls. Review the IP limits with k6 results in Phase 4.
+
 ## Open items
 
 - Choose the key store for local development (database or file). Design the Key Vault and KMS abstraction in `Application`.
-- Set the numbers: code lifetime (5 minutes), refresh idle timeout, refresh absolute lifetime, rate limits.
-- Add user login and the session cookie to the model. This is boundary B1. It is not covered yet.
+- Add tables for registration, email verification, password reset, and account recovery.
 - Next document: the EF Core schema (entities, constraints, indexes).
