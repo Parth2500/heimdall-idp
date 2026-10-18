@@ -4,6 +4,7 @@ using Heimdall.Application.Keys;
 using Heimdall.Application.Sessions;
 using Heimdall.Application.Settings;
 using Heimdall.Application.Tokens;
+using Heimdall.Application.UserInfo;
 using Heimdall.Application.Users;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -25,6 +26,7 @@ public static class DependencyInjection
         services.AddScoped<AuthorizationCodeGrant>();
         services.AddScoped<RefreshTokenGrant>();
         services.AddScoped<TokenRevocation>();
+        services.AddScoped<UserInfoService>();
         services.AddScoped<SigningKeyService>();
         services.AddScoped<UserAuthenticator>();
         services.AddScoped<SessionService>();

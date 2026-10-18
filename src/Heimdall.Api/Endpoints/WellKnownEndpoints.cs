@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Heimdall.Api.Hosting;
 using Heimdall.Application.Keys;
+using Heimdall.Application.UserInfo;
 using Microsoft.Net.Http.Headers;
 
 namespace Heimdall.Api.Endpoints;
@@ -22,7 +23,6 @@ internal static class WellKnownEndpoints
 
     /// <summary>
     /// Lists only what Heimdall supports today, so a client never relies on a capability that does not exist.
-    /// <c>userinfo_endpoint</c> comes with that feature.
     /// </summary>
     public static Task DiscoveryAsync(HttpContext context, SigningKeyOptions keyOptions)
     {
@@ -32,6 +32,7 @@ internal static class WellKnownEndpoints
             issuer + AuthorizeEndpoint.Path,
             issuer + TokenEndpoint.Path,
             issuer + JwksPath,
+            issuer + UserInfoEndpoint.Path,
             issuer + RevokeEndpoint.Path,
             ["code"],
             ["query"],
@@ -83,6 +84,7 @@ internal static class WellKnownEndpoints
         [property: JsonPropertyName("authorization_endpoint")] string AuthorizationEndpoint,
         [property: JsonPropertyName("token_endpoint")] string TokenEndpoint,
         [property: JsonPropertyName("jwks_uri")] string JwksUri,
+        [property: JsonPropertyName("userinfo_endpoint")] string UserInfoEndpoint,
         [property: JsonPropertyName("revocation_endpoint")] string RevocationEndpoint,
         [property: JsonPropertyName("response_types_supported")] string[] ResponseTypesSupported,
         [property: JsonPropertyName("response_modes_supported")] string[] ResponseModesSupported,

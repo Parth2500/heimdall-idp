@@ -37,9 +37,7 @@ public sealed class WellKnownEndpointTests
         Assert.Equal(["authorization_code", "refresh_token", "client_credentials"], root.GetProperty("grant_types_supported").EnumerateArray().Select(e => e.GetString()));
         Assert.Equal(["S256"], root.GetProperty("code_challenge_methods_supported").EnumerateArray().Select(e => e.GetString()));
         Assert.True(root.GetProperty("authorization_response_iss_parameter_supported").GetBoolean());
-
-        // Not built yet, so not listed.
-        Assert.False(root.TryGetProperty("userinfo_endpoint", out _));
+        Assert.Equal(tenant.Issuer + "/oauth/v1/userinfo", root.GetProperty("userinfo_endpoint").GetString());
         Assert.True(response.Headers.CacheControl?.Public);
         Assert.Equal(api.KeyOptions.JwksCacheLifetime, response.Headers.CacheControl?.MaxAge);
     }

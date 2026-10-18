@@ -5,6 +5,7 @@ using Heimdall.Application.Clients;
 using Heimdall.Application.Keys;
 using Heimdall.Application.Sessions;
 using Heimdall.Application.Tenants;
+using Heimdall.Application.UserInfo;
 using Heimdall.Application.Users;
 using Heimdall.Application.Tokens;
 using Heimdall.Infrastructure.Alerts;
@@ -55,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<ISigningKeyStore, EfSigningKeyStore>();
         services.AddSingleton<ISigningKeyCache, SigningKeyCache>();
         services.AddSingleton<ITokenSigner, JwtTokenSigner>();
+        services.AddSingleton<IAccessTokenValidator, AccessTokenValidator>();
         services.AddScoped<DevelopmentSeeder>();
         return services;
     }

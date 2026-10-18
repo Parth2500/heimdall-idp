@@ -5,6 +5,7 @@ using Heimdall.Application.Alerts;
 using Heimdall.Application.Audit;
 using Heimdall.Application.Clients;
 using Heimdall.Application.Common;
+using Heimdall.Application.UserInfo;
 using Heimdall.Domain.Audit;
 using Heimdall.Domain.Clients;
 using Heimdall.Domain.Common;
@@ -131,7 +132,7 @@ public sealed class AuthorizationCodeGrant
             return Result.Failure<TokenResponse>(OAuthError.InvalidRequest("redirect_uri missing"));
         }
 
-        var audience = client.ResolveAudience(request.Resource);
+        var audience = client.ResolveUserAudience(request.Resource, UserInfoEndpoint.AudienceFor(context.Issuer));
         if (audience is null)
         {
             return Result.Failure<TokenResponse>(OAuthError.InvalidTarget("resource missing or not allowed"));

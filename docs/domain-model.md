@@ -37,6 +37,7 @@ The database enforces the most important rules a second time (unique indexes, ch
 | An audience is an absolute URI with `https` (plain `http` only for loopback), and no query, fragment, or user information. | D22, RFC 8707 |
 | A client with the `client_credentials` grant needs at least one audience. | D22 |
 | A requested resource must match an allowed audience by exact string. With no request, the only audience is the default. With two or more audiences, the client must name one. | D22 |
+| A user's grant (`ResolveUserAudience`) can also name the tenant's userinfo endpoint. A client with no audience gets the userinfo endpoint as its default. | D22 |
 
 ## Codes and tokens
 

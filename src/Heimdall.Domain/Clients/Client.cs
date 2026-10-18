@@ -210,6 +210,27 @@ public sealed class Client
         return _allowedAudiences.Contains(requestedResource, StringComparer.Ordinal) ? requestedResource : null;
     }
 
+    /// <summary>
+    /// Chooses the <c>aud</c> value for a token that a user's grant issues (D22). Every such token may name the tenant's
+    /// userinfo endpoint, because the user's sign-in allows the client to read the user's claims there. A client with
+    /// no registered audience gets the userinfo endpoint as its default. Other rules are those of
+    /// <see cref="ResolveAudience"/>.
+    /// </summary>
+    /// <param name="userInfoAudience">The tenant's userinfo endpoint URL.</param>
+    public string? ResolveUserAudience(string? requestedResource, string userInfoAudience)
+    {
+        Guard.NotBlank(userInfoAudience, nameof(userInfoAudience));
+
+        if (requestedResource is null)
+        {
+            return _allowedAudiences.Count == 0 ? userInfoAudience : ResolveAudience(null);
+        }
+
+        return string.Equals(requestedResource, userInfoAudience, StringComparison.Ordinal)
+            ? userInfoAudience
+            : ResolveAudience(requestedResource);
+    }
+
     /// <summary>Returns the scopes that the client may receive from the requested ones.</summary>
     public IReadOnlyList<string> FilterAllowedScopes(IEnumerable<string> requested) =>
         requested.Where(s => _allowedScopes.Contains(s, StringComparer.Ordinal)).Distinct(StringComparer.Ordinal).ToList();

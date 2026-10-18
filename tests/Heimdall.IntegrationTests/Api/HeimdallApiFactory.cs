@@ -70,7 +70,12 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
     /// <summary>
     /// Adds a public browser client (a SPA): authorization code with PKCE and refresh tokens, no secret.
     /// </summary>
-    public async Task<Client> AddWebClientAsync(TestTenant tenant, string clientId = "web-app", bool requireConsent = false, params string[] redirectUris)
+    public async Task<Client> AddWebClientAsync(
+        TestTenant tenant,
+        string clientId = "web-app",
+        bool requireConsent = false,
+        string[]? audiences = null,
+        params string[] redirectUris)
     {
         var client = Client.Create(
             Guid.CreateVersion7(),
@@ -79,12 +84,12 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
             "Web app",
             ClientType.Public,
             [GrantType.AuthorizationCode, GrantType.RefreshToken],
-            ["openid", "profile", "offline_access"],
+            ["openid", "profile", "email", "offline_access"],
             redirectUris.Length > 0 ? redirectUris : ["https://app.example.com/callback"],
             requireConsent,
             overrides: null,
             Time.GetUtcNow(),
-            ["https://api.example.com"]);
+            audiences ?? ["https://api.example.com"]);
         client.Approve();
 
         await using var scope = Services.CreateAsyncScope();

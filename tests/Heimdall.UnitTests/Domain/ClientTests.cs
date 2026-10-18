@@ -128,6 +128,29 @@ public class ClientTests
         Assert.Equal("https://orders.example.com", client.ResolveAudience("https://orders.example.com"));
     }
 
+    private const string UserInfo = "https://acme.example.com/oauth/v1/userinfo";
+
+    [Fact]
+    public void User_grant_of_a_client_with_no_audience_defaults_to_userinfo()
+    {
+        var client = CreateClient();
+
+        Assert.Equal(UserInfo, client.ResolveUserAudience(null, UserInfo));
+        Assert.Null(client.ResolveAudience(null));
+    }
+
+    [Fact]
+    public void User_grant_may_name_userinfo_but_keeps_the_registered_default()
+    {
+        var client = CreateClient(audiences: ["https://api.example.com"]);
+
+        Assert.Equal("https://api.example.com", client.ResolveUserAudience(null, UserInfo));
+        Assert.Equal(UserInfo, client.ResolveUserAudience(UserInfo, UserInfo));
+        Assert.Equal("https://api.example.com", client.ResolveUserAudience("https://api.example.com", UserInfo));
+        Assert.Null(client.ResolveUserAudience("https://evil.example.com", UserInfo));
+        Assert.Null(client.ResolveUserAudience(UserInfo + "/", UserInfo));
+    }
+
     [Theory]
     [InlineData("https://api.example.com/")]
     [InlineData("https://API.example.com")]

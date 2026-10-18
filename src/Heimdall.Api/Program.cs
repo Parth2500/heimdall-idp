@@ -131,6 +131,7 @@ app.MapGet(WellKnownEndpoints.DiscoveryPath, WellKnownEndpoints.DiscoveryAsync);
 app.MapGet(WellKnownEndpoints.JwksPath, WellKnownEndpoints.JwksAsync);
 SessionEndpoints.Map(app);
 AuthorizeEndpoint.Map(app);
+UserInfoApiEndpoint.Map(app);
 
 await app.RunAsync();
 return 0;

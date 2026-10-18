@@ -65,7 +65,7 @@ These decisions apply to every endpoint. The tables below refer to them by ID.
 | D8 | Sign access tokens as JWTs with `RS256` only. Do not negotiate `alg`. Put `kid` in the header. Set the lifetime to 5 minutes. Make refresh tokens opaque. | A short lifetime limits the damage from theft. A fixed `alg` stops `none` and HS256 confusion attacks. |
 | D9 | Add `iss` to the authorization response (RFC 9207). | This stops mix-up attacks. |
 | D10 | In version 1, confidential clients use `client_secret_basic`. Public clients use no authentication and PKCE. Add `private_key_jwt` in Phase 2. | Start with the smallest correct surface. |
-| D22 | Each client has a list of allowed audiences. A token has exactly one audience. The client names it with the `resource` parameter (RFC 8707). If the client has only one audience, that audience is the default. An unknown resource returns `invalid_target`. | A token for one API cannot be replayed at another API. |
+| D22 | Each client has a list of allowed audiences. A token has exactly one audience. The client names it with the `resource` parameter (RFC 8707). If the client has only one audience, that audience is the default. An unknown resource returns `invalid_target`. A token from a user's grant can also name the tenant's userinfo endpoint. That endpoint is the default for a client with no audience. A `client_credentials` token never names it. | A token for one API cannot be replayed at another API. A resource server cannot use its token to read user claims at `/userinfo`. |
 
 ## `GET /oauth/v1/authorize` (worked example)
 | STRIDE | Threat | Mitigation |
@@ -173,15 +173,15 @@ Boundary: B2 and B5. The endpoint needs a bearer access token. It returns the cl
 
 | STRIDE | Threat | Mitigation |
 |---|---|---|
-| Spoofing | An attacker sends a forged token, or a token for a different issuer or audience. | Heimdall checks the signature with `RS256` only (D8). It checks `iss`, `aud`, and `exp`. It rejects `client_credentials` tokens, because they have no subject. |
+| Spoofing | An attacker sends a forged token, or a token for a different issuer or audience. | Heimdall checks the signature with `RS256` only (D8), with the tenant's published keys from memory. The `typ` must be `at+jwt`, so an ID token fails. It checks `iss`, `exp`, and that `aud` is the userinfo endpoint (D22). It rejects `client_credentials` tokens, because their subject is not a user. |
 | Spoofing | An attacker replays a stolen access token. | The short lifetime (D8). DPoP adds sender-constraining in Phase 2. |
-| Tampering | A client sends the token in the query string or form body. Logs and caches keep it. | Heimdall accepts the `Authorization: Bearer` header only. |
-| Repudiation | A party disputes access to user data. | Heimdall writes an audit event for each call: `sub`, `client_id`, released scopes, correlation ID. It does not log claim values. |
-| Information disclosure | The response gives more claims than the scope allows. | Heimdall releases only the claims that the granted scopes allow (`profile`, `email`, and so on). The `sub` always equals the `sub` of the ID token. |
-| Information disclosure | A browser or proxy caches the response. | `Cache-Control: no-store`. CORS allows only registered client origins. It never uses `*`. |
+| Tampering | A client sends the token in the query string or form body. Logs and caches keep it. | Heimdall accepts the `Authorization: Bearer` header only. A token in the query string gets `invalid_request`, so the client developer sees the mistake. |
+| Repudiation | A party disputes access to user data. | Heimdall writes `userinfo.read` for each successful call: `sub`, `client_id`, released scopes, correlation ID. It does not log claim values. A refused call goes to the log only. |
+| Information disclosure | The response gives more claims than the scope allows. | Heimdall releases only the claims that the granted scopes allow. Today `email` releases `email` and `email_verified`. `email_verified` is always false, because Heimdall has no email verification yet. The `sub` always equals the `sub` of the ID token. |
+| Information disclosure | A browser or proxy caches the response. | `Cache-Control: no-store`. CORS allows only registered client origins. It never uses `*`. Until the Angular SPA work, Heimdall sends no CORS headers, so a browser blocks every cross-origin read. |
 | Information disclosure | An error response shows details. | Heimdall returns a generic `invalid_token` error with no reason (D5). |
 | Denial of service | A flood of calls causes one database read for each call. | Rate limit for each subject and each IP. Heimdall loads claims by primary key. A short-lived cache of user claims is optional. |
-| Elevation of privilege | A disabled or deleted user, or removed consent, still gets data until the token expires. | Heimdall loads the user on each call. It rejects an inactive user or missing consent. This check is stricter than a JWT check alone. |
+| Elevation of privilege | A disabled or deleted user, or removed consent, still gets data until the token expires. | Heimdall loads the user on each call. It rejects an inactive user. This check is stricter than a JWT check alone. The consent check comes with persisted consent (Phase 3). |
 | Elevation of privilege | A token with only the `openid` scope reads profile claims. | Heimdall maps scopes to claims on the server. |
 
 ## User login, session, and consent pages
