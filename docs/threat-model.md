@@ -72,7 +72,7 @@ These decisions apply to every endpoint. The tables below refer to them by ID.
 |---|---|---|
 | Spoofing | A rogue client registers a redirect URI that looks like a real one. | Heimdall compares redirect URIs by exact match. It allows no wildcards. An admin must approve each client registration. |
 | Tampering | An attacker changes the `code_challenge` on the network. | TLS (D1). PKCE also stops a man-in-the-middle from using a stolen code. |
-| Repudiation | A user says they did not grant consent. | Heimdall stores a timestamped consent record for each user, client, and scope. |
+| Repudiation | A user says they did not grant consent. | Heimdall writes `consent.granted` or `consent.denied` for each decision, with the user, client, scope, IP, and correlation ID. Persisted consent records come in Phase 3. |
 | Information disclosure | A code leaks through browser history, the referrer header, or logs. | A code is single-use and expires after 5 minutes. Heimdall never writes a full code to a log (D7). |
 | Denial of service | A flood of `/authorize` requests uses all database resources. | Rate limit for each IP and each `client_id`. |
 | Elevation of privilege | A client requests more scope than it is allowed. | Heimdall checks the requested scope on the server against the `AllowedScopes` of the client. It refuses extra scope. It does not reduce it. |
@@ -133,7 +133,7 @@ Boundary: B2. A refresh token is opaque and single-use. It belongs to a family. 
 | Denial of service | A real client retries after it loses a response and triggers reuse detection. | Decision: no grace window. A grace window reopens the race that reuse detection closes. A client must save the new token before it uses it. The integration guide states this. |
 | Denial of service | Expired tokens and families fill the database. | A scheduled job deletes expired families. Indexes exist on `TokenFamilyId` and `TokenHash`. |
 | Elevation of privilege | A client rotates forever and keeps a session without end. | The family has an absolute lifetime (for example, 30 days) and an idle timeout. Rotation does not extend either one. A user or admin revocation ends the whole family. |
-| Elevation of privilege | A refresh succeeds after the user account is disabled or consent is removed. | On each refresh, Heimdall checks that the user is active and consent exists. If not, it returns `invalid_grant` and revokes the family. The consent check comes with persisted consent (Phase 3). Until then, a client that requires consent cannot get a code, so no family needs it. |
+| Elevation of privilege | A refresh succeeds after the user account is disabled or consent is removed. | On each refresh, Heimdall checks that the user is active and consent exists. If not, it returns `invalid_grant` and revokes the family. The consent check comes with persisted consent (Phase 3). Until then, consent is a decision for one stored request. No stored consent exists that a user could remove. |
 
 ## `/.well-known/jwks.json`
 
@@ -206,8 +206,10 @@ Additional decisions for this boundary:
 | Spoofing | Login CSRF: an attacker signs the victim in to the attacker's account. | The login form has an anti-forgery token. `SameSite=Lax` also applies (D11). |
 | Spoofing | CSRF on the JSON login API that the Angular page calls (`/session/v1/login` and `/logout`). | Three layers. The page sends the antiforgery token from the `__Host-XSRF-TOKEN` cookie in the `X-XSRF-TOKEN` header (double-submit). The API accepts only JSON, and a cross-site script needs a CORS preflight for JSON, which Heimdall never allows. A browser `Origin` header must equal the tenant origin. |
 | Information disclosure | A cross-origin script reads a session API response, such as `/session/v1/me`. | Heimdall sends no CORS headers, so the browser blocks the read. The responses are `no-store`. |
-| **Tampering** | CSRF on the consent form: an attacker's page submits consent for the victim. | The consent form has an anti-forgery token. A POST is required. Heimdall links the form to the pending authorization request stored on the server. The browser cannot change the client or the scope. |
-| Tampering | A user or script changes the client or scope in the consent form. | Heimdall reads the client and scope from the stored request. It ignores form fields for them. |
+| **Tampering** | CSRF on the consent form: an attacker's page submits consent for the victim. | The consent API (`POST /session/v1/consent`) has the same three CSRF layers as the login API. Heimdall links the decision to the pending authorization request stored on the server. The browser cannot change the client or the scope. |
+| Spoofing | A second user signs in on the same browser and uses the first user's consent decision. | The stored request records the user who decided. A decision counts only for that user. |
+| Elevation of privilege | A user denies consent, and a script then approves the same request. | A denial ends the stored request at the resume step. A later decision or resume finds no request. |
+| Tampering | A user or script changes the client or scope in the consent form. | Heimdall reads the client and scope from the stored request. The API accepts only the request ID and the decision. |
 | Tampering | Open redirect: the post-login return URL sends the user to an attacker's site. | Heimdall returns only to a stored `/authorize` request. It accepts no free-form return URL. |
 | Tampering | Clickjacking: an attacker frames the login or consent page and tricks the user into a click. | Heimdall sends `Content-Security-Policy: frame-ancestors 'none'` and `X-Frame-Options: DENY` on these pages. |
 | **Repudiation** | A user says they did not sign in, or did not log out. | Heimdall writes an audit event for each sign-in, failure, consent, and logout. The event has the session ID hash, IP, user agent, and correlation ID. |

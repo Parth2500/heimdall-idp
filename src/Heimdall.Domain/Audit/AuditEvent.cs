@@ -22,6 +22,7 @@ public static class AuditEventTypes
     public const string SessionStarted = "session.started";
     public const string SessionRevoked = "session.revoked";
     public const string ConsentGranted = "consent.granted";
+    public const string ConsentDenied = "consent.denied";
     public const string ConsentRevoked = "consent.revoked";
     public const string ClientChanged = "client.changed";
     public const string TenantChanged = "tenant.changed";

@@ -262,10 +262,33 @@ public sealed class AuthorizationService
 
         if (client.RequireConsent)
         {
-            // Persisted consent is a Phase 3 item. Until then, such a client always goes to the consent page.
-            return promptNone
-                ? ErrorRedirect(context, request.RedirectUri, request.State, "consent_required", "client requires consent")
-                : new AuthorizeConsent(request.Id);
+            // Persisted consent is a Phase 3 item. Until then, the user decides for each request on the consent page.
+            if (promptNone)
+            {
+                return ErrorRedirect(context, request.RedirectUri, request.State, "consent_required", "client requires consent");
+            }
+
+            var decision = request.ConsentDecisionOf(session.User.Id);
+            if (decision is null)
+            {
+                return new AuthorizeConsent(request.Id);
+            }
+
+            if (decision == false)
+            {
+                // The request ends here, so a later resume cannot turn the denial into a code.
+                _store.RemoveRequest(request);
+                try
+                {
+                    await _store.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch (ConcurrentUpdateException)
+                {
+                    return new AuthorizeErrorPage(OAuthError.InvalidRequestCode, "request already used");
+                }
+
+                return ErrorRedirect(context, request.RedirectUri, request.State, "access_denied", "user denied consent");
+            }
         }
 
         // 256 random bits. The database stores only the hash (D3). The plain code appears only in this redirect.

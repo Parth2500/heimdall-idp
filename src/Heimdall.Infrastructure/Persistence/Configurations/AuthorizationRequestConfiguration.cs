@@ -11,7 +11,12 @@ internal sealed class AuthorizationRequestConfiguration : IEntityTypeConfigurati
     public void Configure(EntityTypeBuilder<AuthorizationRequest> builder)
     {
         builder.ToTable("authorization_requests", t =>
-            t.HasCheckConstraint("ck_authorization_requests_max_age", "max_age_seconds IS NULL OR max_age_seconds >= 0"));
+        {
+            t.HasCheckConstraint("ck_authorization_requests_max_age", "max_age_seconds IS NULL OR max_age_seconds >= 0");
+            t.HasCheckConstraint(
+                "ck_authorization_requests_consent",
+                "(consent_user_id IS NULL) = (consent_approved IS NULL)");
+        });
 
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Id).ValueGeneratedNever();
@@ -29,6 +34,8 @@ internal sealed class AuthorizationRequestConfiguration : IEntityTypeConfigurati
         builder.Property(r => r.MaxAge).HasColumnName("max_age_seconds").HasConversion(Converters.Seconds);
         builder.Property(r => r.CreatedAt);
         builder.Property(r => r.ExpiresAt);
+        builder.Property(r => r.ConsentUserId);
+        builder.Property(r => r.ConsentApproved);
 
         // The purge job deletes expired requests.
         builder.HasIndex(r => r.ExpiresAt);

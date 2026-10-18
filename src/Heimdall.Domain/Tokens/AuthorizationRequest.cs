@@ -77,6 +77,12 @@ public sealed class AuthorizationRequest
 
     public DateTimeOffset ExpiresAt { get; }
 
+    /// <summary>The user who decided on the consent page, or null. A decision counts only for this user.</summary>
+    public Guid? ConsentUserId { get; private set; }
+
+    /// <summary>The decision of <see cref="ConsentUserId"/>: true to approve, false to deny, null when none.</summary>
+    public bool? ConsentApproved { get; private set; }
+
     public static AuthorizationRequest Create(
         Guid id,
         Guid tenantId,
@@ -124,6 +130,23 @@ public sealed class AuthorizationRequest
     }
 
     public bool IsExpired(DateTimeOffset now) => now >= ExpiresAt;
+
+    /// <summary>
+    /// Records the consent decision of the signed-in user for this one request. A later decision replaces it. Persisted
+    /// consent across requests is a Phase 3 item.
+    /// </summary>
+    public void DecideConsent(Guid userId, bool approved)
+    {
+        Guard.NotEmpty(userId, nameof(userId));
+        ConsentUserId = userId;
+        ConsentApproved = approved;
+    }
+
+    /// <summary>
+    /// The decision of this user, or null when this user has not decided. The decision of another user never counts:
+    /// when a second user signs in on the same browser, that user must decide again.
+    /// </summary>
+    public bool? ConsentDecisionOf(Guid userId) => ConsentUserId == userId ? ConsentApproved : null;
 
     /// <summary>
     /// True when a valid session satisfies this request: a sign-in after the request for <c>prompt=login</c>, and a

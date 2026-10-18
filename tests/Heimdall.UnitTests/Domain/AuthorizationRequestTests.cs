@@ -72,4 +72,32 @@ public class AuthorizationRequestTests
     {
         Assert.True(Request().AcceptsSession(SignedInAt(Now - TimeSpan.FromHours(11)), Now));
     }
+
+    [Fact]
+    public void Consent_decision_counts_only_for_the_user_who_decided()
+    {
+        var request = Request();
+        var alice = Guid.CreateVersion7();
+        var bob = Guid.CreateVersion7();
+
+        Assert.Null(request.ConsentDecisionOf(alice));
+        request.DecideConsent(alice, approved: true);
+
+        Assert.True(request.ConsentDecisionOf(alice));
+        Assert.Null(request.ConsentDecisionOf(bob));
+    }
+
+    [Fact]
+    public void A_later_consent_decision_replaces_the_earlier_one()
+    {
+        var request = Request();
+        var alice = Guid.CreateVersion7();
+        var bob = Guid.CreateVersion7();
+
+        request.DecideConsent(alice, approved: true);
+        request.DecideConsent(bob, approved: false);
+
+        Assert.Null(request.ConsentDecisionOf(alice));
+        Assert.False(request.ConsentDecisionOf(bob));
+    }
 }

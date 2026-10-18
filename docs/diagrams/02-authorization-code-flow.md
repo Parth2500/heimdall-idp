@@ -25,11 +25,14 @@ sequenceDiagram
         B->>H: GET /oauth/v1/authorize/resume?request_id=...
         H->>DB: Load the stored request
     end
-    alt Consent missing
-        H->>B: Show consent page (data from stored request)
-        U->>B: Approve
-        B->>H: POST consent (anti-forgery token)
-        H->>DB: Save consent
+    alt Client requires consent (decision for this request only until Phase 3)
+        H->>B: 302 to /consent?request_id=...
+        B->>H: GET /session/v1/consent?request_id=... (client name, scopes, redirect host)
+        U->>B: Approve or deny
+        B->>H: POST /session/v1/consent (JSON, antiforgery, request ID and decision only)
+        H->>DB: Store the decision and the user on the stored request
+        B->>H: GET /oauth/v1/authorize/resume?request_id=...
+        Note over H: A denial deletes the request and redirects with error=access_denied
     end
     H->>DB: Insert code hash (expires in 5 minutes) and delete the stored request, in one transaction
     H->>B: Redirect to redirect_uri (code, state, iss)

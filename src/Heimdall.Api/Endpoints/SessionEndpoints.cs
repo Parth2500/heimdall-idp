@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Heimdall.Api.Hosting;
+using Heimdall.Application.Authorization;
 using Heimdall.Application.Common;
 using Heimdall.Application.Sessions;
 using Heimdall.Application.Users;
@@ -44,6 +45,8 @@ internal static partial class SessionEndpoints
         group.MapPost("/login", LoginAsync);
         group.MapPost("/logout", LogoutAsync);
         group.MapGet("/me", MeAsync);
+        group.MapGet("/consent", ConsentPromptAsync);
+        group.MapPost("/consent", ConsentDecisionAsync);
     }
 
     /// <summary>Issues the antiforgery tokens. The page calls it before the login form.</summary>
@@ -144,6 +147,76 @@ internal static partial class SessionEndpoints
                 Json);
     }
 
+    /// <summary>What the consent page shows for a stored request. Same origin only: Heimdall sends no CORS headers.</summary>
+    private static async Task<IResult> ConsentPromptAsync(HttpContext context, ConsentService consent, ILoggerFactory loggers)
+    {
+        OAuthResponses.NoStore(context.Response);
+        var requestId = context.Request.Query["request_id"];
+        var result = await consent.GetPromptAsync(
+            TenantResolutionMiddleware.GetRequestContext(context),
+            requestId.Count == 1 ? requestId.ToString() : null,
+            context.Request.Cookies[SessionCookie],
+            context.RequestAborted).ConfigureAwait(false);
+
+        if (!result.IsSuccess)
+        {
+            return ConsentError(result.Error, loggers.CreateLogger(typeof(SessionEndpoints)));
+        }
+
+        var prompt = result.Value;
+        return Results.Json(new ConsentPromptBody(prompt.ClientId, prompt.ClientName, prompt.Scopes, prompt.RedirectHost), Json);
+    }
+
+    /// <summary>
+    /// Records the user's decision. The page then sends the browser to <c>/oauth/v1/authorize/resume</c>, which issues the
+    /// code or the <c>access_denied</c> error. The same CSRF checks as login apply: a cross-site page must not approve.
+    /// </summary>
+    private static async Task<IResult> ConsentDecisionAsync(HttpContext context, IAntiforgery antiforgery, ConsentService consent, ILoggerFactory loggers)
+    {
+        var logger = loggers.CreateLogger(typeof(SessionEndpoints));
+        OAuthResponses.NoStore(context.Response);
+
+        if (await RefuseBrowserRequestAsync(context, antiforgery, logger).ConfigureAwait(false) is { } refused)
+        {
+            return refused;
+        }
+
+        ConsentBody? body;
+        try
+        {
+            body = await context.Request.ReadFromJsonAsync<ConsentBody>(Json, context.RequestAborted).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is JsonException or BadHttpRequestException)
+        {
+            LogRefused(logger, "malformed or oversized body");
+            return Error(StatusCodes.Status400BadRequest, "invalid_request");
+        }
+
+        if (body?.Approve is not { } approve)
+        {
+            LogRefused(logger, "consent decision missing");
+            return Error(StatusCodes.Status400BadRequest, "invalid_request");
+        }
+
+        var result = await consent.DecideAsync(
+            TenantResolutionMiddleware.GetRequestContext(context),
+            body.RequestId,
+            context.Request.Cookies[SessionCookie],
+            approve,
+            context.RequestAborted).ConfigureAwait(false);
+
+        return result.IsSuccess ? Results.NoContent() : ConsentError(result.Error, logger);
+    }
+
+    // The reason goes to the log only (D5).
+    private static IResult ConsentError(OAuthError error, ILogger logger)
+    {
+        LogRefused(logger, error.AuditDetail ?? error.Code);
+        return error.Code == ConsentService.LoginRequiredCode
+            ? Error(StatusCodes.Status401Unauthorized, error.Code)
+            : Error(StatusCodes.Status400BadRequest, error.Code);
+    }
+
     private static CookieOptions SessionCookieOptions() => new()
     {
         HttpOnly = true,
@@ -215,6 +288,16 @@ internal static partial class SessionEndpoints
         [property: JsonPropertyName("sub")] string Sub,
         [property: JsonPropertyName("email")] string Email,
         [property: JsonPropertyName("auth_time")] long AuthTime);
+
+    private sealed record ConsentBody(
+        [property: JsonPropertyName("request_id")] string? RequestId,
+        [property: JsonPropertyName("approve")] bool? Approve);
+
+    private sealed record ConsentPromptBody(
+        [property: JsonPropertyName("client_id")] string ClientId,
+        [property: JsonPropertyName("client_name")] string ClientName,
+        [property: JsonPropertyName("scopes")] IReadOnlyList<string> Scopes,
+        [property: JsonPropertyName("redirect_host")] string RedirectHost);
 
     private sealed record ErrorBody([property: JsonPropertyName("error")] string Error);
 }

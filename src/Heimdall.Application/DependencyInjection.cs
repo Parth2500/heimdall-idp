@@ -31,6 +31,7 @@ public static class DependencyInjection
         services.AddScoped<UserAuthenticator>();
         services.AddScoped<SessionService>();
         services.AddScoped<AuthorizationService>();
+        services.AddScoped<ConsentService>();
         return services;
     }
 }

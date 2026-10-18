@@ -54,6 +54,7 @@ The database enforces the most important rules a second time (unique indexes, ch
 | Entity | Rules | Reference |
 |---|---|---|
 | `Session` | Stores only the hash of the session ID. It is valid only when: not revoked, the tenant matches the request, the user matches and is active, it was created after the last password change, and neither the idle nor the absolute limit has passed. Activity never passes the absolute limit. `max_age` compares with the last sign-in, not the last activity. | D11 to D13, D18 |
+| `AuthorizationRequest` (consent) | Records one consent decision and the user who made it. A decision counts only for that user. A later decision replaces it. | Consent page, Spoofing |
 | `Consent` | Covers a request only if active and every requested scope is in it. A new approval adds scopes to an active consent. After a revocation, a new approval starts with only the new scopes, so old scopes do not come back. | `/authorize`, Repudiation |
 
 ## Signing keys

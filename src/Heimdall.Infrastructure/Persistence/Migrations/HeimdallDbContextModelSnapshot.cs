@@ -504,6 +504,14 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .HasColumnName("code_challenge")
                         .IsFixedLength();
 
+                    b.Property<bool?>("ConsentApproved")
+                        .HasColumnType("boolean")
+                        .HasColumnName("consent_approved");
+
+                    b.Property<Guid?>("ConsentUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("consent_user_id");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -560,6 +568,8 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
 
                     b.ToTable("authorization_requests", null, t =>
                         {
+                            t.HasCheckConstraint("ck_authorization_requests_consent", "(consent_user_id IS NULL) = (consent_approved IS NULL)");
+
                             t.HasCheckConstraint("ck_authorization_requests_max_age", "max_age_seconds IS NULL OR max_age_seconds >= 0");
                         });
                 });

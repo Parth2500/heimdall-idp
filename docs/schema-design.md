@@ -89,6 +89,7 @@ Heimdall stores the pending `/authorize` request here while the user signs in an
 | `force_login` | boolean | `prompt=login`: only a sign-in after `created_at` counts. |
 | `max_age_seconds` | integer, null | The OpenID Connect `max_age`. Check: not negative. |
 | `created_at`, `expires_at` | timestamptz | `expires_at` is `created_at` plus 10 minutes. |
+| `consent_user_id`, `consent_approved` | uuid null, boolean null | The consent decision for this request and the user who made it. Check: both null or both set. |
 
 Heimdall deletes the row in the same transaction that inserts the code. If two requests resume the same row, the second `DELETE` matches no row, and that transaction rolls back. One stored request gives one code.
 

@@ -60,9 +60,12 @@ sequenceDiagram
 
     B->>H: GET /authorize
     H->>DB: Store authorization request R (checked parameters)
-    H->>B: Consent page for R (anti-forgery token, no client or scope fields)
-    B->>H: POST consent (request ID R, anti-forgery token)
-    H->>DB: Load R, read client and scope from R only
-    H->>DB: Save consent, insert code
-    H->>B: Redirect to redirect_uri
+    H->>B: 302 to /consent?request_id=R
+    B->>H: GET /session/v1/consent?request_id=R
+    H->>B: Client name, scopes, redirect host (from R and the client registration)
+    B->>H: POST /session/v1/consent (JSON: request ID R, decision; antiforgery header; Origin)
+    H->>DB: Load R, store the decision and the user on R
+    B->>H: GET /oauth/v1/authorize/resume?request_id=R
+    H->>DB: Decision of this user: approve inserts the code, deny deletes R
+    H->>B: Redirect to redirect_uri (code, or error=access_denied)
 ```
