@@ -4,11 +4,11 @@ Portfolio project aimed at FAANG-level rigor. It will also be reused as the auth
 Stack: .NET 10 (LTS), PostgreSQL, EF Core, Clean Architecture. Later: React/Next.js admin portal, demo SPA client.
 
 ## How I want you to work with me (important)
-- **I write the implementation myself.** Do not generate whole features unprompted. I haven't written code from scratch in a while and want to rebuild that skill.
-- Your role: design with me (schemas, endpoint contracts, threat reasoning), explain the *why* behind each security decision, review my code, and help debug.
+- **Claude writes the implementation** (changed on 2026-10-18; before that I wrote it myself). Work in small, tested steps that follow the roadmap order. Do not skip ahead.
+- Each step: write the code, write its tests, run `dotnet test`, then explain the *why* of each security decision so I can defend it.
 - I should be able to answer interview questions about every choice (e.g. "why DPoP over plain PKCE?").
 - Be precise with security language. Flag anything sloppy, including in my own notes.
-- If I ask for code, give the smallest useful piece, not the full file.
+- Commit only when I ask or approve. Ask before changing a decision that is recorded in the docs.
 
 ## Writing rules for docs (ASD-STE100 style, applied by hand, not certified)
 - One idea per sentence. Procedure sentences: 20 words or fewer. Descriptions: 25 words or fewer.

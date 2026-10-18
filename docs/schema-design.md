@@ -52,12 +52,11 @@ The document has no C# code. The entities and the migrations are written by hand
 | `name` | text | |
 | `type` | text | `public`, `confidential`. |
 | `token_endpoint_auth_method` | text | `none`, `client_secret_basic` in version 1. Check: `none` only for `public`. |
-| `allowed_grant_types` | text[] | Check: `client_credentials` only for `confidential`. |
+| `allowed_grant_types` | text[] | Check: `client_credentials` only for `confidential`. A client can refresh when this list has `refresh_token`. There is no separate flag. |
 | `allowed_scopes` | text[] | |
 | `require_consent` | bool | |
 | `status` | text | `pending`, `active`, `disabled`. A client is `pending` until an admin approves it. |
 | `access_token_seconds`, `refresh_idle_seconds`, `refresh_absolute_seconds` | int, null | Null means: use the tenant value (D15). Check constraints give the hard bounds. |
-| `refresh_enabled` | bool | |
 | `created_at`, `approved_by`, `approved_at` | | |
 
 ### `client_redirect_uris`
