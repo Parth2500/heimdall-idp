@@ -239,7 +239,15 @@ Decisions for this area:
 
 These values are the platform defaults. A tenant or client can change a value only inside the limits (D15, D16). Change a default only with a recorded reason. Store each value in configuration, not in code.
 
-The tenant and client limits (minimum and maximum for each setting) are not set yet. Set them when we design the settings tables.
+Platform limits (D16). A tenant or client value must be inside these ranges. The values are in configuration (`Heimdall:PlatformLimits`). They are proposed starting values, not final. The server does not start if a minimum is zero or greater than its maximum.
+
+| Setting | Minimum | Maximum |
+|---|---|---|
+| Session idle timeout | 5 minutes | 24 hours |
+| Session absolute lifetime | 1 hour | 30 days |
+| Access token lifetime | 1 minute | 60 minutes |
+| Refresh idle timeout | 1 hour | 30 days |
+| Refresh absolute lifetime | 1 day | 90 days |
 
 | Item | Value | Note |
 |---|---|---|

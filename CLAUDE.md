@@ -84,5 +84,5 @@ See `docs/threat-model.md`.
 1. Done: Phase 0. Threat model (all endpoints, login, tenants), schema design, diagrams.
 2. Done: repository files (README, SECURITY, CI, Dependabot, global.json). Remote: github.com/Parth2500/heimdall-idp.
 3. Done: Domain layer, all entities, see `docs/domain-model.md`.
-4. Next: Application layer. Interfaces (clock, stores, password hasher, key source), platform limits (D16), then the code redemption use case tested with fakes.
+4. In progress: Application layer, `client_credentials` slice first (shortest path to a testable API). Done: `ClientAuthenticator`, platform limits (D16), `Result`/`OAuthError`. `TimeProvider` is the clock (no custom `IClock`). Next: the `client_credentials` use case and the token signer interface.
 5. Then: Infrastructure. EF Core mapping, first migration, row-level security, the atomic SQL statements with a concurrency test against PostgreSQL.
