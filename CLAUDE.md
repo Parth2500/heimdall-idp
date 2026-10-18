@@ -1,7 +1,7 @@
 # Heimdall: Custom OAuth 2.1 / OIDC Identity Provider
 
 Portfolio project aimed at FAANG-level rigor. It will also be reused as the auth provider for my other projects.
-Stack: .NET 10 (LTS), PostgreSQL, EF Core, Clean Architecture. Later: React/Next.js admin portal, demo SPA client.
+Stack: .NET 10 (LTS), PostgreSQL, EF Core, Clean Architecture. Later: Angular for all UI (login, consent and logout pages, admin portal, demo SPA client). Decided 2026-10-18; it replaces React/Next.js.
 
 ## How I want you to work with me (important)
 - **Claude writes the implementation** (changed on 2026-10-18; before that I wrote it myself). Work in small, tested steps that follow the roadmap order. Do not skip ahead.
