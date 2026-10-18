@@ -7,12 +7,14 @@ Dependencies point inward only. The Domain project has no outward dependency and
 ```mermaid
 flowchart TB
     subgraph Api["Heimdall.Api (composition root)"]
-        EP["Endpoints: authorize, token, userinfo, revoke, discovery, jwks"]
-        MW["Middleware: tenant by host, rate limit, correlation ID"]
+        EP["Endpoints: authorize, token, userinfo, revoke, discovery, jwks, session and consent API"]
+        MW["Middleware: tenant by host, rate limit (Phase 2), correlation ID"]
+        JOBS["Jobs: signing keys, purge"]
     end
     subgraph Infra["Heimdall.Infrastructure"]
         EF["EF Core and Npgsql"]
         SQL["Hot-path SQL: redeem code, rotate refresh token"]
+        RLS["Tenant interceptor: sets app.tenant_id for row-level security"]
         KEYS["Key storage: dev JSON file, Key Vault or KMS"]
         HASH["Argon2id password hasher"]
     end
@@ -52,7 +54,7 @@ flowchart LR
     U <-->|"B1: login and consent pages"| A
     C <-->|"B2: authorize redirect, token, revoke"| A
     U <--> C
-    A <-->|"B3: SQL"| DB
+    A <-->|"B3: SQL as heimdall_app (row-level security), jobs as heimdall_platform"| DB
     A <-->|"B4: sign"| K
     R -->|"B5: fetch JWKS"| CDN
     CDN --> A

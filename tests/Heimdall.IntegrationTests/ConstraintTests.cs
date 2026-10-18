@@ -26,7 +26,7 @@ public sealed class ConstraintTests
 
     private async Task<Guid> NewTenantAsync()
     {
-        await using var services = _postgres.CreateServices();
+        await using var services = _postgres.CreateServices(connectionString: _postgres.AdminConnectionString);
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<HeimdallDbContext>();
         var tenant = TestData.NewTenant();
@@ -43,7 +43,7 @@ public sealed class ConstraintTests
         string audiences,
         string clientId = "raw-client")
     {
-        await using var connection = new NpgsqlConnection(_postgres.ConnectionString);
+        await using var connection = new NpgsqlConnection(_postgres.AdminConnectionString);
         await connection.OpenAsync();
         await using var command = new NpgsqlCommand(
             $"""
@@ -159,7 +159,7 @@ public sealed class ConstraintTests
     [DockerFact]
     public async Task Secret_cannot_point_to_a_client_of_another_tenant()
     {
-        await using var services = _postgres.CreateServices();
+        await using var services = _postgres.CreateServices(connectionString: _postgres.AdminConnectionString);
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<HeimdallDbContext>();
         var tenant = TestData.NewTenant();
@@ -180,7 +180,7 @@ public sealed class ConstraintTests
     [DockerFact]
     public async Task Second_active_key_for_a_tenant_is_refused()
     {
-        await using var services = _postgres.CreateServices();
+        await using var services = _postgres.CreateServices(connectionString: _postgres.AdminConnectionString);
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<HeimdallDbContext>();
         var tenant = TestData.NewTenant();
@@ -200,7 +200,7 @@ public sealed class ConstraintTests
     public async Task Private_key_material_in_the_reference_is_refused()
     {
         var tenantId = await NewTenantAsync();
-        await using var connection = new NpgsqlConnection(_postgres.ConnectionString);
+        await using var connection = new NpgsqlConnection(_postgres.AdminConnectionString);
         await connection.OpenAsync();
         await using var command = new NpgsqlCommand(
             """

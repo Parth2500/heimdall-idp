@@ -33,7 +33,8 @@ public static class AuditEventTypes
 }
 
 /// <summary>
-/// An append-only record of a security event. It cannot change after creation. The database role can only insert it.
+/// An append-only record of a security event. It cannot change after creation. The application role can only insert
+/// and read it (migration EnableRowLevelSecurity).
 /// </summary>
 public sealed class AuditEvent
 {

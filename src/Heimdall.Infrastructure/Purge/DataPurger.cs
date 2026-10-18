@@ -8,7 +8,8 @@ public sealed record PurgeResult(int Families, int Codes, int Requests, int Sess
 
 /// <summary>
 /// Deletes rows that no flow needs any more (docs/schema-design.md, "Purge job"). It is a platform operation across all
-/// tenants, so it uses SQL statements, not the tenant query filter.
+/// tenants, so it uses SQL statements, not the tenant query filter, and the platform role
+/// (<see cref="PlatformDbContextFactory"/>).
 /// </summary>
 /// <remarks>
 /// Each statement deletes at most <see cref="PurgeOptions.BatchSize"/> rows, and the pass repeats it until fewer rows
@@ -17,19 +18,22 @@ public sealed record PurgeResult(int Families, int Codes, int Requests, int Sess
 /// </remarks>
 public sealed class DataPurger
 {
-    private readonly HeimdallDbContext _db;
+    private readonly PlatformDbContextFactory _platform;
     private readonly PurgeOptions _options;
     private readonly TimeProvider _time;
 
-    public DataPurger(HeimdallDbContext db, PurgeOptions options, TimeProvider time)
+    public DataPurger(PlatformDbContextFactory platform, PurgeOptions options, TimeProvider time)
     {
-        _db = db;
+        _platform = platform;
         _options = options;
         _time = time;
     }
 
     public async Task<PurgeResult> RunOnceAsync(CancellationToken cancellationToken)
     {
+        // The platform role: row-level security lets it delete in every tenant.
+        var db = _platform.Create();
+        await using var dispose = db.ConfigureAwait(false);
         var now = _time.GetUtcNow();
         var batch = _options.BatchSize;
 
@@ -38,7 +42,7 @@ public sealed class DataPurger
         // so it is the end of an unrevoked family.
         var familyCutoff = now - _options.FamilyRetention;
         var families = await RepeatAsync(
-            () => _db.Database.ExecuteSqlAsync(
+            () => db.Database.ExecuteSqlAsync(
                 $"""
                 DELETE FROM token_families
                 WHERE id IN (
@@ -52,7 +56,7 @@ public sealed class DataPurger
 
         var codeCutoff = now - _options.CodeRetention;
         var codes = await RepeatAsync(
-            () => _db.Database.ExecuteSqlAsync(
+            () => db.Database.ExecuteSqlAsync(
                 $"""
                 DELETE FROM authorization_codes
                 WHERE id IN (
@@ -65,7 +69,7 @@ public sealed class DataPurger
             cancellationToken).ConfigureAwait(false);
 
         var requests = await RepeatAsync(
-            () => _db.Database.ExecuteSqlAsync(
+            () => db.Database.ExecuteSqlAsync(
                 $"""
                 DELETE FROM authorization_requests
                 WHERE id IN (
@@ -81,7 +85,7 @@ public sealed class DataPurger
         // is a tenant setting, and this keeps the statement on one table with simple indexes.
         var sessionCutoff = now - _options.SessionRetention;
         var sessions = await RepeatAsync(
-            () => _db.Database.ExecuteSqlAsync(
+            () => db.Database.ExecuteSqlAsync(
                 $"""
                 DELETE FROM sessions
                 WHERE id_hash IN (

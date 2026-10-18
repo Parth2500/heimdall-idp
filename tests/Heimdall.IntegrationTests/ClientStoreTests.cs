@@ -17,7 +17,8 @@ public sealed class ClientStoreTests
 
     private async Task<(Guid TenantId, Guid OtherTenantId)> SeedAsync()
     {
-        await using var services = _postgres.CreateServices();
+        // Setup data for two tenants, as the owner. The reads below use the application role.
+        await using var services = _postgres.CreateServices(connectionString: _postgres.AdminConnectionString);
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<HeimdallDbContext>();
 

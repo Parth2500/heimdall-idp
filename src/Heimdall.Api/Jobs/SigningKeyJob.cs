@@ -1,5 +1,6 @@
 using Heimdall.Application.Keys;
 using Heimdall.Infrastructure.Persistence;
+using Microsoft.Extensions.Options;
 
 namespace Heimdall.Api.Jobs;
 
@@ -14,9 +15,11 @@ internal sealed partial class SigningKeyJob : BackgroundService
     private readonly SigningKeyOptions _options;
     private readonly TimeProvider _time;
     private readonly ILogger<SigningKeyJob> _logger;
+    private readonly bool _loopEnabled;
 
-    public SigningKeyJob(IServiceScopeFactory scopes, SigningKeyOptions options, TimeProvider time, ILogger<SigningKeyJob> logger)
+    public SigningKeyJob(IServiceScopeFactory scopes, SigningKeyOptions options, TimeProvider time, ILogger<SigningKeyJob> logger, IOptions<BackgroundJobOptions> jobs)
     {
+        _loopEnabled = jobs.Value.Enabled;
         _scopes = scopes;
         _options = options;
         _time = time;
@@ -65,6 +68,11 @@ internal sealed partial class SigningKeyJob : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        if (!_loopEnabled)
+        {
+            return;
+        }
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try

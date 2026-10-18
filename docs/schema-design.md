@@ -275,7 +275,20 @@ Later migrations add `users`, `sessions`, `authorization_requests`, `authorizati
 
 ## Row-level security (D20)
 
-The application sets the tenant for each transaction with `SET LOCAL app.tenant_id = '...'`. A policy on each tenant-owned table compares `tenant_id` to `current_setting('app.tenant_id')`. Use `SET LOCAL`, not `SET`. With connection pooling, a plain `SET` stays on the connection and leaks to the next request. Platform operations use a separate role.
+The migration `EnableRowLevelSecurity` turns on row-level security for the nine tenant-owned tables: `users`, `sessions`, `authorization_requests`, `authorization_codes`, `token_families`, `refresh_tokens`, `clients`, `client_secrets`, and `signing_keys`.
+
+- Each table has the policy `tenant_isolation`. A row is visible and writable only when `tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid`. Without a value, no row matches (fail closed).
+- Each table has `FORCE ROW LEVEL SECURITY`, so the table owner is bound too. A superuser still bypasses every policy.
+- The policy `platform_access` lets members of the role `heimdall_platform` see every row. Only the platform jobs use it: the key job's tenant list and the purge job (`PlatformDbContextFactory`).
+- The migration creates two group roles that cannot log in: `heimdall_app` and `heimdall_platform`. An operator creates the login roles of each environment and grants one group role to each.
+- `heimdall_app` has `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on `tenants` and the tenant-owned tables. On `audit_events`, it has `SELECT` and `INSERT` only, so the application cannot change or delete the audit log.
+- A new tenant-owned table needs the same grants and policies in its migration.
+
+How the application sets the tenant: `TenantConnectionInterceptor` runs `set_config('app.tenant_id', @tenant, false)` each time EF Core opens a connection. The value comes from the `TenantScope` of the database context. A context with no tenant sets an empty value.
+
+This replaces the first plan, `SET LOCAL` in each transaction. EF Core runs most commands outside an explicit transaction, so `SET LOCAL` would need a transaction around every command. The risk that `SET LOCAL` avoids is a value that stays on a pooled connection and leaks to the next request. Heimdall prevents that leak in two ways. Each open sets the value again, and Npgsql resets the session state when a connection returns to the pool. A test turns the Npgsql reset off and checks that the interceptor alone prevents the leak. The cost is one extra round trip for each connection open. Measure it in Phase 4.
+
+Configuration: `ConnectionStrings:Heimdall` is the application login (a member of `heimdall_app`). `ConnectionStrings:HeimdallPlatform` is the platform login (a member of `heimdall_platform`). Without `HeimdallPlatform`, the platform jobs use `Heimdall`. That works only when the login is a superuser, as in local development. The migrations run as the owner, not as either login.
 
 ## Purge job
 

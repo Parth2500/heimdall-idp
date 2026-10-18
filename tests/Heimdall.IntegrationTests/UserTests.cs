@@ -59,7 +59,7 @@ public sealed class UserTests
     [DockerFact]
     public async Task Same_email_twice_in_one_tenant_is_refused_in_any_case()
     {
-        await using var services = _postgres.CreateServices();
+        await using var services = _postgres.CreateServices(connectionString: _postgres.AdminConnectionString);
         var tenantId = await AddTenantAsync(services);
         await AddUserAsync(services, tenantId, "alice@example.com");
 
@@ -69,7 +69,7 @@ public sealed class UserTests
     [DockerFact]
     public async Task Same_email_in_two_tenants_is_two_accounts()
     {
-        await using var services = _postgres.CreateServices();
+        await using var services = _postgres.CreateServices(connectionString: _postgres.AdminConnectionString);
         var tenantA = await AddTenantAsync(services);
         var tenantB = await AddTenantAsync(services);
         var userA = await AddUserAsync(services, tenantA, "alice@example.com");
@@ -85,7 +85,7 @@ public sealed class UserTests
     [DockerFact]
     public async Task Sign_in_works_with_the_real_hasher()
     {
-        await using var services = _postgres.CreateServices();
+        await using var services = _postgres.CreateServices(connectionString: _postgres.AdminConnectionString);
         var tenantId = await AddTenantAsync(services);
         var user = await AddUserAsync(services, tenantId, "bob@example.com");
 
@@ -97,7 +97,7 @@ public sealed class UserTests
     [DockerFact]
     public async Task Sign_in_upgrades_an_old_hash_and_keeps_the_password_change_time()
     {
-        await using var services = _postgres.CreateServices();
+        await using var services = _postgres.CreateServices(connectionString: _postgres.AdminConnectionString);
         var tenantId = await AddTenantAsync(services);
         using var weak = new Argon2idPasswordHasher(new PasswordHashingOptions { MemoryKiB = 19 * 1024, Iterations = 3 });
         await AddUserAsync(services, tenantId, "carol@example.com", weak);
@@ -115,9 +115,9 @@ public sealed class UserTests
     [DockerFact]
     public async Task Database_refuses_a_password_hash_that_is_not_Argon2id()
     {
-        await using var services = _postgres.CreateServices();
+        await using var services = _postgres.CreateServices(connectionString: _postgres.AdminConnectionString);
         var tenantId = await AddTenantAsync(services);
-        await using var connection = new NpgsqlConnection(_postgres.ConnectionString);
+        await using var connection = new NpgsqlConnection(_postgres.AdminConnectionString);
         await connection.OpenAsync();
         await using var command = new NpgsqlCommand(
             """

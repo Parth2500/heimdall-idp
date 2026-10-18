@@ -10,10 +10,12 @@ namespace Heimdall.Infrastructure.Keys;
 internal sealed class EfSigningKeyStore : ISigningKeyStore
 {
     private readonly HeimdallDbContext _db;
+    private readonly PlatformDbContextFactory _platform;
 
-    public EfSigningKeyStore(HeimdallDbContext db)
+    public EfSigningKeyStore(HeimdallDbContext db, PlatformDbContextFactory platform)
     {
         _db = db;
+        _platform = platform;
     }
 
     public async Task<IReadOnlyList<SigningKey>> ListAsync(Guid tenantId, CancellationToken cancellationToken) =>
@@ -28,9 +30,12 @@ internal sealed class EfSigningKeyStore : ISigningKeyStore
         DateTimeOffset activeSigningSince,
         CancellationToken cancellationToken)
     {
-        // A platform query across tenants, so it skips the tenant filter on purpose. It returns tenant IDs only.
-        var keys = _db.SigningKeys.IgnoreQueryFilters();
-        return await _db.Tenants
+        // A platform query across tenants, so it skips the tenant filter on purpose and uses the platform role, which
+        // row-level security lets read every tenant. It returns tenant IDs only.
+        var db = _platform.Create();
+        await using var dispose = db.ConfigureAwait(false);
+        var keys = db.SigningKeys.IgnoreQueryFilters();
+        return await db.Tenants
             .Where(t =>
                 // No key signs or waits to sign: create one.
                 !keys.Any(k => k.TenantId == t.Id && (k.Status == SigningKeyStatus.Active || k.Status == SigningKeyStatus.Pending))

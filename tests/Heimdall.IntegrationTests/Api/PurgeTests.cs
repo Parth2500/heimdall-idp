@@ -58,7 +58,7 @@ public sealed class PurgeTests
         await using var scope = fixture.Api.Services.CreateAsyncScope();
         var purger = options is null
             ? scope.ServiceProvider.GetRequiredService<DataPurger>()
-            : new DataPurger(scope.ServiceProvider.GetRequiredService<HeimdallDbContext>(), options, fixture.Api.Time);
+            : new DataPurger(scope.ServiceProvider.GetRequiredService<PlatformDbContextFactory>(), options, fixture.Api.Time);
         return await purger.RunOnceAsync(CancellationToken.None);
     }
 

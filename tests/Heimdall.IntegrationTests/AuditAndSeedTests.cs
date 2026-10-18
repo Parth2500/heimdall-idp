@@ -26,7 +26,7 @@ public sealed class AuditAndSeedTests
     public async Task Audit_event_round_trips_with_its_data_and_ip()
     {
         var id = Guid.CreateVersion7();
-        await using (var services = _postgres.CreateServices())
+        await using (var services = _postgres.CreateServices(connectionString: _postgres.AdminConnectionString))
         await using (var scope = services.CreateAsyncScope())
         {
             var audit = scope.ServiceProvider.GetRequiredService<IAuditLog>();
@@ -42,7 +42,7 @@ public sealed class AuditAndSeedTests
                 CancellationToken.None);
         }
 
-        await using (var services = _postgres.CreateServices())
+        await using (var services = _postgres.CreateServices(connectionString: _postgres.AdminConnectionString))
         await using (var scope = services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<HeimdallDbContext>();
@@ -62,7 +62,7 @@ public sealed class AuditAndSeedTests
         var keyOptions = new SigningKeyOptions();
 
         SeedResult first;
-        await using (var services = _postgres.CreateServices(time, keyOptions))
+        await using (var services = _postgres.CreateServices(time, keyOptions, _postgres.AdminConnectionString))
         await using (var scope = services.CreateAsyncScope())
         {
             first = await scope.ServiceProvider.GetRequiredService<DevelopmentSeeder>().SeedAsync(CancellationToken.None);
@@ -72,7 +72,7 @@ public sealed class AuditAndSeedTests
         time.Advance(keyOptions.PublishWait);
 
         SeedResult second;
-        await using (var services = _postgres.CreateServices(time, keyOptions))
+        await using (var services = _postgres.CreateServices(time, keyOptions, _postgres.AdminConnectionString))
         await using (var scope = services.CreateAsyncScope())
         {
             second = await scope.ServiceProvider.GetRequiredService<DevelopmentSeeder>().SeedAsync(CancellationToken.None);
@@ -88,7 +88,7 @@ public sealed class AuditAndSeedTests
         Assert.NotNull(first.UserPassword);
         Assert.Null(second.UserPassword);
 
-        await using (var services = _postgres.CreateServices())
+        await using (var services = _postgres.CreateServices(connectionString: _postgres.AdminConnectionString))
         await using (var scope = services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<HeimdallDbContext>();

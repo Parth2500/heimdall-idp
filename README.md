@@ -78,7 +78,13 @@ You need Docker for PostgreSQL.
    ```
    Heimdall finds the tenant from the host name, so the request must use `acme.localhost`. It refuses plain HTTP.
 
-   The login API for the future Angular page is under `/session/v1` (`csrf`, `login`, `logout`, `me`). It needs the antiforgery header, so test it with the integration tests, not plain `curl`.
+   The login API for the future Angular page is under `/session/v1` (`csrf`, `login`, `logout`, `me`, `consent`). It needs the antiforgery header, so test it with the integration tests, not plain `curl`.
+
+   The local `heimdall` database user is a superuser, so it bypasses row-level security. The integration tests use restricted logins instead. To run locally with the same restriction, create the logins once, then use them in `ConnectionStrings:Heimdall` and `ConnectionStrings:HeimdallPlatform`. Keep the superuser for migrations and `seed-dev`.
+   ```sql
+   CREATE ROLE heimdall_app_login LOGIN PASSWORD '<password>' IN ROLE heimdall_app;
+   CREATE ROLE heimdall_platform_login LOGIN PASSWORD '<password>' IN ROLE heimdall_platform;
+   ```
 
 ## Operations
 
@@ -93,7 +99,7 @@ To create a migration, use the pinned tool: `dotnet dotnet-ef migrations add <Na
 ## Roadmap
 
 1. **Phase 0:** threat model and design documents. Done.
-2. **Phase 1:** core engine. Authorization code with PKCE, RS256 signing with key rotation, refresh token rotation with family revocation, Argon2id.
+2. **Phase 1:** core engine. Authorization code with PKCE, RS256 signing with key rotation, refresh token rotation with family revocation, Argon2id, `/userinfo`, `/revoke`, the consent API, the purge job, and row-level security. Done.
 3. **Phase 2:** hardening. DPoP, PAR, rate limiting, introspection, OpenID conformance suite.
 4. **Phase 3:** breadth. Tenant administration, WebAuthn, admin portal, audit log, consent management.
 5. **Phase 4:** operations. CI, infrastructure as code, load tests.

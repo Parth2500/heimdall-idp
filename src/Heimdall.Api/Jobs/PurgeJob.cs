@@ -1,4 +1,5 @@
 using Heimdall.Infrastructure.Purge;
+using Microsoft.Extensions.Options;
 
 namespace Heimdall.Api.Jobs;
 
@@ -12,9 +13,11 @@ internal sealed partial class PurgeJob : BackgroundService
     private readonly PurgeOptions _options;
     private readonly TimeProvider _time;
     private readonly ILogger<PurgeJob> _logger;
+    private readonly bool _loopEnabled;
 
-    public PurgeJob(IServiceScopeFactory scopes, PurgeOptions options, TimeProvider time, ILogger<PurgeJob> logger)
+    public PurgeJob(IServiceScopeFactory scopes, PurgeOptions options, TimeProvider time, ILogger<PurgeJob> logger, IOptions<BackgroundJobOptions> jobs)
     {
+        _loopEnabled = jobs.Value.Enabled;
         _scopes = scopes;
         _options = options;
         _time = time;
@@ -23,6 +26,11 @@ internal sealed partial class PurgeJob : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        if (!_loopEnabled)
+        {
+            return;
+        }
+
         while (!stoppingToken.IsCancellationRequested)
         {
             // Wait first: a server that starts has more urgent work than old rows.

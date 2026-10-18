@@ -61,9 +61,15 @@ builder.Services.AddSingleton(provider => provider.GetRequiredService<IOptions<P
 
 // The password is not in any appsettings file. Set it with user-secrets or an environment variable.
 builder.Services.AddHeimdallApplication();
-builder.Services.AddHeimdallInfrastructure(provider =>
-    provider.GetRequiredService<IConfiguration>().GetConnectionString("Heimdall")
-    ?? throw new InvalidOperationException("The connection string 'ConnectionStrings:Heimdall' is not set."));
+builder.Services.AddHeimdallInfrastructure(
+    provider => provider.GetRequiredService<IConfiguration>().GetConnectionString("Heimdall")
+        ?? throw new InvalidOperationException("The connection string 'ConnectionStrings:Heimdall' is not set."),
+
+    // The platform jobs (key job tenant list, purge) need a role in heimdall_platform. Without this setting they use
+    // the application connection, which sees every tenant only when its role bypasses row-level security.
+    provider => provider.GetRequiredService<IConfiguration>().GetConnectionString("HeimdallPlatform")
+        ?? provider.GetRequiredService<IConfiguration>().GetConnectionString("Heimdall")
+        ?? throw new InvalidOperationException("The connection string 'ConnectionStrings:Heimdall' is not set."));
 
 // The development key file holds plain private keys. It is allowed only in Development. No production key store
 // (Key Vault or KMS) exists yet, so the server does not start in any other environment. See the check after Build.
@@ -90,6 +96,7 @@ builder.Services.AddAntiforgery(options =>
     options.HeaderName = SessionEndpoints.XsrfHeader;
 });
 
+builder.Services.AddOptions<BackgroundJobOptions>().Bind(builder.Configuration.GetSection(BackgroundJobOptions.SectionName));
 builder.Services.AddSingleton<SigningKeyJob>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<SigningKeyJob>());
 

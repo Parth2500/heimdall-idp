@@ -1,7 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text;
 using Heimdall.Api.Hosting;
-using Heimdall.Api.Jobs;
 using Heimdall.Application.Keys;
 using Heimdall.Application.Tenants;
 using Heimdall.Application.Users;
@@ -16,7 +15,6 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Heimdall.IntegrationTests.Api;
@@ -45,9 +43,11 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
         builder.ConfigureAppConfiguration(configuration => configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["ConnectionStrings:Heimdall"] = _postgres.ConnectionString,
+            ["ConnectionStrings:HeimdallPlatform"] = _postgres.PlatformConnectionString,
 
-            // The tests call the activation job themselves, so the background loop must not race them.
-            ["Heimdall:SigningKeys:ActivationCheckInterval"] = "1.00:00:00",
+            // The tests run job passes themselves, so the background loops must not race them. A loop's first pass
+            // could otherwise create a key for a tenant that a test is still setting up.
+            ["Heimdall:Jobs:Enabled"] = "false",
 
             // The smallest allowed Argon2id parameters keep the tests fast.
             ["Heimdall:PasswordHashing:MemoryKiB"] = "19456",
@@ -55,12 +55,6 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
         builder.ConfigureTestServices(services =>
         {
             services.AddSingleton<TimeProvider>(Time);
-
-            // The fake clock jumps days in some tests. The purge loop must not run in the background then.
-            foreach (var job in services.Where(d => d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(PurgeJob)).ToList())
-            {
-                services.Remove(job);
-            }
             services.RemoveAll<IKeyMaterialStore>();
             services.AddDevelopmentKeyFile(_postgres.KeyFilePath);
             services.Configure<IssuerOptions>(options => options.Port = null);

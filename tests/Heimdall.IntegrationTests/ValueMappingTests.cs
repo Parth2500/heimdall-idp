@@ -27,7 +27,7 @@ public sealed class ValueMappingTests
         var second = TestData.NewTenant();
         Assert.Same(first.Settings, second.Settings);
 
-        await using (var services = _postgres.CreateServices())
+        await using (var services = _postgres.CreateServices(connectionString: _postgres.AdminConnectionString))
         await using (var scope = services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<HeimdallDbContext>();
@@ -35,7 +35,7 @@ public sealed class ValueMappingTests
             await db.SaveChangesAsync();
         }
 
-        await using (var services = _postgres.CreateServices())
+        await using (var services = _postgres.CreateServices(connectionString: _postgres.AdminConnectionString))
         await using (var scope = services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<HeimdallDbContext>();
@@ -57,7 +57,7 @@ public sealed class ValueMappingTests
         first.UpdateTokenOverrides(shared);
         second.UpdateTokenOverrides(shared);
 
-        await using (var services = _postgres.CreateServices())
+        await using (var services = _postgres.CreateServices(connectionString: _postgres.AdminConnectionString))
         await using (var scope = services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<HeimdallDbContext>();
@@ -66,7 +66,7 @@ public sealed class ValueMappingTests
             await db.SaveChangesAsync();
         }
 
-        await using (var services = _postgres.CreateServices())
+        await using (var services = _postgres.CreateServices(connectionString: _postgres.AdminConnectionString))
         await using (var scope = services.CreateAsyncScope())
         {
             scope.ServiceProvider.GetRequiredService<TenantScope>().Set(tenant.Id);

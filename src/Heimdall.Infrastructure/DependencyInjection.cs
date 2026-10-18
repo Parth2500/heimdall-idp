@@ -28,22 +28,34 @@ public static class DependencyInjection
     /// Registers the database, the stores, the caches, and the token signer. The caller must also register a key
     /// store (<see cref="IKeyMaterialStore"/>). Without one, the service provider fails to build.
     /// </summary>
-    public static IServiceCollection AddHeimdallInfrastructure(this IServiceCollection services, string connectionString)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
-        return services.AddHeimdallInfrastructure(_ => connectionString);
-    }
-
-    /// <summary>Same as the other overload. The connection string is read when the first database context is created.</summary>
+    /// <param name="connectionString">The application role: a member of <c>heimdall_app</c>.</param>
+    /// <param name="platformConnectionString">
+    /// The platform role, a member of <c>heimdall_platform</c>, for jobs across tenants. Null uses
+    /// <paramref name="connectionString"/>, which works only when that role bypasses row-level security (a superuser).
+    /// </param>
     public static IServiceCollection AddHeimdallInfrastructure(
         this IServiceCollection services,
-        Func<IServiceProvider, string> connectionString)
+        string connectionString,
+        string? platformConnectionString = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+        return services.AddHeimdallInfrastructure(_ => connectionString, _ => platformConnectionString ?? connectionString);
+    }
+
+    /// <summary>Same as the other overload. The connection strings are read when the first database context is created.</summary>
+    public static IServiceCollection AddHeimdallInfrastructure(
+        this IServiceCollection services,
+        Func<IServiceProvider, string> connectionString,
+        Func<IServiceProvider, string>? platformConnectionString = null)
     {
         ArgumentNullException.ThrowIfNull(connectionString);
+        platformConnectionString ??= connectionString;
 
         services.TryAddSingleton(new SigningKeyOptions());
         services.AddScoped<TenantScope>();
-        services.AddDbContext<HeimdallDbContext>((provider, options) => ConfigureDbContext(options, connectionString(provider)));
+        services.AddDbContext<HeimdallDbContext>((provider, options) =>
+            ConfigureDbContext(options, connectionString(provider), provider.GetRequiredService<TenantScope>()));
+        services.AddSingleton(provider => new PlatformDbContextFactory(platformConnectionString(provider)));
         services.AddSingleton<ITenantDirectory, TenantDirectory>();
         services.AddScoped<IClientStore, EfClientStore>();
         services.AddScoped<IUserStore, EfUserStore>();
@@ -75,9 +87,14 @@ public static class DependencyInjection
         return services;
     }
 
-    internal static void ConfigureDbContext(DbContextOptionsBuilder options, string connectionString)
+    /// <param name="scope">The tenant of the context. When set, each connection open sets <c>app.tenant_id</c> (D20).</param>
+    internal static void ConfigureDbContext(DbContextOptionsBuilder options, string connectionString, TenantScope? scope = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
         options.UseNpgsql(connectionString).UseSnakeCaseNamingConvention();
+        if (scope is not null)
+        {
+            options.AddInterceptors(new TenantConnectionInterceptor(scope));
+        }
     }
 }
