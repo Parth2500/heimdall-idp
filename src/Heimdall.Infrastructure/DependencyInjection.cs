@@ -1,11 +1,13 @@
 using Heimdall.Application.Audit;
 using Heimdall.Application.Clients;
 using Heimdall.Application.Keys;
+using Heimdall.Application.Tenants;
 using Heimdall.Application.Tokens;
 using Heimdall.Infrastructure.Development;
 using Heimdall.Infrastructure.Keys;
 using Heimdall.Infrastructure.Persistence;
 using Heimdall.Infrastructure.Stores;
+using Heimdall.Infrastructure.Tenants;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -15,16 +17,26 @@ namespace Heimdall.Infrastructure;
 public static class DependencyInjection
 {
     /// <summary>
-    /// Registers the database, the stores, and the token signer. The caller must also register a key store
-    /// (<see cref="IKeyMaterialStore"/>). Without one, the service provider fails to build.
+    /// Registers the database, the stores, the caches, and the token signer. The caller must also register a key
+    /// store (<see cref="IKeyMaterialStore"/>). Without one, the service provider fails to build.
     /// </summary>
     public static IServiceCollection AddHeimdallInfrastructure(this IServiceCollection services, string connectionString)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+        return services.AddHeimdallInfrastructure(_ => connectionString);
+    }
+
+    /// <summary>Same as the other overload. The connection string is read when the first database context is created.</summary>
+    public static IServiceCollection AddHeimdallInfrastructure(
+        this IServiceCollection services,
+        Func<IServiceProvider, string> connectionString)
+    {
+        ArgumentNullException.ThrowIfNull(connectionString);
 
         services.TryAddSingleton(new SigningKeyOptions());
         services.AddScoped<TenantScope>();
-        services.AddDbContext<HeimdallDbContext>(options => ConfigureDbContext(options, connectionString));
+        services.AddDbContext<HeimdallDbContext>((provider, options) => ConfigureDbContext(options, connectionString(provider)));
+        services.AddSingleton<ITenantDirectory, TenantDirectory>();
         services.AddScoped<IClientStore, EfClientStore>();
         services.AddScoped<IAuditLog, EfAuditLog>();
         services.AddScoped<ISigningKeyStore, EfSigningKeyStore>();
@@ -45,6 +57,9 @@ public static class DependencyInjection
         return services;
     }
 
-    internal static void ConfigureDbContext(DbContextOptionsBuilder options, string connectionString) =>
+    internal static void ConfigureDbContext(DbContextOptionsBuilder options, string connectionString)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
         options.UseNpgsql(connectionString).UseSnakeCaseNamingConvention();
+    }
 }

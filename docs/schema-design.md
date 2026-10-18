@@ -171,6 +171,8 @@ D19: each tenant has its own keys.
 
 Rules: a tenant has at most one `active` key. A key is in the JWKS when it is `pending` and published, `active`, or `retired` and before `remove_after`.
 
+Each status change is one conditional statement: `UPDATE signing_keys SET status = @new WHERE id = @id AND status = @old`. EF Core writes it, because `status` is a concurrency token. When two servers change the same key, the second update matches no row. That server changes nothing and writes no audit event. The unique index covers the other case, where two servers activate two different keys.
+
 ### `audit_events`
 | Column | Type | Note |
 |---|---|---|

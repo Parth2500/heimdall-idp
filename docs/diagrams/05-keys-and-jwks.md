@@ -73,7 +73,26 @@ flowchart LR
     MEM -.refresh on rotation.-> DB[("signing_keys")]
 ```
 
-The app server never reads the database for each JWKS request. The response has `Cache-Control: public, max-age=...` and an `ETag`.
+The app server never reads the database for each JWKS request. The response has `Cache-Control: public, max-age=...` and an `ETag`. A request with a matching `If-None-Match` gets `304 Not Modified`.
+
+A new key waits the JWKS cache lifetime plus the server key cache lifetime before it signs. A lagging server can serve the old JWKS for one server cache lifetime, and a resource server can then cache that JWKS for one JWKS cache lifetime.
+
+## Activation job
+
+```mermaid
+sequenceDiagram
+    participant A as Server A job
+    participant B as Server B job
+    participant DB as signing_keys
+    A->>DB: tenants with no active key and a pending key past signing_from
+    B->>DB: same query
+    A->>DB: UPDATE ... SET status='active' WHERE id=K1 AND status='pending'
+    DB-->>A: 1 row. A writes key.activated
+    B->>DB: UPDATE ... SET status='active' WHERE id=K1 AND status='pending'
+    DB-->>B: 0 rows. B does nothing
+```
+
+Every server runs the job. If two servers pick different pending keys, the unique index on the active key refuses the second one.
 
 ## Token signing path
 

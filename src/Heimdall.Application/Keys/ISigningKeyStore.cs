@@ -8,11 +8,17 @@ public interface ISigningKeyStore
     /// <summary>All keys of the tenant, tracked for change.</summary>
     Task<IReadOnlyList<SigningKey>> ListAsync(Guid tenantId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// The tenants that have no active key but have a pending key whose wait has ended. This is a platform query
+    /// across tenants, for the activation job only.
+    /// </summary>
+    Task<IReadOnlyList<Guid>> ListTenantsAwaitingActivationAsync(DateTimeOffset now, CancellationToken cancellationToken);
+
     void Add(SigningKey key);
 
     /// <summary>
-    /// Saves the changes. The database allows one active key for each tenant. A second activation by a
-    /// concurrent caller fails here and changes nothing.
+    /// Saves the changes. The database allows one active key for each tenant. When a concurrent caller activated a
+    /// key first, this throws <see cref="Common.ConcurrentUpdateException"/> and saves nothing.
     /// </summary>
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }
@@ -29,6 +35,9 @@ public interface ISigningKeyCache
 {
     /// <summary>The key that signs new tokens, or null when the tenant has no active key.</summary>
     ValueTask<ActiveSigningKey?> GetActiveKeyAsync(Guid tenantId, CancellationToken cancellationToken);
+
+    /// <summary>The public keys that belong in the tenant's JWKS now: pending, active, and retired before removal.</summary>
+    ValueTask<IReadOnlyList<RsaPublicJwk>> GetPublishedKeysAsync(Guid tenantId, CancellationToken cancellationToken);
 
     /// <summary>Drops the tenant's key set on this server. The next read loads it again.</summary>
     void Invalidate(Guid tenantId);

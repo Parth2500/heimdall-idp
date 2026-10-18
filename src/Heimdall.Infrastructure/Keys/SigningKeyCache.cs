@@ -1,6 +1,6 @@
-using System.Collections.Concurrent;
 using Heimdall.Application.Keys;
 using Heimdall.Domain.Keys;
+using Heimdall.Infrastructure.Caching;
 using Heimdall.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,57 +8,44 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Heimdall.Infrastructure.Keys;
 
 /// <summary>
-/// The active key of each tenant, in memory for <see cref="SigningKeyOptions.ServerCacheLifetime"/>.
-/// The signer reads it for each token, so a token request does not read <c>signing_keys</c>.
+/// The key set of each tenant, in memory for <see cref="SigningKeyOptions.ServerCacheLifetime"/>. The signer and the
+/// JWKS read it, so neither a token request nor a JWKS request reads <c>signing_keys</c>.
 /// </summary>
 /// <remarks>
-/// A key change on this server invalidates the entry at once. A key change on another server reaches this
-/// server when the entry expires. During that time this server can still sign with the previous key. Rotation
-/// keeps the previous key in the JWKS, so those tokens still verify.
+/// A key change on this server invalidates the entry at once. A key change on another server reaches this server
+/// when the entry expires. <see cref="SigningKeyOptions.PublishWait"/> includes this delay.
 /// </remarks>
 internal sealed class SigningKeyCache : ISigningKeyCache
 {
     private readonly IServiceScopeFactory _scopes;
-    private readonly SigningKeyOptions _options;
     private readonly TimeProvider _time;
-    private readonly ConcurrentDictionary<Guid, Entry> _entries = new();
+    private readonly ExpiringCache<Guid, TenantKeySet> _cache;
 
     public SigningKeyCache(IServiceScopeFactory scopes, SigningKeyOptions options, TimeProvider time)
     {
         _scopes = scopes;
-        _options = options;
         _time = time;
+        _cache = new ExpiringCache<Guid, TenantKeySet>(LoadAsync, options.ServerCacheLifetime, time);
     }
 
-    public async ValueTask<ActiveSigningKey?> GetActiveKeyAsync(Guid tenantId, CancellationToken cancellationToken)
+    public async ValueTask<ActiveSigningKey?> GetActiveKeyAsync(Guid tenantId, CancellationToken cancellationToken) =>
+        (await _cache.GetAsync(tenantId, cancellationToken).ConfigureAwait(false)).Active;
+
+    public async ValueTask<IReadOnlyList<RsaPublicJwk>> GetPublishedKeysAsync(Guid tenantId, CancellationToken cancellationToken)
     {
-        while (true)
-        {
-            var now = _time.GetUtcNow();
-            if (_entries.TryGetValue(tenantId, out var entry) && entry.IsUsable(now))
-            {
-                return await entry.Load.Value.WaitAsync(cancellationToken).ConfigureAwait(false);
-            }
+        var set = await _cache.GetAsync(tenantId, cancellationToken).ConfigureAwait(false);
 
-            // Lazy: when many requests miss at the same time, only the winner of the swap queries the database.
-            var fresh = new Entry(
-                new Lazy<Task<ActiveSigningKey?>>(() => LoadAsync(tenantId)),
-                now + _options.ServerCacheLifetime);
-
-            var swapped = entry is null
-                ? _entries.TryAdd(tenantId, fresh)
-                : _entries.TryUpdate(tenantId, fresh, entry);
-            if (swapped)
-            {
-                return await fresh.Load.Value.WaitAsync(cancellationToken).ConfigureAwait(false);
-            }
-        }
+        // A retired key leaves the JWKS at remove_after. The check runs on each read, not only on each load.
+        var now = _time.GetUtcNow();
+        return set.Published
+            .Where(k => k.RemoveAfter is not { } removeAfter || now < removeAfter)
+            .Select(k => k.Jwk)
+            .ToList();
     }
 
-    public void Invalidate(Guid tenantId) => _entries.TryRemove(tenantId, out _);
+    public void Invalidate(Guid tenantId) => _cache.Invalidate(tenantId);
 
-    // The load is shared by all waiting requests, so one caller's cancellation must not cancel it.
-    private async Task<ActiveSigningKey?> LoadAsync(Guid tenantId)
+    private async Task<TenantKeySet> LoadAsync(Guid tenantId)
     {
         var scope = _scopes.CreateAsyncScope();
         await using (scope.ConfigureAwait(false))
@@ -66,19 +53,25 @@ internal sealed class SigningKeyCache : ISigningKeyCache
             scope.ServiceProvider.GetRequiredService<TenantScope>().Set(tenantId);
             var db = scope.ServiceProvider.GetRequiredService<HeimdallDbContext>();
 
-            return await db.SigningKeys
+            var now = _time.GetUtcNow();
+            var keys = await db.SigningKeys
                 .AsNoTracking()
-                .Where(k => k.TenantId == tenantId && k.Status == SigningKeyStatus.Active)
-                .Select(k => new ActiveSigningKey(k.Kid, k.PrivateKeyRef))
-                .SingleOrDefaultAsync(CancellationToken.None)
+                .Where(k => k.TenantId == tenantId)
+                .ToListAsync(CancellationToken.None)
                 .ConfigureAwait(false);
+
+            var active = keys.SingleOrDefault(k => k.CanSign);
+            var published = keys
+                .Where(k => k.IsPublished(now))
+                .OrderBy(k => k.PublishedAt)
+                .Select(k => new PublishedKey(RsaPublicJwk.FromJson(k.PublicJwk), k.Status == SigningKeyStatus.Retired ? k.RemoveAfter : null))
+                .ToList();
+
+            return new TenantKeySet(active is null ? null : new ActiveSigningKey(active.Kid, active.PrivateKeyRef), published);
         }
     }
 
-    private sealed record Entry(Lazy<Task<ActiveSigningKey?>> Load, DateTimeOffset ExpiresAt)
-    {
-        // A failed load is not cached. The next request tries again.
-        public bool IsUsable(DateTimeOffset now) =>
-            now < ExpiresAt && !(Load.IsValueCreated && (Load.Value.IsFaulted || Load.Value.IsCanceled));
-    }
+    private sealed record PublishedKey(RsaPublicJwk Jwk, DateTimeOffset? RemoveAfter);
+
+    private sealed record TenantKeySet(ActiveSigningKey? Active, IReadOnlyList<PublishedKey> Published);
 }

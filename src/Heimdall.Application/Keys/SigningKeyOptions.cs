@@ -5,10 +5,7 @@ public sealed class SigningKeyOptions
 {
     public const string SectionName = "Heimdall:SigningKeys";
 
-    /// <summary>
-    /// The JWKS <c>max-age</c>. A new key waits this long before it signs, so every resource server cache knows it
-    /// before the first token arrives (threat model, JWKS, Elevation of privilege).
-    /// </summary>
+    /// <summary>The JWKS <c>max-age</c>. Resource servers and proxies can cache the key set this long.</summary>
     public TimeSpan JwksCacheLifetime { get; set; } = TimeSpan.FromMinutes(10);
 
     /// <summary>
@@ -16,6 +13,16 @@ public sealed class SigningKeyOptions
     /// within this time. Emergency removal is therefore not instant on every server.
     /// </summary>
     public TimeSpan ServerCacheLifetime { get; set; } = TimeSpan.FromMinutes(1);
+
+    /// <summary>How often the activation job looks for pending keys whose wait has ended.</summary>
+    public TimeSpan ActivationCheckInterval { get; set; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// How long a new key waits before it signs. Another server can serve the old JWKS for one server cache lifetime,
+    /// and a resource server can then cache that JWKS for one JWKS cache lifetime. The wait covers both, so every
+    /// cache knows the key before the first token arrives (threat model, JWKS, Elevation of privilege).
+    /// </summary>
+    public TimeSpan PublishWait => JwksCacheLifetime + ServerCacheLifetime;
 
     /// <summary>Checks the values. Call it at startup, so a bad configuration stops the server.</summary>
     public IReadOnlyList<string> Validate()
@@ -29,6 +36,11 @@ public sealed class SigningKeyOptions
         if (ServerCacheLifetime <= TimeSpan.Zero)
         {
             errors.Add($"{nameof(ServerCacheLifetime)}: the value must be greater than zero.");
+        }
+
+        if (ActivationCheckInterval <= TimeSpan.Zero)
+        {
+            errors.Add($"{nameof(ActivationCheckInterval)}: the value must be greater than zero.");
         }
 
         return errors;

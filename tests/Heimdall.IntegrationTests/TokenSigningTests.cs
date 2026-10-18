@@ -70,7 +70,7 @@ public sealed class TokenSigningTests
         var keyService = scope.ServiceProvider.GetRequiredService<SigningKeyService>();
 
         var key = await keyService.CreateKeyAsync(tenant.Id, "test", CancellationToken.None);
-        _time.Advance(KeyOptions.JwksCacheLifetime);
+        _time.Advance(KeyOptions.PublishWait);
         Assert.NotNull(await keyService.ActivateFirstKeyAsync(tenant.Id, "test", CancellationToken.None));
         return key;
     }
@@ -179,7 +179,7 @@ public sealed class TokenSigningTests
             newKey = await scope.ServiceProvider.GetRequiredService<SigningKeyService>().CreateKeyAsync(tenant.Id, "test", CancellationToken.None);
         }
 
-        _time.Advance(KeyOptions.JwksCacheLifetime);
+        _time.Advance(KeyOptions.PublishWait);
 
         // The cache now holds the old key, loaded after the JWKS wait.
         var before = await SignAsync(server, tenant, Claims(tenant));

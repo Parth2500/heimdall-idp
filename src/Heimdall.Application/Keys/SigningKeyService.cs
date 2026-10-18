@@ -1,4 +1,5 @@
 using Heimdall.Application.Audit;
+using Heimdall.Application.Common;
 using Heimdall.Domain.Audit;
 using Heimdall.Domain.Keys;
 
@@ -35,7 +36,7 @@ public sealed class SigningKeyService
 
     /// <summary>
     /// Creates a key pair in the key store and publishes the public key. The key is pending. It can sign only after
-    /// one JWKS cache lifetime.
+    /// <see cref="SigningKeyOptions.PublishWait"/>.
     /// </summary>
     public async Task<SigningKey> CreateKeyAsync(Guid tenantId, string correlationId, CancellationToken cancellationToken)
     {
@@ -49,7 +50,7 @@ public sealed class SigningKeyService
             jwk.Kid,
             jwk.ToJson(),
             material.PrivateKeyRef,
-            _options.JwksCacheLifetime,
+            _options.PublishWait,
             now);
 
         _keys.Add(key);
@@ -62,7 +63,8 @@ public sealed class SigningKeyService
 
     /// <summary>
     /// Activates the oldest pending key whose <see cref="SigningKey.SigningFrom"/> has passed, when the tenant has no
-    /// active key. Returns the activated key, or null when there is nothing to do.
+    /// active key. Returns the activated key, or null when there is nothing to do or another server activated a key
+    /// first. Several servers can run this at the same time: the database allows one active key for each tenant.
     /// </summary>
     public async Task<SigningKey?> ActivateFirstKeyAsync(Guid tenantId, string correlationId, CancellationToken cancellationToken)
     {
@@ -83,7 +85,17 @@ public sealed class SigningKeyService
         }
 
         SigningKeyRotation.ActivateFirst(ready, now);
-        await _keys.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await _keys.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (ConcurrentUpdateException)
+        {
+            // Another server won. Its key is active, so this server has nothing to do or to audit.
+            _cache.Invalidate(tenantId);
+            return null;
+        }
+
         _cache.Invalidate(tenantId);
 
         await WriteAuditAsync(ready, AuditEventTypes.KeyActivated, correlationId, cancellationToken).ConfigureAwait(false);

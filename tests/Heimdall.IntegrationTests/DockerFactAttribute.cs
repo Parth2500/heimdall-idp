@@ -15,6 +15,18 @@ public sealed class DockerFactAttribute : FactAttribute
     }
 }
 
+/// <summary>The <see cref="TheoryAttribute"/> form of <see cref="DockerFactAttribute"/>.</summary>
+public sealed class DockerTheoryAttribute : TheoryAttribute
+{
+    public DockerTheoryAttribute()
+    {
+        if (!DockerAvailability.IsAvailable && !DockerAvailability.IsCi)
+        {
+            Skip = "Docker is not available on this machine. These tests run in CI.";
+        }
+    }
+}
+
 internal static class DockerAvailability
 {
     public static bool IsCi { get; } =

@@ -24,7 +24,12 @@ internal sealed class SigningKeyConfiguration : IEntityTypeConfiguration<Signing
         builder.HasIndex(k => new { k.TenantId, k.Kid }).IsUnique();
         builder.Property(k => k.PublicJwk).HasColumnType("jsonb").IsRequired();
         builder.Property(k => k.PrivateKeyRef).HasMaxLength(512).IsRequired();
-        builder.Property(k => k.Status).HasConversion(new SnakeCaseEnumConverter<SigningKeyStatus>()).HasMaxLength(32);
+        // A concurrency token: each status change is UPDATE ... WHERE id = @id AND status = @old. When two servers
+        // change the same key, the second update matches no row and fails, so only one change and one audit event happen.
+        builder.Property(k => k.Status)
+            .HasConversion(new SnakeCaseEnumConverter<SigningKeyStatus>())
+            .HasMaxLength(32)
+            .IsConcurrencyToken();
         builder.Property(k => k.PublishedAt);
         builder.Property(k => k.SigningFrom);
         builder.Property(k => k.RetiredAt);

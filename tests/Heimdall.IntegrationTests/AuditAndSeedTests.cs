@@ -68,8 +68,8 @@ public sealed class AuditAndSeedTests
             first = await scope.ServiceProvider.GetRequiredService<DevelopmentSeeder>().SeedAsync(CancellationToken.None);
         }
 
-        // The first key waits one JWKS cache lifetime. A later run activates it.
-        time.Advance(keyOptions.JwksCacheLifetime);
+        // The first key waits for every cache. A later run activates it.
+        time.Advance(keyOptions.PublishWait);
 
         SeedResult second;
         await using (var services = _postgres.CreateServices(time, keyOptions))

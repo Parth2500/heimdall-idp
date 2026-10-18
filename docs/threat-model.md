@@ -35,6 +35,8 @@ Each term has one meaning in this document. Do not use a synonym.
 | Hash | A one-way digest of a secret. Heimdall stores hashes, not secrets. |
 | Throttle | To slow or limit requests. It does not lock out the caller. |
 | Audit log | An append-only record of security events. |
+| Protocol rejection | Heimdall refuses a request before the grant runs, because the request breaks the HTTP or OAuth format. Heimdall logs it. |
+| Grant rejection | The grant refuses a well-formed request, for example for a wrong secret or a scope that is not allowed. Heimdall audits it. |
 
 ## Trust boundaries
 
@@ -92,7 +94,8 @@ Grants: `authorization_code`, `client_credentials`, `refresh_token`. Boundary: B
 | Tampering | PKCE downgrade: the challenge uses `plain`, or the verifier is missing. | `/authorize` rejects `plain`. `/token` requires `code_verifier`. It checks that `BASE64URL(SHA256(verifier))` equals the stored challenge, in fixed time. The verifier has 43 to 128 unreserved characters. |
 | Tampering | An attacker forges an access token, or uses `alg=none` or HS256 confusion. | Heimdall signs with `RS256` only (D8). The documentation tells resource servers to pin `RS256` too. |
 | Tampering | An attacker changes a code or token in the database. | Heimdall stores hashes only. The database enforces a unique `CodeHash` and a non-null `ClientId`. Access to the key store is restricted (B4). |
-| **Repudiation** | A client or user denies a redemption or issuance. After a theft, no evidence exists. | Heimdall writes one audit record for each issuance, redemption, rejection, and family revocation. The record has: timestamp, `client_id`, subject, grant type, result, source IP, correlation ID. The table is insert-only. The application role has no update or delete right. An immutable store is a Phase 3 item. |
+| **Repudiation** | A client or user denies a redemption or issuance. After a theft, no evidence exists. | Heimdall writes one audit record for each issuance, redemption, grant rejection, and family revocation. The record has: timestamp, `client_id`, subject, grant type, result, source IP, correlation ID. The table is insert-only. The application role has no update or delete right. An immutable store is a Phase 3 item. |
+| Repudiation | Malformed requests fill the audit table. Each one costs a database write before any check. | Heimdall logs a protocol rejection and does not audit it. Examples are a query string, a wrong content type, or a repeated parameter. The log line has the error code, the reason, and the correlation ID. It has no parameter value (D7). Decided on 2026-10-18. |
 | **Information disclosure** | A browser or proxy caches tokens or secrets. | `no-store` (D6). |
 | Information disclosure | Secrets, codes, verifiers, or tokens appear in logs, traces, or exception messages. | D7. Request logging for this route excludes the body and the `Authorization` header. |
 | Information disclosure | A database leak (backup, SQL injection) gives an attacker live credentials. | Heimdall stores hashes only (D3). It uses parameterized queries only (EF Core). |
@@ -141,7 +144,7 @@ Boundary: B5. The endpoint is public, unauthenticated, read-only, and has high r
 | Denial of service | Many requests hit the database for each call. | Heimdall caches the keys in memory and refreshes the cache on rotation. It sends `Cache-Control: public, max-age=...` and an `ETag`. A CDN or reverse proxy sits in front on deployment. An IP rate limit is the backstop. |
 | Denial of service | All resource servers refetch the JWKS at the same time after a rotation. | `max-age` spreads the refetch times. Resource servers throttle refetches for an unknown `kid`. The documentation states this. |
 | Elevation of privilege | An attacker steals a signing key and creates valid tokens. | Emergency procedure: remove the key's `kid` from the JWKS at once. Tokens that this key signed stop working. This cost is accepted. Then add a new key. Key Vault or KMS keeps private keys non-exportable. Each server reloads its active key within the server key cache lifetime. Until then, another server can still sign with the removed key. Resource servers reject those tokens after their JWKS cache expires. |
-| Elevation of privilege | Rotation breaks live tokens. Or a new key signs before caches know it. | Publish the new key in the JWKS at least one cache lifetime before it signs a token. Keep the old `kid` listed until its last token expires (token lifetime plus clock skew). |
+| Elevation of privilege | Rotation breaks live tokens. Or a new key signs before caches know it. | Publish the new key in the JWKS at least one cache lifetime before it signs a token. The wait also covers the server key cache lifetime, because another server can serve the old JWKS for that long. Keep the old `kid` listed until its last token expires (token lifetime plus clock skew). |
 
 ## `POST /oauth/v1/revoke` (RFC 7009)
 
@@ -262,8 +265,9 @@ Platform limits (D16). A tenant or client value must be inside these ranges. The
 | Refresh token family, idle timeout | 7 days | Rotation does not extend it beyond the absolute lifetime. |
 | Login session, idle timeout | 30 minutes | |
 | Login session, absolute lifetime | 12 hours | |
-| JWKS cache lifetime (`max-age`) | 10 minutes | A new key waits this long before it signs. Configuration: `Heimdall:SigningKeys:JwksCacheLifetime`. |
-| Server key cache lifetime | 1 minute | A key change on one server reaches every other server within this time. |
+| JWKS cache lifetime (`max-age`) | 10 minutes | Configuration: `Heimdall:SigningKeys:JwksCacheLifetime`. Discovery uses the same `max-age`. |
+| Server key cache lifetime | 1 minute | A key or tenant change on one server reaches every other server within this time. |
+| Publish wait | 11 minutes | A new key waits the JWKS cache lifetime plus the server key cache lifetime before it signs. |
 | Rate limit, `/token` | 10 requests each minute for each IP | Also limit for each `client_id`. |
 | Rate limit, login | 5 requests each minute for each IP | Also throttle for each account. |
 

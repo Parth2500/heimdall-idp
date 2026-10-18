@@ -248,6 +248,7 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .HasColumnName("signing_from");
 
                     b.Property<string>("Status")
+                        .IsConcurrencyToken()
                         .IsRequired()
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
