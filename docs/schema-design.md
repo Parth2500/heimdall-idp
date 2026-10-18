@@ -101,7 +101,7 @@ Heimdall stores the pending `/authorize` request here while the user signs in an
 | `scope` | text | The approved scope. |
 | `code_challenge` | text | |
 | `nonce`, `auth_time` | | For the ID token. |
-| `family_id` | uuid, null | Set at redemption. This is the link from a code to its family. |
+| `family_id` | uuid, null | Set at redemption. This is the link from a code to its family. Foreign key with `ON DELETE SET NULL`. |
 | `created_at`, `expires_at` | timestamptz | `expires_at` is `created_at` plus 5 minutes. |
 | `redeemed_at` | timestamptz, null | |
 
@@ -115,7 +115,7 @@ The family is its own table. Reasons:
 |---|---|---|
 | `id` | uuid PK | This value is `TokenFamilyId`. |
 | `tenant_id`, `client_pk`, `user_id` | uuid | |
-| `source_code_id` | uuid | The code that started the family. |
+| `source_code_id` | uuid | The code that started the family. Audit reference only. It has no foreign key (see "Purge job"). |
 | `scope` | text | The scope at the start. Refresh can only reduce it. |
 | `created_at` | timestamptz | |
 | `absolute_expires_at` | timestamptz | Fixed at creation. Rotation does not change it. |
@@ -252,8 +252,46 @@ The platform limits (minimum and maximum for each setting) live in configuration
 
 The application sets the tenant for each transaction with `SET LOCAL app.tenant_id = '...'`. A policy on each tenant-owned table compares `tenant_id` to `current_setting('app.tenant_id')`. Use `SET LOCAL`, not `SET`. With connection pooling, a plain `SET` stays on the connection and leaks to the next request. Platform operations use a separate role.
 
-## Open questions
+## Purge job
 
-1. Is a UUIDv7 `sub` acceptable, or does a client need a pairwise `sub` for each client? (Pairwise subject identifiers stop clients from linking users. Defer to Phase 3.)
-2. Where does `private_key_ref` point for local development? The first choice is an encrypted file with a key from the environment.
-3. How long do we keep used refresh tokens and expired codes? The purge job needs a number. A short time is enough for codes. Keep used refresh tokens until their family expires, so reuse detection still works.
+A background service deletes old rows in batches. It runs every hour. It deletes at most 1000 rows in each statement and repeats until no rows remain. Batches keep transactions short, so the job does not block `/token`.
+
+```sql
+DELETE FROM token_families
+WHERE id IN (
+    SELECT id FROM token_families
+    WHERE  LEAST(absolute_expires_at, idle_expires_at) < now() - interval '7 days'
+       OR  revoked_at < now() - interval '7 days'
+    LIMIT  1000
+    FOR UPDATE SKIP LOCKED);
+```
+
+`SKIP LOCKED` lets two instances of the job run together without waiting for each other.
+
+| Table | Delete when | Reason for the delay |
+|---|---|---|
+| `token_families` (and its `refresh_tokens`, by `ON DELETE CASCADE`) | The family ended more than 7 days ago | A reused token from a recent family must still cause a revocation and an alert. The delay also helps an investigation. |
+| `authorization_codes` | `expires_at` is more than 24 hours ago, and the code has no family | A replayed code must still show as `redeemed` for a short time after expiry. |
+| `authorization_requests` | `expires_at` has passed | |
+| `sessions` | The session ended (expired or revoked) more than 7 days ago | |
+
+Order: delete families first, then codes. `authorization_codes.family_id` has `ON DELETE SET NULL`, so a code survives its family for the 24-hour delay. `token_families.source_code_id` is a plain column with no foreign key. It is an audit reference only. This avoids a circular foreign key between the two tables.
+
+`audit_events` is not part of this job. A separate role purges it, under a retention policy that is not set yet.
+
+## Decisions on the first open questions
+
+| Question | Decision | Note |
+|---|---|---|
+| Format of `sub` | UUIDv7 | A UUIDv7 holds its creation time, so `sub` shows when the account was created. This risk is low. If it matters later, the pairwise subject identifiers of Phase 3 remove it. |
+| Local signing keys | A JSON file in `.local/`, ignored by git | Development only. See below. |
+| Retention of expired data | Batch purge | See "Purge job". |
+
+### Local development signing keys
+
+The file `.local/signing-keys.json` holds the development keys. Rules:
+- `.gitignore` excludes `.local/`.
+- Heimdall reads this file only when the environment is `Development`. In any other environment, startup fails if `private_key_ref` points to a file.
+- Heimdall creates the file and a first key if the file is missing.
+- A real key never goes into the repository, a chat, or a log. The development keys are not trusted outside the local machine.
+- The `SecurityKey` abstraction in `Application` hides the source. Key Vault or KMS replaces the file on deployment, with no change to the signing code.
