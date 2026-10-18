@@ -157,13 +157,14 @@ Boundary: B2. The endpoint revokes a refresh token with its family, or an access
 
 | STRIDE | Threat | Mitigation |
 |---|---|---|
-| Spoofing | An attacker revokes the tokens of another client. | Confidential clients authenticate as at `/token` (D4, D5). The stored `client_id` of the token must equal the caller. On a mismatch, Heimdall revokes nothing, returns `200`, and writes an audit event. |
+| Spoofing | An attacker revokes the tokens of another client. | Confidential clients authenticate as at `/token` (D4, D5). The family's client must equal the caller. On a mismatch, Heimdall revokes nothing, returns `200`, and writes `revocation.refused`. |
+| Spoofing | An attacker guesses client secrets at `/revoke`, because it is not `/token`. | Heimdall audits each failed client authentication at `/revoke` as `revocation.refused`, as it does at `/token`. |
 | Spoofing | A public client revokes with a stolen token. | The refresh token is already a bearer secret. Whoever holds it can revoke it. Revocation only helps the real owner. |
 | Tampering | A request repeats a parameter or sends credentials in the query string. | The same rules as `/token`: form body only, no repeated parameters. |
-| Repudiation | A user or client disputes a revocation. | Heimdall writes an audit event for each revocation. It records token type, family ID, client, caller IP, and correlation ID. |
+| Repudiation | A user or client disputes a revocation. | Heimdall writes `family.revoked` for each revoked family. The event has the family ID, the client, the caller IP, and the correlation ID. The family reason is `user_logout`. A request that revokes nothing goes to the log only. |
 | Information disclosure | The response shows whether a token existed or was valid. | Heimdall returns `200` for an unknown, expired, revoked, or foreign token (RFC 7009, section 2.2). Only a malformed request or failed client authentication gets an error. |
 | Denial of service | An attacker sends many revocations to flood or lock rows. | Rate limit for each IP and each `client_id`. Revocation is one indexed update on `TokenFamilyId`. |
-| Elevation of privilege | A revoked refresh token family continues to work. | Heimdall revokes the whole family in one transaction. This includes the newest refresh token. |
+| Elevation of privilege | A revoked refresh token family continues to work. | Heimdall revokes the whole family with one statement. This includes the newest refresh token. Any token of the family revokes it, also a used one. This is not reuse, because revocation only removes access. |
 | Elevation of privilege | A revoked access token still works until it expires. | Accepted risk. Access tokens are stateless JWTs with a lifetime of 5 minutes (D8). Version 1 has no denylist. Phase 2 adds introspection (RFC 7662) for resource servers that need immediate revocation. |
 
 ## `GET /oauth/v1/userinfo`

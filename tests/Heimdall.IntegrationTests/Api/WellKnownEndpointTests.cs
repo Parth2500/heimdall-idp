@@ -33,6 +33,7 @@ public sealed class WellKnownEndpointTests
         Assert.Equal(tenant.Issuer + "/oauth/v1/token", root.GetProperty("token_endpoint").GetString());
         Assert.Equal(tenant.Issuer + "/.well-known/jwks.json", root.GetProperty("jwks_uri").GetString());
         Assert.Equal(tenant.Issuer + "/oauth/v1/authorize", root.GetProperty("authorization_endpoint").GetString());
+        Assert.Equal(tenant.Issuer + "/oauth/v1/revoke", root.GetProperty("revocation_endpoint").GetString());
         Assert.Equal(["authorization_code", "refresh_token", "client_credentials"], root.GetProperty("grant_types_supported").EnumerateArray().Select(e => e.GetString()));
         Assert.Equal(["S256"], root.GetProperty("code_challenge_methods_supported").EnumerateArray().Select(e => e.GetString()));
         Assert.True(root.GetProperty("authorization_response_iss_parameter_supported").GetBoolean());

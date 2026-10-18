@@ -15,6 +15,7 @@ public static class AuditEventTypes
     public const string RefreshRotated = "refresh.rotated";
     public const string RefreshReuseDetected = "refresh.reuse_detected";
     public const string FamilyRevoked = "family.revoked";
+    public const string RevocationRefused = "revocation.refused";
     public const string LoginSucceeded = "login.succeeded";
     public const string LoginFailed = "login.failed";
     public const string SessionStarted = "session.started";

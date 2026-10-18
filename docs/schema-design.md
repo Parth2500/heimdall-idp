@@ -231,7 +231,7 @@ WHERE  id = @family_id AND revoked_at IS NULL;
 ```
 After a successful rotation, the application checks that the user is active and that the scope is not wider. It inserts the new token, sets `replaced_by_id`, and moves `idle_expires_at` to `LEAST(@now + idle, absolute_expires_at)`. All of this runs in one transaction. A disabled user gets `invalid_grant`, and Heimdall revokes the family with the reason `user_disabled`.
 
-**Revoke a family** (`/revoke`, logout, admin) is the second statement above with another `revoked_reason`. The statement is idempotent.
+**Revoke a family** (`/revoke`, logout, admin) is the second statement above with another `revoked_reason`. The statement is idempotent. `/revoke` uses the reason `user_logout`.
 
 ## Indexes
 

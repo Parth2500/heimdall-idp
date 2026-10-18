@@ -126,6 +126,7 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<TenantResolutionMiddleware>();
 
 app.MapPost(TokenEndpoint.Path, TokenEndpoint.HandleAsync);
+app.MapPost(RevokeEndpoint.Path, RevokeEndpoint.HandleAsync);
 app.MapGet(WellKnownEndpoints.DiscoveryPath, WellKnownEndpoints.DiscoveryAsync);
 app.MapGet(WellKnownEndpoints.JwksPath, WellKnownEndpoints.JwksAsync);
 SessionEndpoints.Map(app);
