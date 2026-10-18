@@ -3,7 +3,9 @@ using System.Text;
 using Heimdall.Api.Hosting;
 using Heimdall.Application.Keys;
 using Heimdall.Application.Tenants;
+using Heimdall.Application.Users;
 using Heimdall.Domain.Tenants;
+using Heimdall.Domain.Users;
 using Heimdall.Infrastructure;
 using Heimdall.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
@@ -43,6 +45,9 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
 
             // The tests call the activation job themselves, so the background loop must not race them.
             ["Heimdall:SigningKeys:ActivationCheckInterval"] = "1.00:00:00",
+
+            // The smallest allowed Argon2id parameters keep the tests fast.
+            ["Heimdall:PasswordHashing:MemoryKiB"] = "19456",
         }));
         builder.ConfigureTestServices(services =>
         {
@@ -53,12 +58,26 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
         });
     }
 
-    public HttpClient ClientFor(string host, string scheme = "https") =>
+    public HttpClient ClientFor(string host, string scheme = "https", bool handleCookies = true) =>
         CreateClient(new WebApplicationFactoryClientOptions
         {
             BaseAddress = new Uri($"{scheme}://{host}/"),
             AllowAutoRedirect = false,
+            HandleCookies = handleCookies,
         });
+
+    /// <summary>Adds a user to the tenant with the real hasher.</summary>
+    public async Task<User> AddUserAsync(TestTenant tenant, string email, string password)
+    {
+        await using var scope = Services.CreateAsyncScope();
+        scope.ServiceProvider.GetRequiredService<TenantScope>().Set(tenant.Tenant.Id);
+        var hash = await scope.ServiceProvider.GetRequiredService<IPasswordHasher>().HashAsync(password, CancellationToken.None);
+        var user = User.Create(Guid.CreateVersion7(), tenant.Tenant.Id, email, hash, Time.GetUtcNow());
+        var users = scope.ServiceProvider.GetRequiredService<IUserStore>();
+        users.Add(user);
+        await users.SaveChangesAsync(CancellationToken.None);
+        return user;
+    }
 
     /// <summary>Creates a tenant with one confidential client and an active signing key.</summary>
     public async Task<TestTenant> AddTenantAsync(string clientSecret = "s3cret-value-for-tests")

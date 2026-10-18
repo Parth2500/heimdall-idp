@@ -8,6 +8,12 @@ namespace Heimdall.Domain.Sessions;
 /// </summary>
 public sealed class Session
 {
+#pragma warning disable CS8618 // EF Core sets the properties after it calls this constructor.
+    private Session()
+    {
+    }
+#pragma warning restore CS8618
+
     private Session(
         TokenHash idHash,
         Guid tenantId,

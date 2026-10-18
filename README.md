@@ -78,6 +78,8 @@ You need Docker for PostgreSQL.
    ```
    Heimdall finds the tenant from the host name, so the request must use `acme.localhost`. It refuses plain HTTP.
 
+   The login API for the future Angular page is under `/session/v1` (`csrf`, `login`, `logout`, `me`). It needs the antiforgery header, so test it with the integration tests, not plain `curl`.
+
 ## Operations
 
 Emergency removal of a stolen signing key (see `docs/threat-model.md`, JWKS):

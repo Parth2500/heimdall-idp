@@ -79,6 +79,15 @@ builder.Services.AddSingleton<IKeyMaterialStore>(provider =>
     return new DevelopmentKeyFile(Path.Combine(environment.ContentRootPath, path));
 });
 
+// Antiforgery for the login API. Angular's HttpClient reads the request token cookie and sends the header.
+builder.Services.AddAntiforgery(options =>
+{
+    options.Cookie.Name = SessionEndpoints.AntiforgeryCookie;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.HeaderName = SessionEndpoints.XsrfHeader;
+});
+
 builder.Services.AddSingleton<SigningKeyJob>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<SigningKeyJob>());
 
@@ -111,12 +120,14 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<TenantResolutionMiddleware>();
 
 app.MapPost(TokenEndpoint.Path, TokenEndpoint.HandleAsync);
 app.MapGet(WellKnownEndpoints.DiscoveryPath, WellKnownEndpoints.DiscoveryAsync);
 app.MapGet(WellKnownEndpoints.JwksPath, WellKnownEndpoints.JwksAsync);
+SessionEndpoints.Map(app);
 
 await app.RunAsync();
 return 0;

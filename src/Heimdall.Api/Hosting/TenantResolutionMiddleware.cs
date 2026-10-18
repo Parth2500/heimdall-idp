@@ -59,7 +59,13 @@ internal sealed partial class TenantResolutionMiddleware
         var issuer = context.RequestServices.GetRequiredService<IOptions<IssuerOptions>>().Value.IssuerFor(tenant.Host);
 
         // Behind a proxy, RemoteIpAddress is the proxy. Forwarded headers come with the deployment decision.
-        return new RequestContext(tenant, issuer, context.TraceIdentifier, context.Connection.RemoteIpAddress);
+        var userAgent = context.Request.Headers.UserAgent.ToString();
+        return new RequestContext(
+            tenant,
+            issuer,
+            context.TraceIdentifier,
+            context.Connection.RemoteIpAddress,
+            userAgent.Length == 0 ? null : userAgent[..Math.Min(userAgent.Length, 256)]);
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Request refused: plain HTTP.")]

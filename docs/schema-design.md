@@ -142,7 +142,7 @@ A token is valid when `used_at IS NULL` and its family is not revoked or expired
 | `absolute_expires_at` | timestamptz | |
 | `revoked_at` | timestamptz, null | |
 
-The idle limit is `last_seen_at` plus the tenant's `session_idle_seconds`.
+The idle limit is `last_seen_at` plus the tenant's `session_idle_seconds`. Heimdall updates `last_seen_at` at most once a minute, so a session check is not a write on each request. The idle limit can therefore be up to one minute late.
 
 ### `consents`
 | Column | Type | Note |

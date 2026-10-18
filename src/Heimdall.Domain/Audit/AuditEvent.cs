@@ -17,6 +17,7 @@ public static class AuditEventTypes
     public const string FamilyRevoked = "family.revoked";
     public const string LoginSucceeded = "login.succeeded";
     public const string LoginFailed = "login.failed";
+    public const string SessionStarted = "session.started";
     public const string SessionRevoked = "session.revoked";
     public const string ConsentGranted = "consent.granted";
     public const string ConsentRevoked = "consent.revoked";

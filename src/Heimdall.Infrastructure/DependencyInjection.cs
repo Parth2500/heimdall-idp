@@ -1,6 +1,7 @@
 using Heimdall.Application.Audit;
 using Heimdall.Application.Clients;
 using Heimdall.Application.Keys;
+using Heimdall.Application.Sessions;
 using Heimdall.Application.Tenants;
 using Heimdall.Application.Users;
 using Heimdall.Application.Tokens;
@@ -41,6 +42,7 @@ public static class DependencyInjection
         services.AddSingleton<ITenantDirectory, TenantDirectory>();
         services.AddScoped<IClientStore, EfClientStore>();
         services.AddScoped<IUserStore, EfUserStore>();
+        services.AddScoped<ISessionStore, EfSessionStore>();
         services.TryAddSingleton(new PasswordHashingOptions());
         services.AddSingleton<IPasswordHasher, Argon2idPasswordHasher>();
         services.AddScoped<IAuditLog, EfAuditLog>();

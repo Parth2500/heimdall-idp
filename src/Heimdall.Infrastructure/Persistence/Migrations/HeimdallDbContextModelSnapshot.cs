@@ -285,6 +285,53 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Heimdall.Domain.Sessions.Session", b =>
+                {
+                    b.Property<byte[]>("IdHash")
+                        .HasMaxLength(32)
+                        .HasColumnType("bytea")
+                        .HasColumnName("id_hash");
+
+                    b.Property<DateTimeOffset>("AbsoluteExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("absolute_expires_at");
+
+                    b.Property<DateTimeOffset>("AuthTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("auth_time");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("LastSeenAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_seen_at");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("IdHash")
+                        .HasName("pk_sessions");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_sessions_user_id");
+
+                    b.HasIndex("TenantId", "UserId")
+                        .HasDatabaseName("ix_sessions_tenant_id_user_id");
+
+                    b.ToTable("sessions", (string)null);
+                });
+
             modelBuilder.Entity("Heimdall.Domain.Tenants.Tenant", b =>
                 {
                     b.Property<Guid>("Id")
@@ -471,6 +518,23 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_signing_keys_tenants_tenant_id");
+                });
+
+            modelBuilder.Entity("Heimdall.Domain.Sessions.Session", b =>
+                {
+                    b.HasOne("Heimdall.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sessions_tenants_tenant_id");
+
+                    b.HasOne("Heimdall.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sessions_users_user_id");
                 });
 
             modelBuilder.Entity("Heimdall.Domain.Users.User", b =>

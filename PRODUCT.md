@@ -53,7 +53,7 @@ Security rules from `docs/threat-model.md` apply to every page. A design or stac
 
 Open items:
 
-- The threat model was written before the Angular decision. The login, session and consent section needs a review of the SPA-specific risks, such as the JSON login API and the bundle supply chain.
+- The JSON login API is reviewed (threat model, login rows on CSRF, CORS, and XSS). Still open: the Angular bundle supply chain, and the CSP for the Angular pages.
 - Accessibility standard: not set yet.
 - Tenant branding: not in scope now (see Brand Commitments).
 
