@@ -17,6 +17,10 @@ public sealed record CodeRedemption(
     Guid FamilyId,
     DateTimeOffset Now);
 
+/// <summary>The inputs of the atomic refresh token rotation. Every binding is part of the one conditional statement.</summary>
+/// <param name="ClientPk">The authenticated client. A token of another client's family never matches.</param>
+public sealed record RefreshRotation(Guid TenantId, TokenHash TokenHash, Guid ClientPk, DateTimeOffset Now);
+
 /// <summary>A database transaction. Dispose without commit rolls back.</summary>
 public interface IGrantTransaction : IAsyncDisposable
 {
@@ -46,6 +50,30 @@ public interface ITokenStore
     void AddRefreshToken(RefreshToken token);
 
     Task SaveChangesAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// One conditional UPDATE: it marks the token used only when it is unused, and its family belongs to the client,
+    /// is not revoked, and is inside its idle and absolute limits. Returns the used token, or null when no row matched.
+    /// A concurrent rotation of the same token waits on the row lock and then matches no row.
+    /// </summary>
+    Task<RefreshToken?> UseRefreshTokenAsync(RefreshRotation rotation, CancellationToken cancellationToken);
+
+    /// <summary>Reads a refresh token by hash, without a change. Used to explain a rotation that matched no row.</summary>
+    Task<RefreshToken?> FindRefreshTokenAsync(Guid tenantId, TokenHash tokenHash, CancellationToken cancellationToken);
+
+    /// <summary>Reads a family, without a change.</summary>
+    Task<TokenFamily?> FindFamilyAsync(Guid tenantId, Guid familyId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// In the rotation transaction: inserts the new token, links the used token to it (<c>replaced_by_id</c>), and moves
+    /// the family's idle limit, never past its absolute limit.
+    /// </summary>
+    Task CompleteRotationAsync(
+        RefreshToken used,
+        RefreshToken replacement,
+        TimeSpan idleTimeout,
+        DateTimeOffset now,
+        CancellationToken cancellationToken);
 
     /// <summary>One conditional UPDATE. Returns true when this call revoked the family, false when it was already revoked.</summary>
     Task<bool> RevokeFamilyAsync(

@@ -22,7 +22,7 @@ internal static class WellKnownEndpoints
 
     /// <summary>
     /// Lists only what Heimdall supports today, so a client never relies on a capability that does not exist.
-    /// <c>userinfo_endpoint</c> and the <c>refresh_token</c> grant come with those features.
+    /// <c>userinfo_endpoint</c> and <c>revocation_endpoint</c> come with those features.
     /// </summary>
     public static Task DiscoveryAsync(HttpContext context, SigningKeyOptions keyOptions)
     {
@@ -34,7 +34,7 @@ internal static class WellKnownEndpoints
             issuer + JwksPath,
             ["code"],
             ["query"],
-            ["authorization_code", "client_credentials"],
+            ["authorization_code", "refresh_token", "client_credentials"],
             ["client_secret_basic", "none"],
             ["S256"],
             ["public"],

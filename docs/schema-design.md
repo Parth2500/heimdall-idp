@@ -213,18 +213,23 @@ One row means success. Zero rows means: unknown, expired, reused, or a binding t
 
 **Rotate a refresh token** (`/token`, `refresh_token`).
 ```sql
-UPDATE refresh_tokens
-SET    used_at = now()
-WHERE  tenant_id = @tenant AND token_hash = @hash AND used_at IS NULL
-RETURNING id, family_id;
+UPDATE refresh_tokens AS t
+SET    used_at = @now
+FROM   token_families AS f
+WHERE  t.tenant_id = @tenant AND t.token_hash = @hash AND t.used_at IS NULL
+  AND  f.tenant_id = t.tenant_id AND f.id = t.family_id
+  AND  f.client_pk = @client AND f.revoked_at IS NULL
+  AND  f.idle_expires_at > @now AND f.absolute_expires_at > @now
+RETURNING t.*;
 ```
+The family conditions are in the statement, like the bindings of the code redemption. A token sent by another client matches no row and cannot burn the real client's token. A refused request (wider scope, disabled user) rolls back, so the token stays unused.
 Zero rows and a row that exists with `used_at` set is a reuse. Heimdall then runs:
 ```sql
 UPDATE token_families
 SET    revoked_at = now(), revoked_reason = 'reuse_detected'
 WHERE  id = @family_id AND revoked_at IS NULL;
 ```
-After a successful rotation, the application checks that the family is not revoked or expired. It inserts the new token, sets `replaced_by_id`, and moves `idle_expires_at`. All of this runs in one transaction. If the family check fails, the transaction rolls back and Heimdall returns `invalid_grant`.
+After a successful rotation, the application checks that the user is active and that the scope is not wider. It inserts the new token, sets `replaced_by_id`, and moves `idle_expires_at` to `LEAST(@now + idle, absolute_expires_at)`. All of this runs in one transaction. A disabled user gets `invalid_grant`, and Heimdall revokes the family with the reason `user_disabled`.
 
 **Revoke a family** (`/revoke`, logout, admin) is the second statement above with another `revoked_reason`. The statement is idempotent.
 

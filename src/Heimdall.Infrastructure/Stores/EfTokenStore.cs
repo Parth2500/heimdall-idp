@@ -50,6 +50,70 @@ internal sealed class EfTokenStore : ITokenStore
         _db.AuthorizationCodes.AsNoTracking()
             .SingleOrDefaultAsync(c => c.TenantId == tenantId && c.CodeHash == codeHash, cancellationToken);
 
+    public async Task<RefreshToken?> UseRefreshTokenAsync(RefreshRotation rotation, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(rotation);
+        var hash = rotation.TokenHash.ToArray();
+
+        // docs/schema-design.md, "Rotate a refresh token". One statement. The family conditions are in it too: the
+        // calling client must own the family, and the family must be unrevoked and inside both limits. A token sent by
+        // another client matches no row, so it cannot burn the real client's token.
+        var rows = await _db.RefreshTokens
+            .FromSql($"""
+                UPDATE refresh_tokens AS t
+                SET    used_at = {rotation.Now}
+                FROM   token_families AS f
+                WHERE  t.tenant_id = {rotation.TenantId} AND t.token_hash = {hash} AND t.used_at IS NULL
+                  AND  f.tenant_id = t.tenant_id AND f.id = t.family_id
+                  AND  f.client_pk = {rotation.ClientPk}
+                  AND  f.revoked_at IS NULL
+                  AND  f.idle_expires_at > {rotation.Now} AND f.absolute_expires_at > {rotation.Now}
+                RETURNING t.*
+                """)
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return rows.SingleOrDefault();
+    }
+
+    public Task<RefreshToken?> FindRefreshTokenAsync(Guid tenantId, TokenHash tokenHash, CancellationToken cancellationToken) =>
+        _db.RefreshTokens.AsNoTracking()
+            .SingleOrDefaultAsync(t => t.TenantId == tenantId && t.Hash == tokenHash, cancellationToken);
+
+    public Task<TokenFamily?> FindFamilyAsync(Guid tenantId, Guid familyId, CancellationToken cancellationToken) =>
+        _db.TokenFamilies.AsNoTracking()
+            .SingleOrDefaultAsync(f => f.TenantId == tenantId && f.Id == familyId, cancellationToken);
+
+    public async Task CompleteRotationAsync(
+        RefreshToken used,
+        RefreshToken replacement,
+        TimeSpan idleTimeout,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(used);
+        ArgumentNullException.ThrowIfNull(replacement);
+
+        _db.RefreshTokens.Add(replacement);
+        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        await _db.Database.ExecuteSqlAsync(
+            $"UPDATE refresh_tokens SET replaced_by_id = {replacement.Id} WHERE tenant_id = {used.TenantId} AND id = {used.Id}",
+            cancellationToken).ConfigureAwait(false);
+
+        // The idle limit moves forward but never passes the absolute limit (TokenFamily.ExtendIdle, as one statement).
+        var idleUntil = now + idleTimeout;
+        await _db.Database.ExecuteSqlAsync(
+            $"""
+            UPDATE token_families
+            SET    idle_expires_at = LEAST({idleUntil}, absolute_expires_at)
+            WHERE  tenant_id = {used.TenantId} AND id = {used.FamilyId}
+            """,
+            cancellationToken).ConfigureAwait(false);
+    }
+
     public void AddFamily(TokenFamily family) => _db.TokenFamilies.Add(family);
 
     public void AddRefreshToken(RefreshToken token) => _db.RefreshTokens.Add(token);

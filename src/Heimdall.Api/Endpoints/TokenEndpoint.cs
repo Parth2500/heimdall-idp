@@ -9,7 +9,7 @@ using Microsoft.Extensions.Primitives;
 namespace Heimdall.Api.Endpoints;
 
 /// <summary>
-/// <c>POST /oauth/v1/token</c>: the <c>client_credentials</c> and <c>authorization_code</c> grants.
+/// <c>POST /oauth/v1/token</c>: the <c>client_credentials</c>, <c>authorization_code</c>, and <c>refresh_token</c> grants.
 /// Every check before the grant runs needs no database, so a malformed request is cheap to reject.
 /// </summary>
 /// <remarks>
@@ -37,6 +37,7 @@ internal static partial class TokenEndpoint
         HttpContext context,
         ClientCredentialsGrant clientCredentials,
         AuthorizationCodeGrant authorizationCode,
+        RefreshTokenGrant refreshToken,
         ILoggerFactory loggers)
     {
         var logger = loggers.CreateLogger(typeof(TokenEndpoint));
@@ -73,8 +74,19 @@ internal static partial class TokenEndpoint
                     context.RequestAborted).ConfigureAwait(false);
                 break;
 
+            case "refresh_token":
+                result = await refreshToken.HandleAsync(
+                    requestContext,
+                    new RefreshTokenRequest(
+                        parsed.ClientId,
+                        parsed.ClientSecret,
+                        NullIfEmpty(form["refresh_token"]),
+                        NullIfEmpty(form["scope"]),
+                        NullIfEmpty(form["resource"])),
+                    context.RequestAborted).ConfigureAwait(false);
+                break;
+
             default:
-                // refresh_token comes in the next step.
                 var unsupported = OAuthError.UnsupportedGrantType("grant type not supported");
                 LogRejected(logger, unsupported.Code, unsupported.AuditDetail!);
                 await OAuthResponses.WriteErrorAsync(context, unsupported).ConfigureAwait(false);

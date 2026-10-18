@@ -124,7 +124,7 @@ Boundary: B2. A refresh token is opaque and single-use. It belongs to a family. 
 | STRIDE | Threat | Mitigation |
 |---|---|---|
 | Spoofing | An attacker uses a stolen refresh token. | Each use returns a new refresh token and marks the old one as used (`ReplacedByTokenHash`). Reuse of a used token revokes the whole family at once, in the same transaction as the check. Confidential clients also authenticate. DPoP protects public clients in Phase 2. |
-| Spoofing | A client presents a token that Heimdall issued to a different client. | The stored `client_id` must equal the calling client. |
+| Spoofing | A client presents a token that Heimdall issued to a different client. | The family's client must equal the calling client. The check is part of the rotation statement, so the wrong client cannot use or burn the token. |
 | Tampering | The real client and an attacker present the same token at the same time. Two retries can also cause this. | Rotation is one atomic conditional update on `used_at IS NULL`. One caller wins. Heimdall treats the other caller as reuse. |
 | Tampering | A client asks for more scope on refresh. | The requested scope must be a subset of the original grant. |
 | Repudiation | No record shows who rotated a token or why a family ended. | Heimdall writes an audit event for each rotation, reuse detection, and revocation. It includes the family ID and the correlation ID. |
@@ -133,7 +133,7 @@ Boundary: B2. A refresh token is opaque and single-use. It belongs to a family. 
 | Denial of service | A real client retries after it loses a response and triggers reuse detection. | Decision: no grace window. A grace window reopens the race that reuse detection closes. A client must save the new token before it uses it. The integration guide states this. |
 | Denial of service | Expired tokens and families fill the database. | A scheduled job deletes expired families. Indexes exist on `TokenFamilyId` and `TokenHash`. |
 | Elevation of privilege | A client rotates forever and keeps a session without end. | The family has an absolute lifetime (for example, 30 days) and an idle timeout. Rotation does not extend either one. A user or admin revocation ends the whole family. |
-| Elevation of privilege | A refresh succeeds after the user account is disabled or consent is removed. | On each refresh, Heimdall checks that the user is active and consent exists. If not, it returns `invalid_grant` and revokes the family. |
+| Elevation of privilege | A refresh succeeds after the user account is disabled or consent is removed. | On each refresh, Heimdall checks that the user is active and consent exists. If not, it returns `invalid_grant` and revokes the family. The consent check comes with persisted consent (Phase 3). Until then, a client that requires consent cannot get a code, so no family needs it. |
 
 ## `/.well-known/jwks.json`
 

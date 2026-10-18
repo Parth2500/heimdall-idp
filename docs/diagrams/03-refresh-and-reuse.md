@@ -11,10 +11,10 @@ sequenceDiagram
 
     C->>H: POST /token (refresh_token T1)
     H->>DB: BEGIN
-    H->>DB: UPDATE refresh_tokens SET used_at = now() WHERE hash = T1 AND used_at IS NULL
+    H->>DB: UPDATE refresh_tokens SET used_at = @now FROM token_families WHERE hash = T1 AND used_at IS NULL AND family F is the client's, not revoked, inside idle and absolute limits
     DB-->>H: 1 row (family F)
-    H->>DB: Check family F is active (not revoked, idle and absolute limits)
-    H->>DB: INSERT refresh token T2, set T1.replaced_by_id, move F.idle_expires_at
+    H->>DB: Check the user is active and the scope is not wider
+    H->>DB: INSERT refresh token T2, set T1.replaced_by_id, move F.idle_expires_at (never past the absolute limit)
     H->>DB: COMMIT
     H->>C: new access token and T2
 ```
