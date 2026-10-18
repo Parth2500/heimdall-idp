@@ -28,6 +28,7 @@ src/Heimdall.Infrastructure  EF Core, Postgres, key storage (refs Application)
 src/Heimdall.Api             endpoints, composition root (refs Application + Infrastructure)
 tests/Heimdall.UnitTests
 docs/threat-model.md         Phase 0 deliverable
+docs/schema-design.md        Phase 0 deliverable (schema, atomic SQL, constraints)
 ```
 Dependencies point inward only. Domain must never import EF Core.
 
@@ -48,7 +49,7 @@ Auth Code + PKCE (S256 mandatory for ALL clients, per OAuth 2.1), RS256 signing 
 DPoP (RFC 9449), PAR (RFC 9126), rate limiting on `/authorize`, `/token` and login, introspection (RFC 7662), run the OpenID Foundation conformance suite and fix failures.
 
 **Phase 3, Breadth.**
-Multi-tenancy, WebAuthn/passkeys, admin portal with RBAC and an immutable audit log, persisted and revocable per-client/per-scope consent.
+Multi-tenancy features (portal, onboarding; the `Tenant` table and `TenantId` columns exist from the first migration, see D15-D21 in the threat model), WebAuthn/passkeys, admin portal with RBAC and an immutable audit log, persisted and revocable per-client/per-scope consent.
 
 **Phase 4, Ops.**
 Docker Compose for local dev, GitHub Actions CI (build, test, conformance), Terraform/Bicep, k6 load tests on the token endpoint.

@@ -11,7 +11,8 @@ Each term has one meaning in this document. Do not use a synonym.
 | Term | Meaning |
 |---|---|
 | Heimdall | This identity provider. It is also the issuer. |
-| Client | An application that asks Heimdall for tokens. |
+| Tenant | An isolated domain with its own users, clients, keys, and settings. One Heimdall installation can host many tenants. |
+| Client | An application that asks Heimdall for tokens. A client belongs to exactly one tenant. |
 | Public client | A client that cannot keep a secret (single-page app, mobile app). |
 | Confidential client | A client that can keep a secret (server application). |
 | Resource server | An API that accepts Heimdall access tokens. |
@@ -205,9 +206,40 @@ Additional decisions for this boundary:
 
 Out of scope for now: registration, email verification, password reset, and account recovery. Each one needs its own table. They are the most common route to account takeover, so add them before any public deployment.
 
+## Tenants and client configuration
+
+Boundaries: B2 and B3. Heimdall is multi-tenant. The schema has a `Tenant` table from the first migration. Tenant administration features (portal, onboarding) arrive in Phase 3.
+
+Decisions for this area:
+
+| ID | Decision | Reason |
+|---|---|---|
+| D15 | Settings have three layers: platform defaults, tenant settings, and client settings. The most specific layer wins. Each layer must stay inside the limits of the layer above. | A tenant or client cannot weaken a platform rule. |
+| D16 | The platform sets a minimum and a maximum for each setting. Heimdall rejects a value outside the range when the admin saves it. | Misconfiguration cannot create an insecure policy. |
+| D17 | These rules have no setting: PKCE with `S256`, `RS256` only, exact-match redirect URIs, family revocation on reuse, no grace window, and hashing at rest. | The weakest client must not set the security of all clients. |
+| D18 | The login session lifetime is a tenant setting. A client cannot lengthen it. A client can make it shorter with `max_age`. | The session cookie is shared by all clients of a tenant (single sign-on). |
+| D19 | Each tenant has its own issuer URL, user pool, clients, and signing keys. Each token carries the tenant's `iss`. | A token from tenant A must not be valid in tenant B. |
+| D20 | Every tenant-owned table has a `TenantId` column. Each unique index includes `TenantId`. EF Core global query filters apply `TenantId` to every query. PostgreSQL row-level security is a second layer. | One missed filter must not expose another tenant's data. |
+| D21 | Heimdall finds the tenant from the host name (one subdomain for each tenant). | Each tenant gets its own browser origin and its own `__Host-` cookie. Path-based tenants would share one cookie. |
+
+| STRIDE | Threat | Mitigation |
+|---|---|---|
+| **Spoofing** | A token from tenant A is accepted by a resource server or endpoint of tenant B. | Each tenant has its own `iss` and signing keys (D19). Resource servers check `iss` and `aud`. `/userinfo` checks that the token's tenant equals the request's tenant. |
+| Spoofing | A user of tenant A signs in with a session from tenant B. | The server-side session stores `TenantId`. Heimdall rejects a session whose tenant differs from the request's tenant. |
+| **Tampering** | A client admin sets a policy outside the limits, such as a very long token lifetime. | Heimdall validates each value against the limits on save (D16). The database has check constraints for the same ranges. |
+| Tampering | An attacker adds a redirect URI to a client. | A change to redirect URIs needs approval from a tenant admin or a platform admin. Heimdall writes an audit event. |
+| **Repudiation** | A configuration change has no record. | Heimdall writes an audit event for each change, with the old value, the new value, the admin, and the tenant. |
+| **Information disclosure** | A query without a tenant filter returns data of another tenant (insecure direct object reference). | D20. Tests create two tenants and check that each endpoint refuses cross-tenant IDs. |
+| Information disclosure | An attacker learns which tenants exist from error messages or response time. | Heimdall returns the same response for an unknown tenant host and for a host with no content. |
+| **Denial of service** | One tenant uses all capacity (noisy neighbor). | Rate limits apply for each tenant, each client, each IP, and each account. |
+| **Elevation of privilege** | A tenant admin changes platform settings or another tenant. | Admin roles are separate: platform admin and tenant admin. Each admin API call checks the role and the `TenantId`. |
+| Elevation of privilege | A client loosens a rule that has no setting (D17) by a hidden field. | Heimdall binds only known fields. The code has no setting for D17 rules. |
+
 ## Limits and lifetimes
 
-These values are the starting point. Change them only with a recorded reason. Store each one in configuration, not in code.
+These values are the platform defaults. A tenant or client can change a value only inside the limits (D15, D16). Change a default only with a recorded reason. Store each value in configuration, not in code.
+
+The tenant and client limits (minimum and maximum for each setting) are not set yet. Set them when we design the settings tables.
 
 | Item | Value | Note |
 |---|---|---|
