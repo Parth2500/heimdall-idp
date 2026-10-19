@@ -264,4 +264,39 @@ public class ClientTests
     {
         Assert.Throws<DomainException>(() => new ClientTokenOverrides(TimeSpan.Zero, null, null));
     }
+
+    [Fact]
+    public void Browser_origins_of_an_active_public_client_use_the_browser_serialization()
+    {
+        var client = CreateClient(
+            ClientType.Public,
+            redirectUris: ["https://App.Example.com/callback", "https://app.example.com/other", "https://app.example.com:443/x", "https://spa.example.com:4300/cb"]);
+        client.Approve();
+
+        Assert.Equal(["https://app.example.com", "https://spa.example.com:4300"], client.BrowserOrigins());
+    }
+
+    [Fact]
+    public void Loopback_http_redirect_gives_no_browser_origin()
+    {
+        var client = CreateClient(ClientType.Public, redirectUris: ["http://127.0.0.1:8400/callback"]);
+        client.Approve();
+
+        Assert.Empty(client.BrowserOrigins());
+    }
+
+    [Fact]
+    public void Confidential_pending_and_disabled_clients_have_no_browser_origin()
+    {
+        var confidential = CreateClient(ClientType.Confidential);
+        confidential.Approve();
+        var pending = CreateClient(ClientType.Public);
+        var disabled = CreateClient(ClientType.Public);
+        disabled.Approve();
+        disabled.Disable();
+
+        Assert.Empty(confidential.BrowserOrigins());
+        Assert.Empty(pending.BrowserOrigins());
+        Assert.Empty(disabled.BrowserOrigins());
+    }
 }

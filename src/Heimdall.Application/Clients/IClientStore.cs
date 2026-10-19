@@ -30,6 +30,12 @@ public interface IClientStore
     Task<Client?> FindByPkAsync(Guid tenantId, Guid clientPk, CancellationToken cancellationToken);
 
     /// <summary>
+    /// True when <paramref name="origin"/> is a browser origin of an active public client in the tenant (D23). The
+    /// comparison is an exact ordinal match. The answer comes from memory, so a CORS check costs no database read.
+    /// </summary>
+    Task<bool> IsBrowserOriginAllowedAsync(Guid tenantId, string origin, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Drops the tenant's clients on this server. Call it after a change to a client or a secret. Other servers see the
     /// change when their entry expires, within the server cache lifetime.
     /// </summary>

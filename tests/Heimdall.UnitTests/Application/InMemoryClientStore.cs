@@ -42,6 +42,9 @@ internal sealed class InMemoryClientStore : IClientStore
     public Task<Client?> FindByPkAsync(Guid tenantId, Guid clientPk, CancellationToken cancellationToken) =>
         Task.FromResult<Client?>(_entries.Select(e => e.Client).FirstOrDefault(c => c.TenantId == tenantId && c.Id == clientPk));
 
+    public Task<bool> IsBrowserOriginAllowedAsync(Guid tenantId, string origin, CancellationToken cancellationToken) =>
+        Task.FromResult(_entries.Any(e => e.Client.TenantId == tenantId && e.Client.BrowserOrigins().Contains(origin, StringComparer.Ordinal)));
+
     // Nothing is cached here: every read sees the current entries.
     public void Invalidate(Guid tenantId)
     {

@@ -166,6 +166,10 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseHeimdallHealthChecks(app.Services.GetRequiredService<IOptions<HealthOptions>>().Value);
 app.UseMiddleware<TenantResolutionMiddleware>();
 
+// After tenant resolution, because the allowed origins belong to the tenant (D23). Before the rate limiter, so a
+// preflight uses no permit and a 429 still carries the CORS header that lets the page read it.
+app.UseMiddleware<CorsMiddleware>();
+
 // After tenant resolution: an unknown host or plain HTTP is refused before it uses a permit.
 app.UseRateLimiter();
 
@@ -199,6 +203,13 @@ static async Task<int> SeedDevelopmentDataAsync(WebApplication app)
         Console.WriteLine($"  client_id:     {result.ClientId}");
         Console.WriteLine($"  client_secret: {result.ClientSecret}");
         Console.WriteLine($"  audience:      {result.Audience}");
+    }
+
+    if (result.SpaCreated)
+    {
+        Console.WriteLine("Demo SPA client registered. It is a public client with no secret.");
+        Console.WriteLine($"  client_id:     {result.SpaClientId}");
+        Console.WriteLine($"  redirect_uri:  {DevelopmentSeeder.SpaRedirectUri}");
     }
 
     if (result.UserPassword is not null)

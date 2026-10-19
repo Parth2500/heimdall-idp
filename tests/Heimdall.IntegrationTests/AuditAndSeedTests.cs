@@ -3,6 +3,7 @@ using Heimdall.Application.Audit;
 using Heimdall.Application.Clients;
 using Heimdall.Application.Keys;
 using Heimdall.Domain.Audit;
+using Heimdall.Domain.Clients;
 using Heimdall.Domain.Keys;
 using Heimdall.Infrastructure.Development;
 using Heimdall.Infrastructure.Persistence;
@@ -87,6 +88,8 @@ public sealed class AuditAndSeedTests
         Assert.Equal(SigningKeyStatus.Active, second.KeyStatus);
         Assert.NotNull(first.UserPassword);
         Assert.Null(second.UserPassword);
+        Assert.True(first.SpaCreated);
+        Assert.False(second.SpaCreated);
 
         await using (var services = _postgres.CreateServices(connectionString: _postgres.AdminConnectionString))
         await using (var scope = services.CreateAsyncScope())
@@ -104,6 +107,14 @@ public sealed class AuditAndSeedTests
 
             Assert.True(good.IsSuccess);
             Assert.False(bad.IsSuccess);
+
+            // The demo SPA: a public client whose redirect URI origin may read /token (D23).
+            var store = scope.ServiceProvider.GetRequiredService<IClientStore>();
+            var spa = await store.FindAsync(tenant.Id, DevelopmentSeeder.SpaClientId, CancellationToken.None);
+            Assert.NotNull(spa);
+            Assert.Equal(ClientType.Public, spa.Type);
+            Assert.Equal([DevelopmentSeeder.SpaRedirectUri], spa.RedirectUris);
+            Assert.True(await store.IsBrowserOriginAllowedAsync(tenant.Id, "https://demo.localhost:4300", CancellationToken.None));
         }
     }
 }

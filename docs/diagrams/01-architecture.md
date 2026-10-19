@@ -8,7 +8,7 @@ Dependencies point inward only. The Domain project has no outward dependency and
 flowchart TB
     subgraph Api["Heimdall.Api (composition root)"]
         EP["Endpoints: authorize, token, userinfo, revoke, discovery, jwks, session and consent API"]
-        MW["Middleware: tenant by host, rate limit (Phase 2), correlation ID"]
+        MW["Middleware: tenant by host, CORS for client origins (D23), rate limit, correlation ID"]
         JOBS["Jobs: signing keys, purge"]
     end
     subgraph Infra["Heimdall.Infrastructure"]

@@ -290,9 +290,9 @@ sequenceDiagram
 | S1 | Serve `/account/*` from `wwwroot/account`, with the nonce in `index.html` and the CSP of U3 on these paths only. | Other paths keep `default-src 'none'`. |
 | S2 | `UiOptions`: `LoginPath = /account/login`, `ConsentPath = /account/consent`. | Configuration only. |
 | S3 | `/authorize` error page: redirect to `/account/error?error={code}`. | Replaces the JSON body (U6). |
-| S4 | CORS for registered client origins on `/token`, `/revoke`, and `/userinfo`. The allowed origins are the origins of the client's redirect URIs. Never `*`. Discovery and JWKS allow any origin, because they are public. | Threat model, `/userinfo` CORS row. Needs its own threat model rows. |
+| S4 | Done (D23). CORS for registered client origins on `/token`, `/revoke`, and `/userinfo`. The allowed origins are the origins of the client's redirect URIs. Never `*`. Discovery and JWKS allow any origin, because they are public. | Threat model, `/userinfo` CORS row. Needs its own threat model rows. |
 | S5 | OpenAPI document for `/session/v1` (issue #22). | For the typed client (U7). |
-| S6 | `seed-dev` registers the demo SPA client. | Public client, redirect URI `https://demo.localhost:4300/callback`. |
+| S6 | Done. `seed-dev` registers the demo SPA client. | Public client, redirect URI `https://demo.localhost:4300/callback`. |
 
 ## 6. Testing
 

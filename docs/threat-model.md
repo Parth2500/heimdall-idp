@@ -39,6 +39,7 @@ Each term has one meaning in this document. Do not use a synonym.
 | Protocol rejection | Heimdall refuses a request before the grant runs, because the request breaks the HTTP or OAuth format. Heimdall logs it. |
 | Account pages | The Angular login, consent, error, and signed-out pages. Heimdall serves them on each tenant origin under `/account/`. |
 | Demo SPA | A sample Angular client on its own origin. It signs in with Heimdall as a public client. |
+| Client origin | The origin (scheme, host, and port) of an `https` redirect URI of an active public client. A browser page on a client origin may read the responses of `/token`, `/revoke`, and `/userinfo` (D23). |
 | CSP nonce | A random value that Heimdall creates for each page response. Only script and style elements that carry it can run. |
 | Backend-for-frontend (BFF) | A server part of a browser app. It keeps the tokens, and the browser gets only a cookie. |
 | Grant rejection | The grant refuses a well-formed request, for example for a wrong secret or a scope that is not allowed. Heimdall audits it. |
@@ -70,6 +71,7 @@ These decisions apply to every endpoint. The tables below refer to them by ID.
 | D9 | Add `iss` to the authorization response (RFC 9207). | This stops mix-up attacks. |
 | D10 | In version 1, confidential clients use `client_secret_basic`. Public clients use no authentication and PKCE. Add `private_key_jwt` in Phase 2. | Start with the smallest correct surface. |
 | D22 | Each client has a list of allowed audiences. A token has exactly one audience. The client names it with the `resource` parameter (RFC 8707). If the client has only one audience, that audience is the default. An unknown resource returns `invalid_target`. A token from a user's grant can also name the tenant's userinfo endpoint. That endpoint is the default for a client with no audience. A `client_credentials` token never names it. | A token for one API cannot be replayed at another API. A resource server cannot use its token to read user claims at `/userinfo`. |
+| D23 | CORS allows a cross-origin read of `/token`, `/revoke`, and `/userinfo` only from a client origin of the tenant. Heimdall echoes that one origin and never sends `*` or `Access-Control-Allow-Credentials`. Discovery and JWKS allow any origin. Every other path, the session API included, sends no CORS header. | A public SPA must read token responses. A wider list would let any page read responses for a stolen code or token. |
 
 ## `GET /oauth/v1/authorize` (worked example)
 | STRIDE | Threat | Mitigation |
@@ -182,11 +184,29 @@ Boundary: B2 and B5. The endpoint needs a bearer access token. It returns the cl
 | Tampering | A client sends the token in the query string or form body. Logs and caches keep it. | Heimdall accepts the `Authorization: Bearer` header only. A token in the query string gets `invalid_request`, so the client developer sees the mistake. |
 | Repudiation | A party disputes access to user data. | Heimdall writes `userinfo.read` for each successful call: `sub`, `client_id`, released scopes, correlation ID. It does not log claim values. A refused call goes to the log only. |
 | Information disclosure | The response gives more claims than the scope allows. | Heimdall releases only the claims that the granted scopes allow. Today `email` releases `email` and `email_verified`. `email_verified` is always false, because Heimdall has no email verification yet. The `sub` always equals the `sub` of the ID token. |
-| Information disclosure | A browser or proxy caches the response. | `Cache-Control: no-store`. CORS allows only registered client origins. It never uses `*`. Until the Angular SPA work, Heimdall sends no CORS headers, so a browser blocks every cross-origin read. |
+| Information disclosure | A browser or proxy caches the response. | `Cache-Control: no-store`. CORS allows only client origins of the tenant (D23). It never uses `*`. Each response has `Vary: Origin`. |
 | Information disclosure | An error response shows details. | Heimdall returns a generic `invalid_token` error with no reason (D5). |
 | Denial of service | A flood of calls causes one database read for each call. | Rate limit for each subject and each IP. Heimdall loads claims by primary key. A short-lived cache of user claims is optional. |
 | Elevation of privilege | A disabled or deleted user, or removed consent, still gets data until the token expires. | Heimdall loads the user on each call. It rejects an inactive user. This check is stricter than a JWT check alone. The consent check comes with persisted consent (Phase 3). |
 | Elevation of privilege | A token with only the `openid` scope reads profile claims. | Heimdall maps scopes to claims on the server. |
+
+## Cross-origin reads (CORS)
+
+Boundary: B1. A page on another origin calls `/token`, `/revoke`, or `/userinfo` in the user's browser. CORS decides only whether that page may read the response. Each endpoint still checks its code, verifier, token, or secret (D23).
+
+| STRIDE | Threat | Mitigation |
+|---|---|---|
+| Spoofing | A malicious page sends a stolen code or refresh token from the user's browser and reads the new tokens. | Heimdall names only a client origin of the tenant in `Access-Control-Allow-Origin`. The browser blocks the read for any other origin. The code also needs the PKCE verifier, and the refresh token needs its family's `client_id`. |
+| Spoofing | A page on a look-alike origin, such as `https://app.example.com.evil.example`, passes a prefix or suffix check. | Heimdall compares the whole origin by exact ordinal string. No prefix, suffix, or wildcard match exists. |
+| Spoofing | A sandboxed iframe or a local file sends the origin `null`. | The value `null` never matches. A request with two `Origin` headers never matches. |
+| Tampering | An attacker registers a client with an evil redirect URI to add a client origin. | Only an active client counts. A new client is `pending` until an admin approves it. A disabled client's origins stop working on the next cache load, or at once on this server after `Invalidate`. |
+| Tampering | A confidential client's redirect URI adds an origin that does not need CORS. | Only public clients have client origins. A confidential client keeps its secret on a server, so its pages never call these endpoints. A loopback `http` redirect URI belongs to a native app and adds no origin. |
+| Repudiation | It is unclear which origin read a token response. | Accepted. CORS is a browser control, and a non-browser caller can send any `Origin`. Heimdall audits the grant, not the origin. |
+| Information disclosure | A cross-origin page reads the session API, such as `/session/v1/me`, with the user's cookie. | The session API sends no CORS header. Heimdall never sends `Access-Control-Allow-Credentials`, so a cross-origin request never carries the session cookie. |
+| Information disclosure | A shared cache serves one origin's response, with its `Access-Control-Allow-Origin`, to another origin. | Each response of these three endpoints has `Vary: Origin`. The token and userinfo responses are also `no-store`. |
+| Information disclosure | A wildcard on discovery or JWKS leaks private data. | Accepted on purpose. Both documents are public, have the same body for every caller, and carry no credentials. |
+| Denial of service | A flood of preflight requests loads the database. | The check reads the tenant's client origins from the client cache in memory. A preflight runs before the rate limiter and uses no permit. |
+| Elevation of privilege | A preflight lets a page send a header or method that the endpoint does not expect. | Each endpoint has a fixed rule. `/token` and `/revoke` allow `POST` with no extra header. `/userinfo` allows `GET` and `POST` with `Authorization`. Any other request gets a preflight answer with no CORS header. |
 
 ## User login, session, and consent pages
 

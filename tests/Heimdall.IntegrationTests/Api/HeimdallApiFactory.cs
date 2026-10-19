@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using Heimdall.Api.Hosting;
+using Heimdall.Application.Clients;
 using Heimdall.Application.Keys;
 using Heimdall.Application.Tenants;
 using Heimdall.Application.Users;
@@ -12,6 +13,7 @@ using Heimdall.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -106,6 +108,18 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
         db.Clients.Add(client);
         await db.SaveChangesAsync();
         return client;
+    }
+
+    /// <summary>Disables a client and drops the tenant's clients from this server's cache, as an admin change does.</summary>
+    public async Task DisableClientAsync(TestTenant tenant, Guid clientPk)
+    {
+        await using var scope = Services.CreateAsyncScope();
+        scope.ServiceProvider.GetRequiredService<TenantScope>().Set(tenant.Tenant.Id);
+        var db = scope.ServiceProvider.GetRequiredService<HeimdallDbContext>();
+        var client = await db.Clients.SingleAsync(c => c.Id == clientPk);
+        client.Disable();
+        await db.SaveChangesAsync();
+        scope.ServiceProvider.GetRequiredService<IClientStore>().Invalidate(tenant.Tenant.Id);
     }
 
     /// <summary>Adds a user to the tenant with the real hasher.</summary>

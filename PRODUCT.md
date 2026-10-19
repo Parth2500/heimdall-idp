@@ -28,7 +28,7 @@ Heimdall is a custom OAuth 2.1 and OpenID Connect identity provider. It is a por
 
 ## Positioning
 
-Every behavior traces back to a written threat model (STRIDE for each trust boundary, decisions D1 to D22) and to RFC text. The UI shows the same rigor. Each page states only true facts, and each security choice on a page has a reason someone can defend.
+Every behavior traces back to a written threat model (STRIDE for each trust boundary, decisions D1 to D23) and to RFC text. The UI shows the same rigor. Each page states only true facts, and each security choice on a page has a reason someone can defend.
 
 ## Operating Context
 
@@ -64,7 +64,7 @@ Open items:
 
 ## Evidence on Hand
 
-- `docs/threat-model.md`: STRIDE tables for each endpoint, login, sessions and tenants, decisions D1 to D22, glossary and platform defaults.
+- `docs/threat-model.md`: STRIDE tables for each endpoint, login, sessions and tenants, decisions D1 to D23, glossary and platform defaults.
 - `docs/schema-design.md`, `docs/domain-model.md`, `docs/diagrams/`: schema, Domain rules and Mermaid diagrams.
 - No users, customers, testimonials, benchmarks or conformance results exist yet. Do not invent them. The OpenID conformance suite run is a Phase 2 item, and k6 load targets come in Phase 4.
 - Heimdall is not ready for production. No page may say or imply otherwise.

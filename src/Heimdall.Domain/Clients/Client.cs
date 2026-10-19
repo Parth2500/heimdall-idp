@@ -1,3 +1,4 @@
+using System.Globalization;
 using Heimdall.Domain.Common;
 using Heimdall.Domain.Tenants;
 
@@ -194,6 +195,30 @@ public sealed class Client
         redirectUri is not null && _redirectUris.Contains(redirectUri, StringComparer.Ordinal);
 
     public bool IsGrantAllowed(GrantType grantType) => _allowedGrantTypes.Contains(grantType);
+
+    /// <summary>
+    /// The origins from which a browser may read this client's responses at <c>/token</c>, <c>/revoke</c>, and
+    /// <c>/userinfo</c> (D23). Only an active public client has them. A confidential client keeps its secret on a
+    /// server, so its pages never call these endpoints. Each origin comes from an <c>https</c> redirect URI. A loopback
+    /// <c>http</c> URI belongs to a native app, which needs no CORS.
+    /// </summary>
+    /// <remarks>The format is the browser's serialization (RFC 6454): lowercase scheme and host, no default port.</remarks>
+    public IReadOnlyList<string> BrowserOrigins()
+    {
+        if (Type != ClientType.Public || Status != ClientStatus.Active)
+        {
+            return [];
+        }
+
+        return _redirectUris
+            .Select(value => new Uri(value))
+            .Where(uri => uri.Scheme == Uri.UriSchemeHttps)
+            .Select(uri => uri.IsDefaultPort
+                ? $"{uri.Scheme}://{uri.IdnHost}"
+                : string.Create(CultureInfo.InvariantCulture, $"{uri.Scheme}://{uri.IdnHost}:{uri.Port}"))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+    }
 
     /// <summary>
     /// Chooses the <c>aud</c> value for a token (RFC 8707, D22). A requested resource must match an allowed

@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using Heimdall.Application.Clients;
 using Heimdall.Application.Keys;
 using Heimdall.Domain.Clients;
@@ -34,6 +35,9 @@ internal sealed class EfClientStore : IClientStore
 
     public Task<Client?> FindByPkAsync(Guid tenantId, Guid clientPk, CancellationToken cancellationToken) =>
         IsRequestTenant(tenantId) ? _cache.FindByPkAsync(tenantId, clientPk, cancellationToken) : Task.FromResult<Client?>(null);
+
+    public Task<bool> IsBrowserOriginAllowedAsync(Guid tenantId, string origin, CancellationToken cancellationToken) =>
+        IsRequestTenant(tenantId) ? _cache.IsBrowserOriginAllowedAsync(tenantId, origin, cancellationToken) : Task.FromResult(false);
 
     public void Invalidate(Guid tenantId) => _cache.Invalidate(tenantId);
 
@@ -89,6 +93,12 @@ internal sealed class ClientCache
         return clients.ByPk.GetValueOrDefault(clientPk)?.Client;
     }
 
+    public async Task<bool> IsBrowserOriginAllowedAsync(Guid tenantId, string origin, CancellationToken cancellationToken)
+    {
+        var clients = await _cache.GetAsync(tenantId, cancellationToken).ConfigureAwait(false);
+        return clients.BrowserOrigins.Contains(origin);
+    }
+
     public void Invalidate(Guid tenantId) => _cache.Invalidate(tenantId);
 
     private async Task<TenantClients> LoadAsync(Guid tenantId)
@@ -113,7 +123,8 @@ internal sealed class ClientCache
                 .ToList();
             return new TenantClients(
                 entries.ToDictionary(e => e.Client.ClientId, StringComparer.Ordinal),
-                entries.ToDictionary(e => e.Client.Id));
+                entries.ToDictionary(e => e.Client.Id),
+                clients.SelectMany(c => c.BrowserOrigins()).ToFrozenSet(StringComparer.Ordinal));
         }
     }
 
@@ -123,5 +134,6 @@ internal sealed class ClientCache
 
     private sealed record TenantClients(
         IReadOnlyDictionary<string, CachedClient> ByClientId,
-        IReadOnlyDictionary<Guid, CachedClient> ByPk);
+        IReadOnlyDictionary<Guid, CachedClient> ByPk,
+        FrozenSet<string> BrowserOrigins);
 }

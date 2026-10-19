@@ -18,6 +18,8 @@ namespace Heimdall.Infrastructure.Development;
 /// <param name="SigningFrom">The earliest time that key can sign.</param>
 /// <param name="UserEmail">The development user.</param>
 /// <param name="UserPassword">The user's password when this run created the user, else null.</param>
+/// <param name="SpaClientId">The public client of the demo SPA.</param>
+/// <param name="SpaCreated">True when this run registered the demo SPA client.</param>
 public sealed record SeedResult(
     bool Created,
     string TenantHost,
@@ -28,10 +30,13 @@ public sealed record SeedResult(
     SigningKeyStatus KeyStatus,
     DateTimeOffset SigningFrom,
     string UserEmail,
-    string? UserPassword);
+    string? UserPassword,
+    string SpaClientId,
+    bool SpaCreated);
 
 /// <summary>
-/// Creates one tenant, one client, and the tenant's first signing key for local development. The caller must
+/// Creates one tenant, a confidential client, the demo SPA client, a user, and the tenant's first signing key for
+/// local development. The caller must
 /// check that the environment is Development. The secret is shown once and only its hash is stored (D3).
 /// Each run also activates the first key when its JWKS wait has passed.
 /// </summary>
@@ -41,6 +46,10 @@ public sealed class DevelopmentSeeder
     public const string ClientId = "demo-service";
     public const string Audience = "https://api.acme.localhost";
     public const string UserEmail = "alice@acme.localhost";
+
+    /// <summary>The demo SPA in <c>ui/projects/demo</c> (frontend-design.md, U9 and S6).</summary>
+    public const string SpaClientId = "demo-spa";
+    public const string SpaRedirectUri = "https://demo.localhost:4300/callback";
     private const string CorrelationId = "seed-dev";
 
     private readonly HeimdallDbContext _db;
@@ -93,6 +102,7 @@ public sealed class DevelopmentSeeder
         }
 
         var userPassword = await EnsureUserAsync(tenantId, cancellationToken).ConfigureAwait(false);
+        var spaCreated = await EnsureSpaClientAsync(tenantId, cancellationToken).ConfigureAwait(false);
 
         // Creates the first key, or activates it when its wait has ended. The running server's key job does the same.
         await _keyService.MaintainAsync(tenantId, CorrelationId, cancellationToken).ConfigureAwait(false);
@@ -111,7 +121,9 @@ public sealed class DevelopmentSeeder
             newest.Status,
             newest.SigningFrom,
             UserEmail,
-            userPassword);
+            userPassword,
+            SpaClientId,
+            spaCreated);
     }
 
     /// <summary>Creates the development user when it is missing. Returns its new password, or null.</summary>
@@ -128,6 +140,39 @@ public sealed class DevelopmentSeeder
         _users.Add(User.Create(Guid.CreateVersion7(), tenantId, UserEmail, hash, _time.GetUtcNow()));
         await _users.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return password;
+    }
+
+    /// <summary>
+    /// Registers the demo SPA when it is missing, also in a database that an older seed created. Returns true when it
+    /// registered it.
+    /// </summary>
+    private async Task<bool> EnsureSpaClientAsync(Guid tenantId, CancellationToken cancellationToken)
+    {
+        if (await _db.Clients.AnyAsync(c => c.TenantId == tenantId && c.ClientId == SpaClientId, cancellationToken).ConfigureAwait(false))
+        {
+            return false;
+        }
+
+        // A public client: no secret, PKCE on every request, and refresh tokens that rotate (U9). It has no audience,
+        // so its access tokens are for /userinfo only (D22). Consent is off, so a reload of the demo gets a new code
+        // with no page while the session is valid (U10).
+        var client = Client.Create(
+            Guid.CreateVersion7(),
+            tenantId,
+            SpaClientId,
+            "Heimdall demo SPA",
+            ClientType.Public,
+            [GrantType.AuthorizationCode, GrantType.RefreshToken],
+            ["openid", "email", "offline_access"],
+            [SpaRedirectUri],
+            requireConsent: false,
+            overrides: null,
+            _time.GetUtcNow());
+        client.Approve();
+
+        _db.Clients.Add(client);
+        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return true;
     }
 
     private async Task<(Guid TenantId, string Secret)> CreateTenantAndClientAsync(CancellationToken cancellationToken)
