@@ -73,6 +73,8 @@ Two applications, one rule each:
 
 ### U1. One Angular workspace with separate applications
 
+Status: **Approved** by the owner on 2026-10-19.
+
 **Decision.** The repository gets a folder `ui/` with one Angular workspace. It holds the applications `account` and `demo`, and later `admin`. A shared library `ui-kit` holds design tokens and a few plain components.
 
 **Reason.** One lockfile, one Angular version, and one place for supply-chain checks. Each application builds to its own bundle, so the login page never loads demo or admin code.
@@ -158,6 +160,8 @@ The typed API client comes from the OpenAPI document of the session API (issue #
 
 ### U8. Supply-chain controls for the Angular build
 
+Status: **Approved** by the owner on 2026-10-19.
+
 **Decision.**
 
 - `package-lock.json` is committed. CI installs with `npm ci --ignore-scripts`. A package that needs an install script gets a reviewed exception.
@@ -170,6 +174,8 @@ The typed API client comes from the OpenAPI document of the session API (issue #
 
 ### U9. The demo SPA is a public client on its own origin
 
+Status: **Approved** by the owner on 2026-10-19.
+
 **Decision.** The demo SPA runs on its own origin (development: `https://demo.localhost:4300`). It is registered as a public client with authorization code, PKCE (S256), refresh tokens, and no registered audience. Its access tokens are therefore for `/userinfo` (D22).
 
 It uses `angular-auth-oidc-client`, an OpenID-certified relying party library. It does not use hand-written OAuth code.
@@ -178,15 +184,23 @@ It uses `angular-auth-oidc-client`, an OpenID-certified relying party library. I
 
 ### U10. The demo SPA keeps tokens in memory only
 
+Status: **Approved** by the owner on 2026-10-19.
+
 **Decision.** The demo SPA stores tokens in memory, not in `localStorage` or `sessionStorage`. After a page reload, it sends the browser to `/authorize` again. The Heimdall session cookie is still valid, so Heimdall returns a code at once, with no page. The demo SPA does not use silent renew in a hidden iframe.
 
 **Reason.** Script on the page can read web storage, so an XSS bug there would leak the refresh token. Memory is lost on reload, which is safer. A hidden iframe cannot work, because Heimdall pages send `frame-ancestors 'none'` (N2).
 
 **Trade-off.** A reload costs one redirect. That is acceptable for a demo.
 
+**What goes to `sessionStorage`.** Memory is empty when the browser comes back to `/callback`, so some values must live through the redirect. The demo keeps an allowlist of library keys there: `state`, `nonce`, `code_verifier`, and two flags of the sign-in request. The library removes them after the callback. A key that is not on the list stays in memory, so a new token key in a later library version never lands in web storage. One more flag, `heimdall-demo.resume`, holds no token. It tells a reloaded page to go to `/authorize` again. The page removes it before the redirect, so an error response cannot start a loop.
+
+**Why the verifier may sit in `sessionStorage`.** The `code_verifier` is useful only with the one code that comes back to the redirect URI. Script that can read `sessionStorage` on this origin can also read that code from the URL, so memory would not protect it. A refresh token is different: it lives for hours and works without the browser.
+
 **Alternative.** A backend-for-frontend (BFF), which keeps tokens on a server and gives the browser only a cookie. This is the most secure pattern for browser apps (IETF draft "OAuth 2.0 for Browser-Based Applications"). It is a candidate for a second demo. The first demo stays a pure SPA, because it exercises the public-client features of Heimdall: PKCE, rotation, and reuse detection.
 
 ### U11. Demo SPA screens
+
+Status: **Approved** by the owner on 2026-10-19.
 
 | Screen | Shows |
 |---|---|
@@ -296,6 +310,7 @@ sequenceDiagram
 - `ui/` builds with the Angular CLI. The .NET build does not build Angular.
 - Development: `ng build account --watch` writes to `src/Heimdall.Api/wwwroot/account/`, which git ignores. Heimdall serves it on `https://acme.localhost:7200/account/`, so the pages run on the real tenant origin with the real cookies and CSP.
 - The demo SPA runs with `ng serve demo` on `https://demo.localhost:4300`. It is a separate origin by design.
+- Node.js: the Angular CLI needs 22.22.3 or later, or 24.15.0 or later. `ui/.nvmrc` names 24, and CI reads it.
 - CI: a new job installs, audits, lints, tests, and builds `ui/`, then runs the Playwright tests against Heimdall.
 - Release: a container build copies the `account` bundle into `wwwroot`. The deployment work in Phase 4 decides the image.
 
@@ -315,10 +330,10 @@ These rows go into `docs/threat-model.md` when the owner approves this design:
 
 ## 9. Open questions for the owner
 
-1. Approve U1 to U11, U13, and U14, or change some. U12 is approved.
-2. The demo SPA library: `angular-auth-oidc-client` (Angular-native) or `oidc-client-ts` (framework-neutral, the base of many other libraries). Both work. This design proposes the first, because it is OpenID-certified and Angular-native.
+1. Approve U2 to U7, U13, and U14, or change some. U1, U8 to U12 are approved.
+2. Decided on 2026-10-19: the demo SPA uses `angular-auth-oidc-client` (U9).
 3. Build a BFF demo later (U10, alternative)?
-4. Order of work. Proposal: S1 to S3, then the account pages, then S4 to S6, then the demo SPA.
+4. Decided on 2026-10-19: the account pages and the demo SPA are built in parallel. The demo SPA cannot finish a sign-in until S1 to S4 exist.
 
 ## 10. What to revisit as Heimdall grows
 

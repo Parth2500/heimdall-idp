@@ -36,3 +36,34 @@ jobs:
 
       - name: Test
         run: dotnet test Heimdall.slnx --configuration Release --no-build --verbosity normal
+
+  # The Angular workspace in ui/ (frontend-design.md, U8).
+  ui:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: ui/.nvmrc
+
+      # Install scripts are the most common way a malicious package runs code. None run here.
+      - name: Install
+        run: npm ci --ignore-scripts
+
+      - name: Audit
+        run: npm audit --audit-level=low
+
+      - name: Check formatting
+        run: npm run lint:format
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
