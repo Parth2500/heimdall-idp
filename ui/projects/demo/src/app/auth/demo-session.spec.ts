@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { OidcSecurityService, PublicEventsService } from 'angular-auth-oidc-client';
 import { EMPTY, of } from 'rxjs';
+import { HeimdallDiscovery } from './discovery';
 import { DemoSession, RESUME_FLAG, knownErrorOrUnknown } from './demo-session';
 
 const APP = 'https://demo.localhost:4300';
@@ -26,8 +27,10 @@ describe('DemoSession.start', () => {
     getRefreshToken: ReturnType<typeof vi.fn>;
   };
   let session: DemoSession;
+  let endpoints: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    endpoints = vi.fn().mockResolvedValue({});
     sessionStorage.clear();
     oidc = {
       checkAuth: vi.fn(),
@@ -38,6 +41,7 @@ describe('DemoSession.start', () => {
       providers: [
         { provide: OidcSecurityService, useValue: oidc },
         { provide: PublicEventsService, useValue: { registerForEvents: () => EMPTY } },
+        { provide: HeimdallDiscovery, useValue: { endpoints } },
       ],
     });
     session = TestBed.inject(DemoSession);
@@ -81,5 +85,22 @@ describe('DemoSession.start', () => {
 
     expect(oidc.authorize).not.toHaveBeenCalled();
     expect(session.state()).toBe('signed-out');
+  });
+
+  it('says that Heimdall is unreachable instead of waiting forever', async () => {
+    endpoints.mockRejectedValue(new Error('certificate not accepted'));
+
+    await session.signIn();
+
+    expect(oidc.authorize).not.toHaveBeenCalled();
+    expect(session.unreachable()).toBe(true);
+    expect(session.state()).toBe('signed-out');
+  });
+
+  it('goes to /authorize when discovery answers', async () => {
+    await session.signIn();
+
+    expect(oidc.authorize).toHaveBeenCalledOnce();
+    expect(session.unreachable()).toBe(false);
   });
 });

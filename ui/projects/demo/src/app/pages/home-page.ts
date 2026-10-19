@@ -46,6 +46,19 @@ import { ClaimsTable } from './claims-table';
           >.
         </p>
       }
+      @if (session.unreachable()) {
+        <div role="alert" class="hd-problem">
+          <p class="hd-problem__title">The demo cannot reach Heimdall</p>
+          <p>
+            Heimdall may not be running, or your browser has not accepted its development
+            certificate. Open
+            <a [href]="discoveryUrl" target="_blank" rel="noopener"
+              >Heimdall's discovery document</a
+            >
+            in a new tab, accept the certificate, then try again.
+          </p>
+        </div>
+      }
       @if (session.signedOutHere()) {
         <p role="status" class="hd-note">
           The client revoked its refresh token and dropped its tokens. Your Heimdall session is
@@ -63,6 +76,7 @@ export class HomePage {
   protected readonly session = inject(DemoSession);
   private readonly oidc = inject(OidcSecurityService);
   protected readonly issuer = HEIMDALL_ISSUER;
+  protected readonly discoveryUrl = `${HEIMDALL_ISSUER}/.well-known/openid-configuration`;
 
   protected readonly idClaims = resource({
     params: () => (this.session.state() === 'signed-in' ? this.session.tokenVersion() : undefined),

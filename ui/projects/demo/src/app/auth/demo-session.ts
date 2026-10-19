@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { EventTypes, OidcSecurityService, PublicEventsService } from 'angular-auth-oidc-client';
 import { filter, firstValueFrom } from 'rxjs';
+import { HeimdallDiscovery } from './discovery';
 import { RefreshTokenHistory } from './refresh-token-history';
 
 /**
@@ -38,6 +39,7 @@ export class DemoSession {
   private readonly oidc = inject(OidcSecurityService);
   private readonly events = inject(PublicEventsService);
   private readonly history = inject(RefreshTokenHistory);
+  private readonly discovery = inject(HeimdallDiscovery);
   private readonly stateSignal = signal<SessionState>('starting');
   private readonly errorSignal = signal<string | null>(null);
 
@@ -48,6 +50,8 @@ export class DemoSession {
   readonly tokenVersion = signal(0);
   /** True after the user signed out in this page. The home page then explains what stays. */
   readonly signedOutHere = signal(false);
+  /** True when the last sign-in could not read Heimdall's discovery document. */
+  readonly unreachable = signal(false);
 
   /** Runs once when the application starts. It finishes a callback when the URL holds one. */
   async start(url: string): Promise<void> {
@@ -70,17 +74,30 @@ export class DemoSession {
     if (sessionStorage.getItem(RESUME_FLAG) !== null && this.errorSignal() === null) {
       // Remove the flag first. If Heimdall sends an error back, the next load does not loop.
       sessionStorage.removeItem(RESUME_FLAG);
-      this.signIn();
+      await this.signIn();
       return;
     }
 
     this.stateSignal.set('signed-out');
   }
 
-  signIn(): void {
+  /**
+   * Sends the browser to /authorize. The library reads discovery first and ignores a failure,
+   * so the page would wait forever. The demo checks discovery itself and says what went wrong.
+   * In development the usual cause is a certificate that the browser has not accepted yet.
+   */
+  async signIn(): Promise<void> {
     this.stateSignal.set('redirecting');
     this.errorSignal.set(null);
     this.signedOutHere.set(false);
+    this.unreachable.set(false);
+    try {
+      await this.discovery.endpoints();
+    } catch {
+      this.unreachable.set(true);
+      this.stateSignal.set('signed-out');
+      return;
+    }
     this.oidc.authorize();
   }
 
