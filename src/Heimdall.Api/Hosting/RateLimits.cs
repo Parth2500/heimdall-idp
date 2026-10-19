@@ -1,9 +1,8 @@
 using System.Globalization;
-using System.Net;
-using System.Net.Sockets;
 using System.Text.Json;
 using System.Threading.RateLimiting;
 using Heimdall.Api.Endpoints;
+using Heimdall.Application.Common;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 
@@ -139,32 +138,10 @@ internal static class RateLimits
     }
 
     /// <summary>
-    /// The partition key of a caller: the IP address. An IPv6 address counts as its /64 network, because one host
-    /// usually controls a whole /64 and could otherwise rotate through it. The address is the client's after the
-    /// forwarded headers step, which trusts only configured proxies.
+    /// The partition key of a caller (<see cref="SourceKeys.For"/>). The address is the client's after the forwarded
+    /// headers step, which trusts only configured proxies.
     /// </summary>
-    public static string IpKey(HttpContext context)
-    {
-        var address = context.Connection.RemoteIpAddress;
-        if (address is null)
-        {
-            return "unknown";
-        }
-
-        if (address.IsIPv4MappedToIPv6)
-        {
-            address = address.MapToIPv4();
-        }
-
-        if (address.AddressFamily == AddressFamily.InterNetworkV6)
-        {
-            var bytes = address.GetAddressBytes();
-            Array.Clear(bytes, 8, 8);
-            return new IPAddress(bytes) + "/64";
-        }
-
-        return address.ToString();
-    }
+    public static string IpKey(HttpContext context) => SourceKeys.For(context.Connection.RemoteIpAddress);
 
     public static SlidingWindowRateLimiterOptions SlidingWindow(RateLimit limit) => new()
     {

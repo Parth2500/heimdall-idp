@@ -60,6 +60,12 @@ builder.Services.AddOptions<PasswordHashingOptions>()
     .ValidateOnStart();
 builder.Services.AddSingleton(provider => provider.GetRequiredService<IOptions<PasswordHashingOptions>>().Value);
 
+builder.Services.AddOptions<LoginThrottleOptions>()
+    .Bind(builder.Configuration.GetSection(LoginThrottleOptions.SectionName))
+    .Validate(options => options.Validate().Count == 0, "Invalid settings in " + LoginThrottleOptions.SectionName + ".")
+    .ValidateOnStart();
+builder.Services.AddSingleton(provider => provider.GetRequiredService<IOptions<LoginThrottleOptions>>().Value);
+
 // The password is not in any appsettings file. Set it with user-secrets or an environment variable.
 builder.Services.AddHeimdallApplication();
 builder.Services.AddHeimdallInfrastructure(

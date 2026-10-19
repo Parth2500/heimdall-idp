@@ -43,6 +43,18 @@ The document has no C# code. The entities and the migrations are written by hand
 | `status` | text | `active`, `disabled`. |
 | `created_at`, `password_changed_at` | timestamptz | `password_changed_at` ends older sessions. |
 
+### `login_throttles`
+Failed sign-ins of one account from one source. The throttle keeps no state for an unknown email.
+
+| Column | Type | Note |
+|---|---|---|
+| `tenant_id`, `user_id`, `source_key` | uuid, uuid, text | **Primary key.** `source_key` is an IPv4 address or an IPv6 /64 network. |
+| `failures` | integer | Failures in a row. Check: at least 1. |
+| `last_failure_at` | timestamptz | A source with no failure for 24 hours starts again at zero. |
+| `throttled_until` | timestamptz, null | No sign-in check for this account and source before this time. |
+
+One `INSERT ... ON CONFLICT DO UPDATE` statement records a failure, so concurrent failures on two servers both count. A successful sign-in deletes the row. Row-level security applies, as for the other tenant-owned tables.
+
 ### `clients`
 | Column | Type | Note |
 |---|---|---|
@@ -315,6 +327,7 @@ Indexes for the job: `token_families (idle_expires_at)`, `token_families (revoke
 | `token_families` (and its `refresh_tokens`, by `ON DELETE CASCADE`) | The family ended more than 7 days ago | A reused token from a recent family must still cause a revocation and an alert. The delay also helps an investigation. |
 | `authorization_codes` | `expires_at` is more than 24 hours ago, and the code has no family | A replayed code must still show as `redeemed` for a short time after expiry. |
 | `authorization_requests` | `expires_at` has passed | |
+| `login_throttles` | No failure for 24 hours, and no wait is running | The row would start again at zero anyway. |
 | `sessions` | `absolute_expires_at` or `revoked_at` is more than 7 days ago | A session that ended by its idle timeout stays until this time. The idle timeout is a tenant setting, so this rule keeps the statement on one table. |
 
 Order: delete families first, then codes. `authorization_codes.family_id` has `ON DELETE SET NULL`, so a code survives its family for the 24-hour delay. `token_families.source_code_id` is a plain column with no foreign key. It is an audit reference only. This avoids a circular foreign key between the two tables.

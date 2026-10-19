@@ -10,14 +10,14 @@ flowchart TD
     RL -- No --> T1["429 Too Many Requests"]
     RL -- Yes --> CS{"Anti-forgery token valid?"}
     CS -- No --> T2["400 Bad Request"]
-    CS -- Yes --> TH{"Account throttle allows an attempt?"}
-    TH -- No --> T3["Generic failure and delay"]
-    TH -- Yes --> CC{"Concurrent hash limit passed?"}
+    CS -- Yes --> CC{"Concurrent hash limit passed?"}
     CC -- No --> T4["503 Retry later"]
     CC -- Yes --> LU["Load user by tenant and email"]
-    LU --> HV["Argon2id verify (dummy hash if user is unknown)"]
+    LU --> TH{"Wait running for this account and source?"}
+    TH -- Yes --> T3["Argon2id against the dummy hash, generic failure"]
+    TH -- No --> HV["Argon2id verify (dummy hash if user is unknown)"]
     HV --> OK{"Password correct and user active?"}
-    OK -- No --> F["Generic failure, count failure, audit event"]
+    OK -- No --> F["Generic failure, count failure for account and source, audit event"]
     OK -- Yes --> NS["New session ID, set cookie, audit event"]
 ```
 
@@ -42,7 +42,7 @@ Throttle. Do not hard-lock accounts. A lock lets an attacker deny service to a v
 ```mermaid
 flowchart TB
     L1["Layer 1: IP rate limit (cheap, first)"]
-    L2["Layer 2: per-account backoff (delay grows with failures)"]
+    L2["Layer 2: backoff for each account and source (delay doubles with failures, never a lock)"]
     L3["Layer 3: challenge after repeated failures (Phase 2)"]
     L4["Layer 4: temporary IP block on strong signals (Phase 2)"]
     L5["Layer 5: alert on credential stuffing patterns (Phase 2)"]

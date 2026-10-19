@@ -63,6 +63,7 @@ public static class DependencyInjection
         services.AddSingleton<ClientCache>();
         services.AddScoped<IClientStore, EfClientStore>();
         services.AddScoped<IUserStore, EfUserStore>();
+        services.AddScoped<ILoginThrottleStore, EfLoginThrottleStore>();
         services.AddScoped<ISessionStore, EfSessionStore>();
         services.AddScoped<IAuthorizationStore, EfAuthorizationStore>();
         services.AddScoped<ITokenStore, EfTokenStore>();

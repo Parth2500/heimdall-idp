@@ -18,14 +18,18 @@ public class UserAuthenticatorTests
     private readonly InMemoryUserStore _users = new();
     private readonly FakePasswordHasher _hasher = new();
     private readonly RecordingAuditLog _audit = new();
+    private readonly InMemoryLoginThrottleStore _throttle = new();
+    private readonly LoginThrottleOptions _throttleOptions = new() { FreeFailures = 3, MaxDelay = TimeSpan.FromMinutes(15) };
     private readonly UserAuthenticator _authenticator;
 
     public UserAuthenticatorTests()
     {
-        _authenticator = new UserAuthenticator(_users, _hasher, _audit, _time);
+        _authenticator = new UserAuthenticator(_users, _hasher, _throttle, _throttleOptions, _audit, _time);
     }
 
-    private RequestContext Context => new(_tenant, "https://acme.example.com", "corr-1", IPAddress.Parse("203.0.113.7"));
+    private RequestContext Context => ContextFrom("203.0.113.7");
+
+    private RequestContext ContextFrom(string ip) => new(_tenant, "https://acme.example.com", "corr-1", IPAddress.Parse(ip));
 
     private User AddUser(string email = "Alice@Example.com")
     {
@@ -171,6 +175,112 @@ public class UserAuthenticatorTests
 
         await Assert.ThrowsAsync<PasswordHasherBusyException>(() => Login("alice@example.com", Password));
         Assert.Empty(_audit.Events);
+    }
+
+    private async Task FailAsync(int times, string ip = "203.0.113.7")
+    {
+        for (var i = 0; i < times; i++)
+        {
+            Assert.False((await _authenticator.AuthenticateAsync(ContextFrom(ip), "alice@example.com", "wrong password value", CancellationToken.None)).Succeeded);
+        }
+    }
+
+    [Fact]
+    public async Task Free_failures_cost_no_wait()
+    {
+        AddUser();
+        await FailAsync(3);
+
+        Assert.True((await Login("alice@example.com", Password)).Succeeded);
+    }
+
+    [Fact]
+    public async Task During_a_wait_the_right_password_is_not_checked_and_fails_like_any_failure()
+    {
+        AddUser();
+        await FailAsync(4);
+        _audit.Events.Clear();
+        _hasher.Verified.Clear();
+
+        var result = await Login("alice@example.com", Password);
+
+        // The dummy verification runs (same cost), the real hash is never checked, the answer is the generic failure.
+        AssertFailedWith(result, "throttled");
+        Assert.Equal([null], _hasher.Verified);
+    }
+
+    [Fact]
+    public async Task The_wait_ends_by_itself_and_success_forgets_the_failures()
+    {
+        AddUser();
+        await FailAsync(4);
+        _time.Advance(TimeSpan.FromSeconds(1));
+
+        Assert.True((await Login("alice@example.com", Password)).Succeeded);
+        Assert.Empty(_throttle.Rows);
+    }
+
+    [Fact]
+    public async Task An_attackers_failures_do_not_slow_the_user_at_another_source()
+    {
+        AddUser();
+        await FailAsync(10, ip: "198.51.100.66");
+
+        var result = await _authenticator.AuthenticateAsync(ContextFrom("203.0.113.7"), "alice@example.com", Password, CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+    }
+
+    [Fact]
+    public async Task Attempts_during_a_wait_do_not_make_it_longer()
+    {
+        AddUser();
+        await FailAsync(4);
+        var until = _throttle.Rows.Single().Value.Until;
+
+        await FailAsync(5);
+
+        Assert.Equal(until, _throttle.Rows.Single().Value.Until);
+    }
+
+    [Fact]
+    public async Task Unknown_user_gets_no_throttle_row()
+    {
+        await FailAsync(10);
+
+        Assert.Empty(_throttle.Rows);
+    }
+
+    private sealed class InMemoryLoginThrottleStore : ILoginThrottleStore
+    {
+        public Dictionary<(Guid Tenant, Guid User, string Source), (int Failures, DateTimeOffset Last, DateTimeOffset? Until)> Rows { get; } = [];
+
+        public Task<DateTimeOffset?> GetThrottledUntilAsync(Guid tenantId, Guid userId, string sourceKey, CancellationToken cancellationToken) =>
+            Task.FromResult(Rows.TryGetValue((tenantId, userId, sourceKey), out var row) ? row.Until : null);
+
+        public Task<int> RecordFailureAsync(Guid tenantId, Guid userId, string sourceKey, DateTimeOffset now, DateTimeOffset resetBefore, CancellationToken cancellationToken)
+        {
+            var key = (tenantId, userId, sourceKey);
+            var row = Rows.TryGetValue(key, out var existing) && existing.Last >= resetBefore
+                ? (existing.Failures + 1, now, existing.Until)
+                : (1, now, (DateTimeOffset?)null);
+            Rows[key] = row;
+            return Task.FromResult(row.Item1);
+        }
+
+        public Task ThrottleUntilAsync(Guid tenantId, Guid userId, string sourceKey, DateTimeOffset until, CancellationToken cancellationToken)
+        {
+            var key = (tenantId, userId, sourceKey);
+            var row = Rows[key];
+            Rows[key] = (row.Failures, row.Last, row.Until is { } current && current > until ? current : until);
+            return Task.CompletedTask;
+        }
+
+        public Task ResetAsync(Guid tenantId, Guid userId, string sourceKey, CancellationToken cancellationToken)
+        {
+            Rows.Remove((tenantId, userId, sourceKey));
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class InMemoryUserStore : IUserStore

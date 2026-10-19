@@ -1,10 +1,11 @@
+using Heimdall.Application.Users;
 using Heimdall.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Heimdall.Infrastructure.Purge;
 
 /// <summary>The rows that one purge pass deleted, for each table.</summary>
-public sealed record PurgeResult(int Families, int Codes, int Requests, int Sessions);
+public sealed record PurgeResult(int Families, int Codes, int Requests, int Sessions, int LoginThrottles);
 
 /// <summary>
 /// Deletes rows that no flow needs any more (docs/schema-design.md, "Purge job"). It is a platform operation across all
@@ -20,12 +21,14 @@ public sealed class DataPurger
 {
     private readonly PlatformDbContextFactory _platform;
     private readonly PurgeOptions _options;
+    private readonly LoginThrottleOptions _throttle;
     private readonly TimeProvider _time;
 
-    public DataPurger(PlatformDbContextFactory platform, PurgeOptions options, TimeProvider time)
+    public DataPurger(PlatformDbContextFactory platform, PurgeOptions options, LoginThrottleOptions throttle, TimeProvider time)
     {
         _platform = platform;
         _options = options;
+        _throttle = throttle;
         _time = time;
     }
 
@@ -97,7 +100,22 @@ public sealed class DataPurger
                 cancellationToken),
             cancellationToken).ConfigureAwait(false);
 
-        return new PurgeResult(families, codes, requests, sessions);
+        // A source with no failure for the reset time starts from zero anyway. A running wait is kept until it ends.
+        var throttleCutoff = now - _throttle.ResetAfter;
+        var throttles = await RepeatAsync(
+            () => db.Database.ExecuteSqlAsync(
+                $"""
+                DELETE FROM login_throttles
+                WHERE (tenant_id, user_id, source_key) IN (
+                    SELECT tenant_id, user_id, source_key FROM login_throttles
+                    WHERE  last_failure_at < {throttleCutoff} AND (throttled_until IS NULL OR throttled_until < {now})
+                    LIMIT  {batch}
+                    FOR UPDATE SKIP LOCKED)
+                """,
+                cancellationToken),
+            cancellationToken).ConfigureAwait(false);
+
+        return new PurgeResult(families, codes, requests, sessions, throttles);
     }
 
     private async Task<int> RepeatAsync(Func<Task<int>> deleteBatch, CancellationToken cancellationToken)

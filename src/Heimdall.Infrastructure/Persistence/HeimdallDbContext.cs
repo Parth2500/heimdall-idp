@@ -41,6 +41,8 @@ public sealed class HeimdallDbContext : DbContext
 
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
 
+    public DbSet<LoginThrottleRecord> LoginThrottles => Set<LoginThrottleRecord>();
+
     // EF Core reads this property for each query, so the filter uses the tenant of this context instance.
     private Guid? CurrentTenantId => _scope.TenantId;
 
@@ -59,5 +61,6 @@ public sealed class HeimdallDbContext : DbContext
         modelBuilder.Entity<Client>().HasQueryFilter(c => c.TenantId == CurrentTenantId);
         modelBuilder.Entity<ClientSecretRecord>().HasQueryFilter(s => s.TenantId == CurrentTenantId);
         modelBuilder.Entity<SigningKey>().HasQueryFilter(k => k.TenantId == CurrentTenantId);
+        modelBuilder.Entity<LoginThrottleRecord>().HasQueryFilter(r => r.TenantId == CurrentTenantId);
     }
 }

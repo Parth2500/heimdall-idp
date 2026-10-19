@@ -49,7 +49,7 @@ internal sealed partial class PurgeJob : BackgroundService
                 await using (scope.ConfigureAwait(false))
                 {
                     var result = await scope.ServiceProvider.GetRequiredService<DataPurger>().RunOnceAsync(stoppingToken).ConfigureAwait(false);
-                    LogPurged(_logger, result.Families, result.Codes, result.Requests, result.Sessions);
+                    LogPurged(_logger, result.Families, result.Codes, result.Requests, result.Sessions, result.LoginThrottles);
                 }
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
@@ -60,8 +60,8 @@ internal sealed partial class PurgeJob : BackgroundService
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Purge pass deleted {Families} families, {Codes} codes, {Requests} requests, {Sessions} sessions.")]
-    private static partial void LogPurged(ILogger logger, int families, int codes, int requests, int sessions);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Purge pass deleted {Families} families, {Codes} codes, {Requests} requests, {Sessions} sessions, {LoginThrottles} login throttles.")]
+    private static partial void LogPurged(ILogger logger, int families, int codes, int requests, int sessions, int loginThrottles);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "The purge job pass failed.")]
     private static partial void LogFailed(ILogger logger, Exception exception);

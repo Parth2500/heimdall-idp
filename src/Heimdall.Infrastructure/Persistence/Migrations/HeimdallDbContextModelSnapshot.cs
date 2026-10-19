@@ -812,6 +812,48 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Heimdall.Infrastructure.Persistence.LoginThrottleRecord", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("SourceKey")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("source_key");
+
+                    b.Property<int>("Failures")
+                        .HasColumnType("integer")
+                        .HasColumnName("failures");
+
+                    b.Property<DateTimeOffset>("LastFailureAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_failure_at");
+
+                    b.Property<DateTimeOffset?>("ThrottledUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("throttled_until");
+
+                    b.HasKey("TenantId", "UserId", "SourceKey")
+                        .HasName("pk_login_throttles");
+
+                    b.HasIndex("LastFailureAt")
+                        .HasDatabaseName("ix_login_throttles_last_failure_at");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_login_throttles_user_id");
+
+                    b.ToTable("login_throttles", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_login_throttles_failures", "failures >= 1");
+                        });
+                });
+
             modelBuilder.Entity("Heimdall.Domain.Clients.Client", b =>
                 {
                     b.HasOne("Heimdall.Domain.Tenants.Tenant", null)
@@ -963,6 +1005,23 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_client_secrets_clients_tenant_id_client_pk");
+                });
+
+            modelBuilder.Entity("Heimdall.Infrastructure.Persistence.LoginThrottleRecord", b =>
+                {
+                    b.HasOne("Heimdall.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_login_throttles_tenants_tenant_id");
+
+                    b.HasOne("Heimdall.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_login_throttles_users_user_id");
                 });
 #pragma warning restore 612, 618
         }

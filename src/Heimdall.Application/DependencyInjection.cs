@@ -21,6 +21,7 @@ public static class DependencyInjection
     {
         services.TryAddSingleton(new PlatformLimits());
         services.TryAddSingleton(new PasswordHashingOptions());
+        services.TryAddSingleton(new LoginThrottleOptions());
         services.AddScoped<ClientAuthenticator>();
         services.AddScoped<ClientCredentialsGrant>();
         services.AddScoped<AuthorizationCodeGrant>();
