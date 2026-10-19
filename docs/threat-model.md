@@ -312,10 +312,12 @@ Platform limits (D16). A tenant or client value must be inside these ranges. The
 | Retention of an ended family | 7 days | A reused token of a recent family still causes a revocation and an alert. |
 | Retention of an expired code with no family | 24 hours | A replayed code still shows as redeemed. |
 | Retention of an ended session | 7 days | For an investigation. |
-| Rate limit, `/token` | 10 requests each minute for each IP | Also limit for each `client_id`. |
-| Rate limit, login | 5 requests each minute for each IP | Also throttle for each account. |
+| Rate limit, `/token` and `/revoke` failures | 60 each minute for each IP | Only failed requests count. An IP that reaches the limit gets 429 before any database work, also with the right secret. A backend's normal traffic from one IP never reaches it. |
+| Rate limit, `/token` issuance | 300 each minute for each authenticated client | Only the client's own successful issuances count. A caller with a wrong secret cannot use up another client's budget. |
+| Rate limit, login | 5 attempts each minute for each IP | Each attempt costs one Argon2id hash, so successes count too. The per-account throttle is a separate control (#11). |
+| Rate limit, `/authorize` | 120 requests each minute for each IP | Each request can store an authorization request. |
 
-A shared IP address (for example, an office) can reach these limits. The per-client and per-account limits are the main controls. Review the IP limits with k6 results in Phase 4.
+Decision (2026-10-19): the counters are in memory on each server. With N servers, a caller gets up to N times each limit. This still caps the CPU and database load of each server, which is the purpose. An IPv6 address counts as its /64 network. A refused request gets 429, `Retry-After`, and the error `temporarily_unavailable`. The values are in configuration (`Heimdall:RateLimits`). A shared IP address (for example, an office) can reach the login limit. Review the values with k6 results in Phase 4.
 
 ## Open items
 

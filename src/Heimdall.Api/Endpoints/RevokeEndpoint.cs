@@ -11,12 +11,21 @@ internal static partial class RevokeEndpoint
 {
     public const string Path = "/oauth/v1/revoke";
 
-    public static async Task HandleAsync(HttpContext context, TokenRevocation revocation, ILoggerFactory loggers)
+    public static async Task HandleAsync(HttpContext context, TokenRevocation revocation, ClientRateLimiter limiter, ILoggerFactory loggers)
     {
         var logger = loggers.CreateLogger(typeof(RevokeEndpoint));
+
+        // The same failure budget as /token: /revoke authenticates clients too, so it must not be a second guessing door.
+        if (limiter.IsIpBlocked(context))
+        {
+            await RateLimits.WriteRejectedAsync(context, limiter.FailureWindow).ConfigureAwait(false);
+            return;
+        }
+
         var parsed = await OAuthFormReader.ReadAsync(context).ConfigureAwait(false);
         if (parsed.Error is { } error)
         {
+            limiter.RecordFailure(context);
             LogRejected(logger, error.Code, error.AuditDetail ?? string.Empty);
             await OAuthResponses.WriteErrorAsync(context, error).ConfigureAwait(false);
             return;
@@ -29,6 +38,7 @@ internal static partial class RevokeEndpoint
 
         if (!result.IsSuccess)
         {
+            limiter.RecordFailure(context);
             await OAuthResponses.WriteErrorAsync(context, result.Error).ConfigureAwait(false);
             return;
         }

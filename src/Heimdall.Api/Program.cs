@@ -101,6 +101,7 @@ builder.Services.AddOptions<ProxyOptions>()
     .Bind(builder.Configuration.GetSection(ProxyOptions.SectionName))
     .Validate(options => options.Validate().Count == 0, "Invalid settings in " + ProxyOptions.SectionName + ".")
     .ValidateOnStart();
+builder.Services.AddHeimdallRateLimits(builder.Configuration);
 builder.Services.AddOptions<HealthOptions>().Bind(builder.Configuration.GetSection(HealthOptions.SectionName));
 builder.Services.AddHeimdallHealthChecks();
 
@@ -158,6 +159,9 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 // Before tenant resolution and the HTTPS check: probes call the container IP over plain HTTP.
 app.UseHeimdallHealthChecks(app.Services.GetRequiredService<IOptions<HealthOptions>>().Value);
 app.UseMiddleware<TenantResolutionMiddleware>();
+
+// After tenant resolution: an unknown host or plain HTTP is refused before it uses a permit.
+app.UseRateLimiter();
 
 app.MapPost(TokenEndpoint.Path, TokenEndpoint.HandleAsync);
 app.MapPost(RevokeEndpoint.Path, RevokeEndpoint.HandleAsync);

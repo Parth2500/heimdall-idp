@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using Heimdall.Api.Endpoints;
+using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Heimdall.IntegrationTests.Api;
 
@@ -11,9 +12,14 @@ internal sealed class BrowserSession : IDisposable
 {
     private readonly HttpClient _http;
 
-    public BrowserSession(HeimdallApiFactory api, string host)
+    public BrowserSession(WebApplicationFactory<Program> api, string host)
     {
-        _http = api.ClientFor(host, handleCookies: false);
+        _http = api.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri($"https://{host}/"),
+            AllowAutoRedirect = false,
+            HandleCookies = false,
+        });
         Origin = "https://" + host;
     }
 

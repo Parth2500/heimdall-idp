@@ -49,6 +49,12 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
             // could otherwise create a key for a tenant that a test is still setting up.
             ["Heimdall:Jobs:Enabled"] = "false",
 
+            // Every test request comes from one address. RateLimitTests sets low limits on purpose.
+            ["Heimdall:RateLimits:Login:PermitLimit"] = "1000",
+            ["Heimdall:RateLimits:Authorize:PermitLimit"] = "1000",
+            ["Heimdall:RateLimits:ClientFailures:PermitLimit"] = "1000",
+            ["Heimdall:RateLimits:ClientIssuance:PermitLimit"] = "1000",
+
             // The smallest allowed Argon2id parameters keep the tests fast.
             ["Heimdall:PasswordHashing:MemoryKiB"] = "19456",
         }));

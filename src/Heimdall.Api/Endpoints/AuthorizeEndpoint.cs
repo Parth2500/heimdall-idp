@@ -27,8 +27,8 @@ internal static partial class AuthorizeEndpoint
 
     public static void Map(WebApplication app)
     {
-        app.MapGet(Path, AuthorizeAsync);
-        app.MapGet(ResumePath, ResumeAsync);
+        app.MapGet(Path, AuthorizeAsync).RequireRateLimiting(RateLimits.AuthorizePolicy);
+        app.MapGet(ResumePath, ResumeAsync).RequireRateLimiting(RateLimits.AuthorizePolicy);
     }
 
     private static async Task AuthorizeAsync(HttpContext context, AuthorizationService authorization, IOptions<UiOptions> ui, ILoggerFactory loggers)

@@ -23,9 +23,19 @@ internal static partial class TokenEndpoint
         AuthorizationCodeGrant authorizationCode,
         RefreshTokenGrant refreshToken,
         HeimdallMetrics metrics,
+        ClientRateLimiter limiter,
         ILoggerFactory loggers)
     {
         var logger = loggers.CreateLogger(typeof(TokenEndpoint));
+
+        // First, before the body is read: an IP that used its failure budget costs nothing more.
+        if (limiter.IsIpBlocked(context))
+        {
+            metrics.TokenRequest(null, "rate_limited");
+            await RateLimits.WriteRejectedAsync(context, limiter.FailureWindow).ConfigureAwait(false);
+            return;
+        }
+
         var parsed = await OAuthFormReader.ReadAsync(context).ConfigureAwait(false);
         if (parsed.Error is null && string.IsNullOrEmpty(parsed.Form!["grant_type"]))
         {
@@ -35,6 +45,7 @@ internal static partial class TokenEndpoint
         if (parsed.Error is { } error)
         {
             metrics.TokenRequest(parsed.Form?["grant_type"].ToString(), error.Code);
+            limiter.RecordFailure(context);
             LogRejected(logger, error.Code, error.AuditDetail ?? string.Empty);
             await OAuthResponses.WriteErrorAsync(context, error).ConfigureAwait(false);
             return;
@@ -42,6 +53,13 @@ internal static partial class TokenEndpoint
 
         var form = parsed.Form!;
         var requestContext = TenantResolutionMiddleware.GetRequestContext(context);
+        if (limiter.IsClientBlocked(requestContext.Tenant.Id, parsed.ClientId))
+        {
+            metrics.TokenRequest(form["grant_type"].ToString(), "rate_limited");
+            await RateLimits.WriteRejectedAsync(context, limiter.IssuanceWindow).ConfigureAwait(false);
+            return;
+        }
+
         Result<TokenResponse> result;
         switch (form["grant_type"].ToString())
         {
@@ -80,12 +98,23 @@ internal static partial class TokenEndpoint
             default:
                 var unsupported = OAuthError.UnsupportedGrantType("grant type not supported");
                 metrics.TokenRequest(null, unsupported.Code);
+                limiter.RecordFailure(context);
                 LogRejected(logger, unsupported.Code, unsupported.AuditDetail!);
                 await OAuthResponses.WriteErrorAsync(context, unsupported).ConfigureAwait(false);
                 return;
         }
 
         metrics.TokenRequest(form["grant_type"].ToString(), result.IsSuccess ? "success" : result.Error.Code);
+        if (result.IsSuccess)
+        {
+            // The grant authenticated the client, so ClientId is its real ID.
+            limiter.RecordIssued(requestContext.Tenant.Id, parsed.ClientId!);
+        }
+        else
+        {
+            limiter.RecordFailure(context);
+        }
+
         if (result.IsSuccess)
         {
             await OAuthResponses.WriteTokenAsync(context, result.Value).ConfigureAwait(false);

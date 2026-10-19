@@ -43,7 +43,7 @@ internal static partial class SessionEndpoints
     {
         var group = app.MapGroup(Prefix);
         group.MapGet("/csrf", Csrf);
-        group.MapPost("/login", LoginAsync);
+        group.MapPost("/login", LoginAsync).RequireRateLimiting(RateLimits.LoginPolicy);
         group.MapPost("/logout", LogoutAsync);
         group.MapGet("/me", MeAsync);
         group.MapGet("/consent", ConsentPromptAsync);
