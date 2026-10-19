@@ -96,6 +96,8 @@ The key leaves the JWKS at once, and tokens it signed stop working. Token issuan
 
 Telemetry: set `OTEL_EXPORTER_OTLP_ENDPOINT` (for example `http://localhost:4317`) to send OpenTelemetry traces and metrics to a collector. Without it, Heimdall sends nothing. Heimdall's own metrics are in the meter `Heimdall` (`heimdall.token.requests`, `heimdall.login.attempts`, `heimdall.password_hash.*`, `heimdall.security.alerts`, `heimdall.cache.lookups`).
 
+Behind a reverse proxy, list the proxy addresses in `Heimdall:ForwardedHeaders:KnownProxies` (or CIDR ranges in `KnownNetworks`). The proxy must keep the original Host header and set `X-Forwarded-For` and `X-Forwarded-Proto`. Without this setting, Heimdall ignores forwarded headers.
+
 Health probes: `/health/live` (the process answers) and `/health/ready` (the database answers). Set `Heimdall:Health:Port` to a management port in each deployment, so the probes answer only there.
 
 To create a migration, use the pinned tool: `dotnet dotnet-ef migrations add <Name> --project src/Heimdall.Infrastructure --startup-project src/Heimdall.Api --output-dir Persistence/Migrations`.

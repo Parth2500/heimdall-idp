@@ -97,6 +97,10 @@ builder.Services.AddAntiforgery(options =>
     options.HeaderName = SessionEndpoints.XsrfHeader;
 });
 
+builder.Services.AddOptions<ProxyOptions>()
+    .Bind(builder.Configuration.GetSection(ProxyOptions.SectionName))
+    .Validate(options => options.Validate().Count == 0, "Invalid settings in " + ProxyOptions.SectionName + ".")
+    .ValidateOnStart();
 builder.Services.AddOptions<HealthOptions>().Bind(builder.Configuration.GetSection(HealthOptions.SectionName));
 builder.Services.AddHeimdallHealthChecks();
 
@@ -126,6 +130,14 @@ if (args.Contains("seed-dev", StringComparer.Ordinal))
 if (args.Length > 0 && args[0] == "remove-key")
 {
     return await RemoveCompromisedKeyAsync(app, args);
+}
+
+// First: every later step (HTTPS check, audit source IP) must see the client, not the proxy. Only configured proxies
+// are trusted. Without any, forwarded headers are ignored.
+var proxies = app.Services.GetRequiredService<IOptions<ProxyOptions>>().Value;
+if (proxies.IsEnabled)
+{
+    app.UseForwardedHeaders(proxies.ToMiddlewareOptions());
 }
 
 // The developer exception page shows details in Development only. Elsewhere a failure is an empty 500.

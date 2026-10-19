@@ -58,7 +58,7 @@ internal sealed partial class TenantResolutionMiddleware
             ?? throw new InvalidOperationException("The tenant is not resolved. The middleware must run first.");
         var issuer = context.RequestServices.GetRequiredService<IOptions<IssuerOptions>>().Value.IssuerFor(tenant.Host);
 
-        // Behind a proxy, RemoteIpAddress is the proxy. Forwarded headers come with the deployment decision.
+        // Behind a trusted proxy, the forwarded headers middleware already replaced the proxy address with the client's.
         var userAgent = context.Request.Headers.UserAgent.ToString();
         return new RequestContext(
             tenant,
