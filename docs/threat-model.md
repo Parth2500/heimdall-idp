@@ -37,6 +37,10 @@ Each term has one meaning in this document. Do not use a synonym.
 | Throttle | To slow or limit requests. It does not lock out the caller. |
 | Audit log | An append-only record of security events. |
 | Protocol rejection | Heimdall refuses a request before the grant runs, because the request breaks the HTTP or OAuth format. Heimdall logs it. |
+| Account pages | The Angular login, consent, error, and signed-out pages. Heimdall serves them on each tenant origin under `/account/`. |
+| Demo SPA | A sample Angular client on its own origin. It signs in with Heimdall as a public client. |
+| CSP nonce | A random value that Heimdall creates for each page response. Only script and style elements that carry it can run. |
+| Backend-for-frontend (BFF) | A server part of a browser app. It keeps the tokens, and the browser gets only a cookie. |
 | Grant rejection | The grant refuses a well-formed request, for example for a wrong secret or a scope that is not allowed. Heimdall audits it. |
 
 ## Trust boundaries
