@@ -53,8 +53,7 @@ Security rules from `docs/threat-model.md` apply to every page. A design or stac
 
 Open items:
 
-- The JSON login API is reviewed (threat model, login rows on CSRF, CORS, and XSS). Still open: the Angular bundle supply chain, and the CSP for the Angular pages.
-- Accessibility standard: not set yet.
+- The JSON login API is reviewed (threat model, login rows on CSRF, CORS, and XSS). Still open: the Angular bundle supply chain (proposed in U8) and the CSP for the Angular pages (proposed in U3). Both wait for owner approval in `docs/frontend-design.md`.
 - Tenant branding: not in scope now (see Brand Commitments).
 
 ## Brand Commitments
@@ -69,6 +68,13 @@ Open items:
 - `docs/schema-design.md`, `docs/domain-model.md`, `docs/diagrams/`: schema, Domain rules and Mermaid diagrams.
 - No users, customers, testimonials, benchmarks or conformance results exist yet. Do not invent them. The OpenID conformance suite run is a Phase 2 item, and k6 load targets come in Phase 4.
 - Heimdall is not ready for production. No page may say or imply otherwise.
+
+## Accessibility & Inclusion
+
+- The account pages and the demo SPA meet WCAG 2.2 level AA. The owner approved this on 2026-10-19 (U12 in `docs/frontend-design.md`).
+- Each form field has a visible label. The page announces errors with `aria-live` and moves focus to the first error.
+- Every action works with a keyboard. Text has a contrast ratio of at least 4.5:1.
+- Reason: a login page that a screen reader cannot use locks real users out.
 
 ## Product Principles
 

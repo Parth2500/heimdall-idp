@@ -34,7 +34,7 @@ Writing rules are in `CLAUDE.md`. Terms are in the glossary of `docs/threat-mode
 | N4 | The pages reveal nothing about accounts or tenants. Copy and timing are the same for an unknown user and a wrong password. | D5, `PRODUCT.md` principle 4 |
 | N5 | The pages load no code, font, or image from another origin. | Supply chain (threat model, login) |
 | N6 | The login page loads fast on a slow phone connection. Target: the first form is usable after 2 seconds on a "Slow 4G" profile. Measure it; it is not a promise. | `PRODUCT.md` principle 3 |
-| N7 | WCAG 2.2 level AA. | Proposed, see U12 |
+| N7 | WCAG 2.2 level AA. | Approved, see U12 |
 | N8 | Copy states only what the system enforces. | `PRODUCT.md` principle 2 |
 
 ### 1.3 Constraints
@@ -201,9 +201,11 @@ The theft demo is the strongest portfolio screen. It shows refresh token reuse d
 
 ### U12. Accessibility: WCAG 2.2 level AA
 
+Status: **Approved** by the owner on 2026-10-19.
+
 **Decision.** Both applications meet WCAG 2.2 level AA. Each form field has a visible label. Errors are announced with `aria-live`. Focus moves to the first error. Every action works with a keyboard. Color contrast is at least 4.5:1 for text.
 
-**Reason.** `PRODUCT.md` lists the accessibility standard as an open item. AA is the common legal and industry baseline. A login page that a screen reader cannot use locks real users out.
+**Reason.** `PRODUCT.md` listed the accessibility standard as an open item. AA is the common legal and industry baseline. A login page that a screen reader cannot use locks real users out.
 
 ### U13. Visual direction
 
@@ -313,7 +315,7 @@ These rows go into `docs/threat-model.md` when the owner approves this design:
 
 ## 9. Open questions for the owner
 
-1. Approve U1 to U14, or change some.
+1. Approve U1 to U11, U13, and U14, or change some. U12 is approved.
 2. The demo SPA library: `angular-auth-oidc-client` (Angular-native) or `oidc-client-ts` (framework-neutral, the base of many other libraries). Both work. This design proposes the first, because it is OpenID-certified and Angular-native.
 3. Build a BFF demo later (U10, alternative)?
 4. Order of work. Proposal: S1 to S3, then the account pages, then S4 to S6, then the demo SPA.
