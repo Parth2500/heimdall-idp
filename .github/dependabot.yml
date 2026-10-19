@@ -19,3 +19,8 @@ updates:
           - "@angular/*"
           - "@angular-devkit/*"
           - "@schematics/angular"
+    ignore:
+      # Each Angular release supports one TypeScript minor line (a peer dependency of @angular/build).
+      # TypeScript moves when Angular moves, not on its own.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
