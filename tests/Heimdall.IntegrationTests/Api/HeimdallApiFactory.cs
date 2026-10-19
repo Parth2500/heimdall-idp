@@ -29,6 +29,14 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
 {
     private readonly PostgresFixture _postgres;
 
+    static HeimdallApiFactory()
+    {
+        // Each host watches its configuration files for changes, and each watcher uses one inotify instance. Linux
+        // allows 128 for each user by default, shared with the IDE. Hundreds of test hosts would run out, so the test
+        // hosts read configuration once. The variable must be set before the first host is built.
+        Environment.SetEnvironmentVariable("DOTNET_hostBuilder__reloadConfigOnChange", "false");
+    }
+
     public HeimdallApiFactory(PostgresFixture postgres, FakeTimeProvider? time = null)
     {
         _postgres = postgres;
