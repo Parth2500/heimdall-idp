@@ -57,6 +57,7 @@ public static class DependencyInjection
             ConfigureDbContext(options, connectionString(provider), provider.GetRequiredService<TenantScope>()));
         services.AddSingleton(provider => new PlatformDbContextFactory(platformConnectionString(provider)));
         services.AddSingleton<ITenantDirectory, TenantDirectory>();
+        services.AddSingleton<ClientCache>();
         services.AddScoped<IClientStore, EfClientStore>();
         services.AddScoped<IUserStore, EfUserStore>();
         services.AddScoped<ISessionStore, EfSessionStore>();

@@ -252,6 +252,7 @@ Decisions for this area:
 | Information disclosure | An attacker learns which tenants exist from error messages or response time. | Heimdall returns the same response for an unknown tenant host and for a host with no content. |
 | **Denial of service** | One tenant uses all capacity (noisy neighbor). | Rate limits apply for each tenant, each client, each IP, and each account. |
 | **Elevation of privilege** | A tenant admin changes platform settings or another tenant. | Admin roles are separate: platform admin and tenant admin. Each admin API call checks the role and the `TenantId`. |
+| Elevation of privilege | An admin disables a client or revokes a secret, but other servers still accept it. | Each server keeps a tenant's clients in memory for the server cache lifetime (1 minute). The server that makes the change drops its entry at once. This delay is accepted. Secret expiry has no delay: Heimdall checks it at each request. |
 | Elevation of privilege | A client loosens a rule that has no setting (D17) by a hidden field. | Heimdall binds only known fields. The code has no setting for D17 rules. |
 
 ## Limits and lifetimes
@@ -277,7 +278,7 @@ Platform limits (D16). A tenant or client value must be inside these ranges. The
 | Login session, idle timeout | 30 minutes | |
 | Login session, absolute lifetime | 12 hours | |
 | JWKS cache lifetime (`max-age`) | 10 minutes | Configuration: `Heimdall:SigningKeys:JwksCacheLifetime`. Discovery uses the same `max-age`. |
-| Server key cache lifetime | 1 minute | A key or tenant change on one server reaches every other server within this time. |
+| Server key cache lifetime | 1 minute | A key, tenant, or client change on one server reaches every other server within this time. The changing server applies it at once. |
 | Publish wait | 11 minutes | A new key waits the JWKS cache lifetime plus the server key cache lifetime before it signs. |
 | Key rotation interval | 90 days | The job creates the next key one publish wait before this time ends. Configuration: `Heimdall:SigningKeys:RotationInterval`. |
 | Clock skew | 5 minutes | Resource servers allow this difference when they check `exp`. |

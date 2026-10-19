@@ -1,7 +1,11 @@
 using Heimdall.Application.Clients;
+using Heimdall.Application.Keys;
 using Heimdall.Domain.Common;
 using Heimdall.Infrastructure.Persistence;
+using Heimdall.Infrastructure.Stores;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Heimdall.IntegrationTests;
 
@@ -87,5 +91,72 @@ public sealed class ClientStoreTests
         var (tenantId, _) = await SeedAsync();
 
         Assert.Null(await FindAsync(null, tenantId, "billing-service"));
+    }
+
+    /// <summary>One server: one service provider, so one cache, with a fake clock.</summary>
+    private static async Task<ClientWithSecrets?> FindOnServerAsync(ServiceProvider server, Guid tenantId, DateTimeOffset now)
+    {
+        await using var scope = server.CreateAsyncScope();
+        scope.ServiceProvider.GetRequiredService<TenantScope>().Set(tenantId);
+        return await scope.ServiceProvider.GetRequiredService<IClientStore>()
+            .FindForAuthenticationAsync(tenantId, "billing-service", now, CancellationToken.None);
+    }
+
+    private async Task RevokeAllSecretsAsync(Guid tenantId)
+    {
+        await using var admin = _postgres.CreateServices(connectionString: _postgres.AdminConnectionString);
+        await using var scope = admin.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<HeimdallDbContext>().ClientSecrets
+            .IgnoreQueryFilters()
+            .Where(s => s.TenantId == tenantId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.RevokedAt, TestData.Now));
+    }
+
+    [DockerFact]
+    public async Task A_change_on_another_server_shows_after_the_cache_lifetime()
+    {
+        var (tenantId, _) = await SeedAsync();
+        var time = new FakeTimeProvider(TestData.Now);
+        await using var server = _postgres.CreateServices(time);
+        Assert.Single((await FindOnServerAsync(server, tenantId, TestData.Now))!.ValidSecretHashes);
+
+        // Another server revokes the secret. This server still has the old entry.
+        await RevokeAllSecretsAsync(tenantId);
+        Assert.Single((await FindOnServerAsync(server, tenantId, TestData.Now))!.ValidSecretHashes);
+
+        time.Advance(server.GetRequiredService<SigningKeyOptions>().ServerCacheLifetime);
+        Assert.Empty((await FindOnServerAsync(server, tenantId, TestData.Now))!.ValidSecretHashes);
+    }
+
+    [DockerFact]
+    public async Task Invalidate_shows_a_change_at_once()
+    {
+        var (tenantId, _) = await SeedAsync();
+        await using var server = _postgres.CreateServices(new FakeTimeProvider(TestData.Now));
+        Assert.Single((await FindOnServerAsync(server, tenantId, TestData.Now))!.ValidSecretHashes);
+
+        await RevokeAllSecretsAsync(tenantId);
+        server.GetRequiredService<ClientCache>().Invalidate(tenantId);
+
+        Assert.Empty((await FindOnServerAsync(server, tenantId, TestData.Now))!.ValidSecretHashes);
+    }
+
+    [DockerFact]
+    public async Task Secret_expiry_is_checked_at_each_read_not_at_load()
+    {
+        var (tenantId, _) = await SeedAsync();
+        await using (var admin = _postgres.CreateServices(connectionString: _postgres.AdminConnectionString))
+        await using (var scope = admin.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<HeimdallDbContext>();
+            var client = await db.Clients.IgnoreQueryFilters().SingleAsync(c => c.TenantId == tenantId);
+            db.ClientSecrets.Add(TestData.Secret(client, "rotating-secret", expiresAt: TestData.Now.AddSeconds(10)));
+            await db.SaveChangesAsync();
+        }
+
+        await using var server = _postgres.CreateServices(new FakeTimeProvider(TestData.Now));
+
+        Assert.Equal(2, (await FindOnServerAsync(server, tenantId, TestData.Now))!.ValidSecretHashes.Count);
+        Assert.Single((await FindOnServerAsync(server, tenantId, TestData.Now.AddSeconds(10)))!.ValidSecretHashes);
     }
 }

@@ -41,4 +41,9 @@ internal sealed class InMemoryClientStore : IClientStore
 
     public Task<Client?> FindByPkAsync(Guid tenantId, Guid clientPk, CancellationToken cancellationToken) =>
         Task.FromResult<Client?>(_entries.Select(e => e.Client).FirstOrDefault(c => c.TenantId == tenantId && c.Id == clientPk));
+
+    // Nothing is cached here: every read sees the current entries.
+    public void Invalidate(Guid tenantId)
+    {
+    }
 }
