@@ -3,8 +3,13 @@ import { Component, computed, input } from '@angular/core';
 /** Claims as a two-column table. Angular encodes every value, so a claim cannot inject markup. */
 @Component({
   selector: 'demo-claims-table',
+  styles: `
+    :host {
+      display: block;
+    }
+  `,
   template: `
-    <table>
+    <table class="hd-table">
       <caption>
         {{
           caption()

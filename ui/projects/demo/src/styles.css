@@ -1,168 +1,69 @@
-/*
- * Base styles only. The visual direction for the Heimdall pages is still open (U13).
- * No web font and no third-party origin (U8): the system font stack.
- */
+/* The demo uses the Heimdall ui-kit (projects/ui-kit/styles/heimdall.css). Only demo layout is here. */
+
+/* Lapis means Heimdall. The demo is a client, so its actions use the client slate (DESIGN.md, One Meaning). */
 :root {
-  color-scheme: light dark;
-  --ink: #1b1d21;
-  --ink-muted: #545a64;
-  --ground: #f7f7f5;
-  --surface: #ffffff;
-  --line: #d6d8dc;
-  --accent: #1f4fd1;
-  --accent-ink: #ffffff;
-  --alert: #a3261b;
-  --space: 1rem;
-  --radius: 6px;
-  --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --hd-lapis: var(--hd-client);
+  --hd-lapis-strong: var(--hd-client-strong);
+}
+.page {
+  display: block;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ink: #e8e9ec;
-    --ink-muted: #a7acb5;
-    --ground: #15171b;
-    --surface: #1d2025;
-    --line: #353a42;
-    --accent: #8eb0ff;
-    --accent-ink: #0d1430;
-    --alert: #ff9b8f;
-  }
+/* Prose keeps a reading measure. Only tables use the full 48rem column. */
+.page p {
+  max-width: 34em;
 }
 
-* {
-  box-sizing: border-box;
+.page section > * + * {
+  margin-top: var(--hd-3);
 }
 
-body {
-  margin: 0;
-  background: var(--ground);
-  color: var(--ink);
-  font: 1rem/1.5 var(--font);
+/* A table and its caption start a new group: more space above than inside. */
+.page demo-claims-table {
+  margin-top: var(--hd-8);
 }
 
-.bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space);
-  align-items: center;
-  padding: calc(var(--space) * 0.75) var(--space);
-  border-bottom: 1px solid var(--line);
-  background: var(--surface);
+.page section + section {
+  margin-top: var(--hd-12);
 }
 
-.brand {
-  margin: 0;
-  font-weight: 600;
-}
-
-.brand span {
-  color: var(--ink-muted);
-  font-weight: 400;
-}
-
-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space);
-  margin-inline-end: auto;
-}
-
-nav a {
-  color: var(--ink-muted);
-}
-
-nav a.active {
-  color: var(--ink);
-  font-weight: 600;
-}
-
-main {
-  max-width: 48rem;
-  margin: 0 auto;
-  padding: calc(var(--space) * 2) var(--space);
-}
-
-section {
-  margin-block: calc(var(--space) * 2);
-}
-
-code {
-  font-family: var(--mono);
-  font-size: 0.9em;
-  overflow-wrap: anywhere;
-}
-
-button {
-  font: inherit;
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--accent);
-  border-radius: var(--radius);
-  background: var(--accent);
-  color: var(--accent-ink);
-  cursor: pointer;
-}
-
-button.quiet {
-  background: transparent;
-  color: var(--ink);
-  border-color: var(--line);
-}
-
-button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-:focus-visible {
-  outline: 3px solid var(--accent);
-  outline-offset: 2px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-caption {
-  text-align: start;
-  color: var(--ink-muted);
-  padding-block-end: 0.5rem;
-}
-
-th,
-td {
-  text-align: start;
-  vertical-align: top;
-  padding: 0.5rem;
-  border-bottom: 1px solid var(--line);
-}
-
-.notice,
-.verdict {
-  padding: var(--space);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-}
-
-.defect,
-[role='alert'] {
-  border-color: var(--alert);
-}
-
-.rotations,
-.steps {
-  padding-inline-start: 1.25rem;
+.rotations {
+  list-style: none;
+  padding: 0;
+  border-top: 1px solid var(--hd-rule);
 }
 
 .rotations li {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space);
+  gap: var(--hd-2) var(--hd-6);
+  align-items: baseline;
+  padding: var(--hd-3) 0;
+  border-bottom: 1px solid var(--hd-rule);
+}
+
+.rotations code {
+  font-size: var(--hd-text-m);
+  font-weight: 700;
 }
 
 .rotations span {
-  color: var(--ink-muted);
+  color: var(--hd-ink-muted);
+}
+
+.mark {
+  display: inline-block;
+  margin-right: var(--hd-2);
+  padding: 0 var(--hd-2);
+  border: var(--hd-border) solid currentColor;
+  font-size: var(--hd-text-xs);
+  font-weight: 700;
+}
+
+.mark--refused {
+  color: var(--hd-red);
+}
+
+.mark--issued {
+  color: var(--hd-green);
 }

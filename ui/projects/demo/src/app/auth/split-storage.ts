@@ -14,6 +14,9 @@ export const REDIRECT_KEYS: readonly string[] = [
   'codeVerifier',
   'storageCodeFlowInProgress',
   'storageCustomParamsAuthRequest',
+  // The discovery document: public metadata, no secret. The library reads the token endpoint
+  // from it at /callback, before it would fetch the document again.
+  'authWellKnownEndPoints',
 ];
 
 const SESSION_PREFIX = 'heimdall-demo.flow.';

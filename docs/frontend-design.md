@@ -83,6 +83,8 @@ Status: **Approved** by the owner on 2026-10-19.
 
 ### U2. Heimdall serves the account pages on each tenant origin
 
+Status: **Approved** by the owner on 2026-10-19.
+
 **Decision.** `Heimdall.Api` serves the built `account` application as static files under `/account/`. The routes are `/account/login`, `/account/consent`, `/account/error`, and `/account/signed-out`. `UiOptions` points `/authorize` to these paths. Every tenant gets the same files.
 
 **Reason.** The session cookie uses the `__Host-` prefix, so only the tenant origin can set and send it (D11). The login API refuses a foreign `Origin` (threat model, CSRF row). A page on another origin cannot sign a user in.
@@ -93,6 +95,8 @@ Status: **Approved** by the owner on 2026-10-19.
 - Server-rendered Razor pages. Rejected: the owner decided Angular for every user interface.
 
 ### U3. A strict CSP with a nonce for each request
+
+Status: **Approved** by the owner on 2026-10-19.
 
 **Decision.** Heimdall serves `index.html` for the account pages itself, not as a plain static file. For each response, it creates a random nonce, puts it into `index.html` (Angular reads it from the `ngCspNonce` attribute), and sends this policy:
 
@@ -114,11 +118,15 @@ The build turns off critical CSS inlining (`inlineCritical: false`), because it 
 
 `index.html` gets `Cache-Control: no-store`, because each copy has its own nonce. Hashed bundle files get `Cache-Control: public, max-age=31536000, immutable`.
 
+The built `index.html` has no `<base>` element, because `base-uri 'none'` blocks it. The application sets `APP_BASE_HREF` to `/account/` in code instead. Each page is one level under `/account/`, so the relative bundle URLs still resolve.
+
 **Reason.** Angular adds component styles at run time, so `style-src 'self'` alone fails, and `'unsafe-inline'` is not allowed (N1). A nonce is the strict alternative. Trusted Types stop DOM XSS at the sinks that Angular does not sanitize.
 
 **Alternative.** Hashes of each inline part. Rejected: they change with each build, and run-time styles have no fixed hash.
 
 ### U4. The login page continues only a stored request
+
+Status: **Approved** by the owner on 2026-10-19.
 
 **Decision.** The login page reads `request_id` from its URL. It accepts the value only when it is a UUID. After a successful sign-in, it sends the browser to `/oauth/v1/authorize/resume?request_id={id}`. It never reads a return URL, a client, or a scope from the URL.
 
@@ -138,6 +146,8 @@ Copy never says "locked", because Heimdall never locks an account (`PRODUCT.md`,
 
 ### U5. Consent shows only server values
 
+Status: **Approved** by the owner on 2026-10-19.
+
 **Decision.** The consent page calls `GET /session/v1/consent?request_id=...`. It shows `client_name`, `redirect_host`, and the scopes. Angular text binding encodes every value. Each known scope gets a fixed description in the page (for example, `email`: "Read your email address."). An unknown scope is shown as its raw name, in code style.
 
 The "Allow" and "Deny" buttons send `POST /session/v1/consent` with the request ID and the decision only. Then the page sends the browser to the resume path, as in U4. `401 login_required` sends the user to the login page with the same `request_id`.
@@ -146,11 +156,15 @@ The "Allow" and "Deny" buttons send `POST /session/v1/consent` with the request 
 
 ### U6. Error page with a fixed list of codes
 
+Status: **Approved** by the owner on 2026-10-19.
+
 **Decision.** `/authorize` sends a refused request to `/account/error?error={code}`, not a JSON body. The page shows text only for a fixed list of codes (`invalid_request`, `invalid_client`, `unsupported_response_type`, `temporarily_unavailable`). Any other value shows the general text. The page never prints the raw query value.
 
 **Reason.** An error page that prints a URL value is a common phishing and injection surface. A fixed list has nothing to inject.
 
 ### U7. Same-origin API calls with Angular's XSRF support
+
+Status: **Approved** by the owner on 2026-10-19.
 
 **Decision.** The account application uses Angular `HttpClient` with `withXsrfConfiguration({ cookieName: '__Host-XSRF-TOKEN', headerName: 'X-XSRF-TOKEN' })`. It calls `GET /session/v1/csrf` once when it starts. It uses relative URLs only.
 
@@ -192,7 +206,7 @@ Status: **Approved** by the owner on 2026-10-19.
 
 **Trade-off.** A reload costs one redirect. That is acceptable for a demo.
 
-**What goes to `sessionStorage`.** Memory is empty when the browser comes back to `/callback`, so some values must live through the redirect. The demo keeps an allowlist of library keys there: `state`, `nonce`, `code_verifier`, and two flags of the sign-in request. The library removes them after the callback. A key that is not on the list stays in memory, so a new token key in a later library version never lands in web storage. One more flag, `heimdall-demo.resume`, holds no token. It tells a reloaded page to go to `/authorize` again. The page removes it before the redirect, so an error response cannot start a loop.
+**What goes to `sessionStorage`.** Memory is empty when the browser comes back to `/callback`, so some values must live through the redirect. The demo keeps an allowlist of library keys there: `state`, `nonce`, `code_verifier`, and two flags of the sign-in request. The library removes them after the callback. The list also holds the discovery document (`authWellKnownEndPoints`), which is public: the library reads the token endpoint from it at `/callback`. A key that is not on the list stays in memory, so a new token key in a later library version never lands in web storage. One more flag, `heimdall-demo.resume`, holds no token. It tells a reloaded page to go to `/authorize` again. The page removes it before the redirect, so an error response cannot start a loop.
 
 **Why the verifier may sit in `sessionStorage`.** The `code_verifier` is useful only with the one code that comes back to the redirect URI. Script that can read `sessionStorage` on this origin can also read that code from the URL, so memory would not protect it. A refresh token is different: it lives for hours and works without the browser.
 
@@ -223,11 +237,15 @@ Status: **Approved** by the owner on 2026-10-19.
 
 ### U13. Visual direction
 
-**Decision.** One centered card on a plain background. The Heimdall name as text, no logo. The system font stack. Light and dark themes from `prefers-color-scheme`. Design tokens (color, space, radius, type size) in `ui-kit` as CSS custom properties, so tenant branding (Phase 3) can change tokens and not components.
+Status: **Decided by Claude** on 2026-10-19. The owner delegated the visual design. The direction contract is in `.impeccable/surfaces/ui-projects-account.md`.
 
-The page shows the tenant host under the title, for example "Signing in to acme.heimdall.example". The host is already in the address bar, so it reveals nothing new, and it helps the user see a phishing copy.
+**Decision.** The pages follow a public-service identity program, like a government design system. A lapis band runs across the top with the word "Heimdall". The origin plate hangs from the band and shows the tenant host, for example "Signing in to acme.localhost:7200". The page is white, with a left-aligned column. Controls are square, with a 2px border and a height of 48px. Keyboard focus is a yellow field. The system font stack is used (U8). Light and dark themes come from `prefers-color-scheme`.
 
-**Reason.** No visual identity exists (`PRODUCT.md`). A calm, plain page loads fast and has nothing to break. Tokens make later branding a data change.
+Each state color has one meaning: lapis for Heimdall and its actions, red for a refusal, green for a confirmation, yellow for focus only. No card, box, or shadow ranks content; size and weight do.
+
+The tokens and the frame component are in `ui/projects/ui-kit`. Tenant branding (Phase 3) changes tokens, not components. The demo SPA uses the same kit with a neutral band labeled "Demo client", so the user can see that it is a different site.
+
+**Reason.** The host is already in the address bar, so the plate reveals nothing new. It helps the user compare the two and see a phishing copy. A plain public-service look loads fast, works without a web font, and states only facts.
 
 ### U14. Later work that these pages need
 
@@ -287,9 +305,9 @@ sequenceDiagram
 
 | # | Change | Note |
 |---|---|---|
-| S1 | Serve `/account/*` from `wwwroot/account`, with the nonce in `index.html` and the CSP of U3 on these paths only. | Other paths keep `default-src 'none'`. |
-| S2 | `UiOptions`: `LoginPath = /account/login`, `ConsentPath = /account/consent`. | Configuration only. |
-| S3 | `/authorize` error page: redirect to `/account/error?error={code}`. | Replaces the JSON body (U6). |
+| S1 | Done. Serve `/account/*` from `wwwroot/account`, with the nonce in `index.html` and the CSP of U3 on these paths only. | Other paths keep `default-src 'none'`. |
+| S2 | Done. `UiOptions`: `LoginPath = /account/login`, `ConsentPath = /account/consent`. | Configuration only. |
+| S3 | Done. `/authorize` error page: redirect to `/account/error?error={code}`. | Replaces the JSON body (U6). |
 | S4 | Done (D23). CORS for registered client origins on `/token`, `/revoke`, and `/userinfo`. The allowed origins are the origins of the client's redirect URIs. Never `*`. Discovery and JWKS allow any origin, because they are public. | Threat model, `/userinfo` CORS row. Needs its own threat model rows. |
 | S5 | OpenAPI document for `/session/v1` (issue #22). | For the typed client (U7). |
 | S6 | Done. `seed-dev` registers the demo SPA client. | Public client, redirect URI `https://demo.localhost:4300/callback`. |
@@ -330,7 +348,7 @@ These rows go into `docs/threat-model.md` when the owner approves this design:
 
 ## 9. Open questions for the owner
 
-1. Approve U2 to U7, U13, and U14, or change some. U1, U8 to U12 are approved.
+1. Approve U14, or change it. U1 to U12 are approved. Claude decided U13 (delegated).
 2. Decided on 2026-10-19: the demo SPA uses `angular-auth-oidc-client` (U9).
 3. Build a BFF demo later (U10, alternative)?
 4. Decided on 2026-10-19: the account pages and the demo SPA are built in parallel. The demo SPA cannot finish a sign-in until S1 to S4 exist.

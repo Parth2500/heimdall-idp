@@ -11,9 +11,15 @@ public sealed class UiOptions
 {
     public const string SectionName = "Heimdall:Ui";
 
-    public string LoginPath { get; set; } = "/login";
+    public string LoginPath { get; set; } = AccountPages.Prefix + "/login";
 
-    public string ConsentPath { get; set; } = "/consent";
+    public string ConsentPath { get; set; } = AccountPages.Prefix + "/consent";
+
+    /// <summary>The page for a refused request that Heimdall cannot send back to the client (U6).</summary>
+    public string ErrorPath { get; set; } = AccountPages.Prefix + "/error";
+
+    /// <summary>The built account application, relative to the content root (U2).</summary>
+    public string AccountDirectory { get; set; } = "wwwroot/account";
 }
 
 /// <summary>
@@ -73,10 +79,10 @@ internal static partial class AuthorizeEndpoint
         switch (outcome)
         {
             case AuthorizeErrorPage page:
-                // The Angular error page comes later. Until then, a JSON body with the code only (D5).
+                // Heimdall's own error page, never the client: the client or its redirect URI is not proven (U6). The
+                // page shows text for a fixed list of codes only, and the code carries no reason (D5).
                 LogRefused(logger, page.Error, page.Reason);
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                return context.Response.WriteAsJsonAsync(new { error = page.Error }, context.RequestAborted);
+                return Redirect(context, AppendQuery(ui.ErrorPath, [new("error", page.Error)]));
 
             case AuthorizeRedirect redirect:
                 if (redirect.Reason is { } reason)

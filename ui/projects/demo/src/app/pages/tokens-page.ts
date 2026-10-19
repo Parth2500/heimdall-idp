@@ -7,13 +7,14 @@ import { TheftDemo, TheftDemoResult } from '../theft/theft-demo';
 /** The refresh screen and the theft demo screen of U11. */
 @Component({
   selector: 'demo-tokens-page',
+  host: { class: 'hd-stack page' },
   imports: [DatePipe],
   template: `
-    <h1>Refresh and theft</h1>
+    <h1 class="hd-title">Refresh and theft</h1>
 
     @if (session.state() === 'signed-in') {
       <section aria-labelledby="refresh-heading">
-        <h2 id="refresh-heading">Refresh token rotation</h2>
+        <h2 class="hd-heading" id="refresh-heading">Refresh token rotation</h2>
         <p>
           Each refresh gives the client a new refresh token. Heimdall marks the old one as used. The
           page shows the first 6 hex characters of the SHA-256 of each token, never the token.
@@ -27,9 +28,11 @@ import { TheftDemo, TheftDemoResult } from '../theft/theft-demo';
             </li>
           }
         </ol>
-        <button type="button" (click)="refresh()" [disabled]="busy()">Refresh now</button>
+        <button class="hd-button" type="button" (click)="refresh()" [disabled]="busy()">
+          Refresh now
+        </button>
         @if (refreshError()) {
-          <p role="alert" class="notice">
+          <p role="alert" class="hd-problem">
             The refresh failed. Sign in again to get a new token family.
           </p>
         }
@@ -37,7 +40,7 @@ import { TheftDemo, TheftDemoResult } from '../theft/theft-demo';
     }
 
     <section aria-labelledby="theft-heading">
-      <h2 id="theft-heading">Theft demo</h2>
+      <h2 class="hd-heading" id="theft-heading">Theft demo</h2>
       <p>
         An attacker who copied the previous refresh token now sends it to the token endpoint. Then
         the demo sends the current token, as the real client would.
@@ -46,47 +49,84 @@ import { TheftDemo, TheftDemoResult } from '../theft/theft-demo';
         @if (!history.hasPrevious()) {
           <p>Refresh once first, so that a used token exists.</p>
         }
-        <button type="button" (click)="replay()" [disabled]="busy() || !history.hasPrevious()">
+        <button
+          class="hd-button"
+          type="button"
+          (click)="replay()"
+          [disabled]="busy() || !history.hasPrevious()"
+        >
           Replay the old refresh token
         </button>
-      } @else {
-        <button type="button" (click)="session.signIn()">Sign in again</button>
       }
 
       @if (result(); as r) {
-        <ol class="steps" aria-live="polite">
-          <li>
-            Old token <code>{{ r.replay.tokenFingerprint }}</code
-            >: HTTP {{ r.replay.status }},
-            <code>{{ r.replay.error ?? 'tokens issued' }}</code>
-          </li>
-          <li>
-            Current token <code>{{ r.current.tokenFingerprint }}</code
-            >: HTTP {{ r.current.status }},
-            <code>{{ r.current.error ?? 'tokens issued' }}</code>
-          </li>
-        </ol>
+        <table class="hd-table" aria-live="polite">
+          <caption>
+            What Heimdall answered, in order
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Sent by</th>
+              <th scope="col">Refresh token</th>
+              <th scope="col">Answer</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (
+              row of [
+                { who: 'Attacker, with the old token', a: r.replay },
+                { who: 'Client, with the current token', a: r.current },
+              ];
+              track row.who
+            ) {
+              <tr>
+                <th scope="row">{{ row.who }}</th>
+                <td>
+                  <code>{{ row.a.tokenFingerprint }}</code>
+                </td>
+                <td>
+                  <span [class]="row.a.error === null ? 'mark mark--issued' : 'mark mark--refused'">
+                    {{ row.a.error === null ? 'Issued' : 'Refused' }}
+                  </span>
+                  HTTP {{ row.a.status }} <code>{{ row.a.error ?? '' }}</code>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
         @switch (r.verdict) {
           @case ('family-revoked') {
-            <p class="verdict">
-              Heimdall detected the reuse and revoked the whole token family. The current token
-              fails too, so the attacker's copy and the client's copy are both dead. The client
-              dropped its tokens and must sign in again.
-            </p>
+            <div class="hd-confirm">
+              <p class="hd-confirm__title">Reuse detected. The family is revoked.</p>
+              <p>
+                The current token fails too, so the attacker's copy and the client's copy are both
+                dead. The client dropped its tokens and must sign in again.
+              </p>
+            </div>
           }
           @case ('replay-refused-only') {
-            <p class="verdict defect">
-              Heimdall refused the old token but did not revoke the family. This breaks the rule
-              that reuse revokes the family.
-            </p>
+            <div class="hd-problem">
+              <p class="hd-problem__title">Defect</p>
+              <p>
+                Heimdall refused the old token but did not revoke the family. This breaks the rule
+                that reuse revokes the family.
+              </p>
+            </div>
           }
           @case ('replay-accepted') {
-            <p class="verdict defect">Heimdall accepted a used refresh token. This is a defect.</p>
+            <div class="hd-problem">
+              <p class="hd-problem__title">Defect</p>
+              <p>Heimdall accepted a used refresh token.</p>
+            </div>
           }
           @default {
-            <p class="verdict">The answers do not show a result. Check that Heimdall is running.</p>
+            <p class="hd-note">The answers do not show a result. Check that Heimdall is running.</p>
           }
         }
+      }
+
+      @if (session.state() !== 'signed-in') {
+        <button class="hd-button" type="button" (click)="session.signIn()">Sign in again</button>
       }
     </section>
   `,

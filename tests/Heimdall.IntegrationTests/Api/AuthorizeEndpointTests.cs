@@ -88,12 +88,13 @@ public sealed class AuthorizeEndpointTests
             .ToDictionary(p => p.Key, p => p.Value.ToString(), StringComparer.Ordinal);
     }
 
-    private static async Task AssertErrorPageAsync(HttpResponseMessage response, string error)
+    private static Task AssertErrorPageAsync(HttpResponseMessage response, string error)
     {
-        // Never a redirect: the client or redirect URI is not proven valid.
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Null(response.Headers.Location);
-        Assert.Contains($"\"{error}\"", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+        // Never a redirect to the client: the client or redirect URI is not proven valid. Heimdall's own page only (U6).
+        var query = QueryOf(response, out var target);
+        Assert.Equal("/account/error", target);
+        Assert.Equal(new Dictionary<string, string> { ["error"] = error }, query);
+        return Task.CompletedTask;
     }
 
     [DockerFact]
@@ -131,7 +132,7 @@ public sealed class AuthorizeEndpointTests
 
         using var first = await setup.Browser.SendAsync(HttpMethod.Get, AuthorizeUrl());
         var loginQuery = QueryOf(first, out var loginPath);
-        Assert.Equal("/login", loginPath);
+        Assert.Equal("/account/login", loginPath);
         Assert.Equal(["request_id"], loginQuery.Keys);
 
         using var login = await setup.Browser.LoginAsync(Email, Password);
@@ -158,8 +159,8 @@ public sealed class AuthorizeEndpointTests
         var responses = await Task.WhenAll(Enumerable.Range(0, 6).Select(_ =>
             setup.Browser.SendAsync(HttpMethod.Get, $"oauth/v1/authorize/resume?request_id={requestId}")));
 
-        Assert.Equal(1, responses.Count(r => r.StatusCode == HttpStatusCode.Found));
-        Assert.Equal(5, responses.Count(r => r.StatusCode == HttpStatusCode.BadRequest));
+        Assert.All(responses, r => Assert.Equal(HttpStatusCode.Found, r.StatusCode));
+        Assert.Equal(5, responses.Count(r => r.Headers.Location!.OriginalString.StartsWith("/account/error?", StringComparison.Ordinal)));
         foreach (var response in responses)
         {
             response.Dispose();
@@ -272,11 +273,11 @@ public sealed class AuthorizeEndpointTests
         // A session exists, but it is older than the request.
         using var first = await setup.Browser.SendAsync(HttpMethod.Get, AuthorizeUrl(("prompt", "login")));
         var requestId = QueryOf(first, out var path)["request_id"];
-        Assert.Equal("/login", path);
+        Assert.Equal("/account/login", path);
 
         using var stillOld = await setup.Browser.SendAsync(HttpMethod.Get, $"oauth/v1/authorize/resume?request_id={requestId}");
         QueryOf(stillOld, out var stillLogin);
-        Assert.Equal("/login", stillLogin);
+        Assert.Equal("/account/login", stillLogin);
 
         setup.Api.Time.Advance(TimeSpan.FromSeconds(1));
         using var login = await setup.Browser.LoginAsync(Email, Password);
@@ -294,7 +295,7 @@ public sealed class AuthorizeEndpointTests
         using var fresh = await setup.Browser.SendAsync(HttpMethod.Get, AuthorizeUrl(("max_age", "900")));
 
         QueryOf(tooOld, out var path);
-        Assert.Equal("/login", path);
+        Assert.Equal("/account/login", path);
         Assert.True(QueryOf(fresh, out _).ContainsKey("code"));
     }
 
@@ -306,7 +307,7 @@ public sealed class AuthorizeEndpointTests
         using var response = await setup.Browser.SendAsync(HttpMethod.Get, AuthorizeUrl());
 
         var query = QueryOf(response, out var path);
-        Assert.Equal("/consent", path);
+        Assert.Equal("/account/consent", path);
         Assert.Equal(["request_id"], query.Keys);
     }
 

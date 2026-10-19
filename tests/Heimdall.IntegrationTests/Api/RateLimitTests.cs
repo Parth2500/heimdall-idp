@@ -128,7 +128,9 @@ public sealed class RateLimitTests
         using var second = await http.GetAsync("oauth/v1/authorize?client_id=unknown");
         using var third = await http.GetAsync("oauth/v1/authorize?client_id=unknown");
 
-        Assert.Equal(HttpStatusCode.BadRequest, second.StatusCode);
+        // Refused by the grant, not the limit: Heimdall's error page (U6).
+        Assert.Equal(HttpStatusCode.Found, second.StatusCode);
+        Assert.StartsWith("/account/error?", second.Headers.Location!.OriginalString, StringComparison.Ordinal);
         await AssertRateLimitedAsync(third);
     }
 

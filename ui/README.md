@@ -1,6 +1,6 @@
 # Heimdall UI
 
-One Angular workspace (U1 in `docs/frontend-design.md`). It holds the `demo` application now. The `account` application and the `ui-kit` library come next.
+One Angular workspace (U1 in `docs/frontend-design.md`). It holds the `account` application (the Heimdall login, consent, error, and signed-out pages), the `demo` application (a sample client), and the `ui-kit` library (design tokens and the page frame, U13).
 
 ## Setup
 
@@ -21,8 +21,7 @@ npm ci --ignore-scripts
 
 ## Demo SPA against Heimdall
 
-The demo signs in at `https://acme.localhost:7200` as the public client `demo-spa`. A full sign-in also needs these server changes from `docs/frontend-design.md`, section 5:
-
-- S1 to S3: the account pages on the tenant origin.
-- S4: CORS for the client's origin on `/token`, `/revoke`, and `/userinfo`.
-- S6: `seed-dev` registers `demo-spa` with the redirect URI `https://demo.localhost:4300/callback`.
+1. Run `seed-dev` (see the root README). It registers the public client `demo-spa` and prints the password of `alice@acme.localhost` once.
+2. Build the account pages: `npm run build` or `npm run watch:account`.
+3. Run Heimdall with the `https` launch profile, then `npm start`.
+4. Open `https://demo.localhost:4300` and accept the development certificates of both origins.

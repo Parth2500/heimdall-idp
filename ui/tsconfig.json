@@ -13,7 +13,10 @@
     "experimentalDecorators": true,
     "importHelpers": true,
     "target": "ES2022",
-    "module": "preserve"
+    "module": "preserve",
+    "paths": {
+      "ui-kit": ["./projects/ui-kit/src/public-api.ts"]
+    }
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
@@ -28,6 +31,18 @@
     },
     {
       "path": "./projects/demo/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/ui-kit/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/ui-kit/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/account/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/account/tsconfig.spec.json"
     }
   ]
 }

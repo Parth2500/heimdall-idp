@@ -59,6 +59,9 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
 
             // The smallest allowed Argon2id parameters keep the tests fast.
             ["Heimdall:PasswordHashing:MemoryKiB"] = "19456",
+
+            // A small stand-in for the Angular build, so the tests do not need Node.js.
+            ["Heimdall:Ui:AccountDirectory"] = AccountFixture.Directory,
         }));
         builder.ConfigureTestServices(services =>
         {
@@ -170,4 +173,24 @@ internal sealed record TestTenant(Tenant Tenant, string ClientId, string ClientS
     public string Host => Tenant.Host;
 
     public string Issuer => "https://" + Tenant.Host;
+}
+
+/// <summary>A stand-in for the built account application: an index with the nonce placeholder and one hashed bundle.</summary>
+internal static class AccountFixture
+{
+    public const string Bundle = "main-ABCD1234.js";
+
+    private static readonly Lazy<string> Root = new(() =>
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "heimdall-account-" + Guid.NewGuid().ToString("N"));
+        System.IO.Directory.CreateDirectory(directory);
+        File.WriteAllText(
+            Path.Combine(directory, "index.html"),
+            $"<!doctype html><html><head><script src=\"{Bundle}\" nonce=\"__HEIMDALL_CSP_NONCE__\"></script></head>" +
+            "<body><acct-root ngCspNonce=\"__HEIMDALL_CSP_NONCE__\"></acct-root></body></html>");
+        File.WriteAllText(Path.Combine(directory, Bundle), "console.log('account');");
+        return directory;
+    });
+
+    public static string Directory => Root.Value;
 }

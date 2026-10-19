@@ -4,9 +4,10 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve demo",
-    "build": "ng build demo",
-    "test": "ng test demo --watch=false",
-    "lint:format": "prettier --check projects"
+    "build": "ng build demo && ng build account",
+    "test": "ng test ui-kit --watch=false && ng test account --watch=false && ng test demo --watch=false",
+    "lint:format": "prettier --check projects",
+    "watch:account": "ng build account --configuration development --watch"
   },
   "private": true,
   "packageManager": "npm@11.19.1",

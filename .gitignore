@@ -492,3 +492,11 @@ $RECYCLE.BIN/
 
 # Private working notes (audits, ideas). Never committed.
 .notes/
+
+# The account pages build output (ui/, U2). Heimdall serves it from here in development.
+src/Heimdall.Api/wwwroot/account/
+
+# Impeccable working files. The surface briefs in .impeccable/surfaces are kept.
+.impeccable/review/
+.impeccable/questions/
+.impeccable/hook.cache.json

@@ -8,13 +8,14 @@ import { ClaimsTable } from './claims-table';
 /** The signed-out screen and the signed-in screen of U11. */
 @Component({
   selector: 'demo-home-page',
+  host: { class: 'hd-stack page' },
   imports: [ClaimsTable],
   template: `
     @if (session.state() === 'signed-in') {
-      <h1>Signed in</h1>
+      <h1 class="hd-title">Signed in</h1>
 
       <section aria-labelledby="expiry-heading">
-        <h2 id="expiry-heading">Access token</h2>
+        <h2 class="hd-heading" id="expiry-heading">Access token</h2>
         @if (secondsLeft() !== null) {
           <p>
             It expires in <strong>{{ secondsLeft() }} s</strong>. The library refreshes it 30
@@ -26,33 +27,35 @@ import { ClaimsTable } from './claims-table';
       </section>
 
       <section aria-labelledby="claims-heading">
-        <h2 id="claims-heading">ID token claims</h2>
+        <h2 class="hd-heading" id="claims-heading">ID token claims</h2>
         <p>The library verified the signature with a key from the Heimdall JWKS.</p>
         @if (idClaims.value(); as claims) {
           <demo-claims-table [claims]="claims" caption="Decoded ID token payload" />
         }
       </section>
     } @else {
-      <h1>Sign in with Heimdall</h1>
+      <h1 class="hd-title">Sign in with Heimdall</h1>
       <p>
         This client is a public client. It uses the authorization code flow with PKCE (S256) against
         <code>{{ issuer }}</code
         >. It keeps its tokens in memory only.
       </p>
       @if (session.error(); as error) {
-        <p role="alert" class="notice">
+        <p role="alert" class="hd-problem">
           Heimdall did not sign you in. The error code is <code>{{ error }}</code
           >.
         </p>
       }
       @if (session.signedOutHere()) {
-        <p role="status" class="notice">
+        <p role="status" class="hd-note">
           The client revoked its refresh token and dropped its tokens. Your Heimdall session is
           still active, so the next sign-in may not ask for a password. Heimdall has no RP-initiated
           logout yet.
         </p>
       }
-      <button type="button" (click)="session.signIn()">Sign in with Heimdall</button>
+      <button class="hd-button" type="button" (click)="session.signIn()">
+        Sign in with Heimdall
+      </button>
     }
   `,
 })

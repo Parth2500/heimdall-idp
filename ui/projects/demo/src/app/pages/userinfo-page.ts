@@ -26,9 +26,10 @@ export const RELEASING_SCOPE: Readonly<Record<string, string>> = {
 /** The user info screen of U11. */
 @Component({
   selector: 'demo-userinfo-page',
+  host: { class: 'hd-stack page' },
   imports: [ClaimsTable],
   template: `
-    <h1>User info</h1>
+    <h1 class="hd-title">User info</h1>
     <p>
       The client sent its access token to the <code>userinfo_endpoint</code> as a bearer token.
       Heimdall releases a claim only when a granted scope allows it.
@@ -36,8 +37,8 @@ export const RELEASING_SCOPE: Readonly<Record<string, string>> = {
     @if (userInfo.isLoading()) {
       <p role="status">Asking Heimdall.</p>
     } @else if (userInfo.error(); as error) {
-      <p role="alert" class="notice">{{ describe(error) }}</p>
-      <button type="button" (click)="userInfo.reload()">Try again</button>
+      <p role="alert" class="hd-problem">{{ describe(error) }}</p>
+      <button class="hd-button" type="button" (click)="userInfo.reload()">Try again</button>
     } @else if (userInfo.value(); as claims) {
       <demo-claims-table
         [claims]="claims"
@@ -45,7 +46,9 @@ export const RELEASING_SCOPE: Readonly<Record<string, string>> = {
         [notes]="scopes"
         notesHeading="Released by scope"
       />
-      <button type="button" class="quiet" (click)="userInfo.reload()">Ask again</button>
+      <button type="button" class="hd-button hd-button--secondary" (click)="userInfo.reload()">
+        Ask again
+      </button>
     }
   `,
 })

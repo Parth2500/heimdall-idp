@@ -46,6 +46,7 @@ builder.Services.AddOptions<SigningKeyOptions>()
 builder.Services.AddSingleton(provider => provider.GetRequiredService<IOptions<SigningKeyOptions>>().Value);
 builder.Services.AddOptions<IssuerOptions>().Bind(builder.Configuration.GetSection(IssuerOptions.SectionName));
 builder.Services.AddOptions<UiOptions>().Bind(builder.Configuration.GetSection(UiOptions.SectionName));
+builder.Services.AddSingleton<AccountIndex>();
 
 // D16: the platform limits. A minimum of zero, or a minimum above its maximum, stops the server at startup.
 builder.Services.AddOptions<PlatformLimits>()
@@ -172,6 +173,9 @@ app.UseMiddleware<CorsMiddleware>();
 
 // After tenant resolution: an unknown host or plain HTTP is refused before it uses a permit.
 app.UseRateLimiter();
+
+// After tenant resolution: the pages exist only on a tenant origin, where the session cookie works (U2).
+AccountPages.Map(app);
 
 app.MapPost(TokenEndpoint.Path, TokenEndpoint.HandleAsync);
 app.MapPost(RevokeEndpoint.Path, RevokeEndpoint.HandleAsync);

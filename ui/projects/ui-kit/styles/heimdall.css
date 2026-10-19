@@ -1,0 +1,422 @@
+/*
+ * Heimdall ui-kit: the public-service identity program (U13, delegated).
+ * Tokens first. Tenant branding (Phase 3) changes tokens, never components.
+ * No web font and no third-party origin (U8): the system font stack.
+ *
+ * State colors have one meaning each, everywhere:
+ *   lapis  Heimdall speaks or acts
+ *   red    refused or failed
+ *   green  done or confirmed
+ *   yellow keyboard focus, nothing else
+ */
+:root {
+  color-scheme: light dark;
+
+  --hd-lapis: #1e2f7a;
+  --hd-lapis-strong: #14205a;
+  --hd-link: #1e2f7a;
+  --hd-on-lapis: #ffffff;
+  --hd-on-lapis-muted: #c9d1f0;
+  --hd-client: #2b2e36;
+  --hd-client-strong: #1c1e24;
+
+  --hd-ink: #0b0c14;
+  --hd-ink-muted: #474d63;
+  --hd-page: #ffffff;
+  --hd-ground: #eef1f8;
+  --hd-rule: #c7cddf;
+
+  --hd-focus: #ffd21f;
+  --hd-focus-ink: #0b0c14;
+  --hd-red: #b3261e;
+  --hd-red-tint: #fbeae8;
+  --hd-green: #0b6b3a;
+  --hd-green-tint: #e5f3ea;
+
+  --hd-font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --hd-mono:
+    ui-monospace, 'SF Mono', 'Cascadia Mono', 'DejaVu Sans Mono', 'Liberation Mono', Menlo,
+    Consolas, monospace;
+
+  /* Type scale: hierarchy by size and weight only. */
+  --hd-text-xs: 0.875rem;
+  --hd-text-s: 1rem;
+  --hd-text-m: 1.125rem;
+  --hd-text-l: 1.5rem;
+  --hd-text-xl: clamp(2rem, 1.6rem + 1.6vw, 2.75rem);
+
+  /* A 4px rhythm. */
+  --hd-1: 0.25rem;
+  --hd-2: 0.5rem;
+  --hd-3: 0.75rem;
+  --hd-4: 1rem;
+  --hd-6: 1.5rem;
+  --hd-8: 2rem;
+  --hd-12: 3rem;
+  --hd-16: 4rem;
+
+  --hd-band-height: 4rem;
+  --hd-column: 30rem;
+  --hd-frame: 64rem;
+  --hd-control: 3rem;
+  --hd-border: 2px;
+  --hd-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --hd-lapis: #2b3f99;
+    --hd-lapis-strong: #3a50b5;
+    --hd-link: #a9bbff;
+    --hd-on-lapis-muted: #d3daf5;
+    --hd-client: #3a3e48;
+    --hd-client-strong: #4a4f5b;
+
+    --hd-ink: #e9ecf7;
+    --hd-ink-muted: #aab2cc;
+    --hd-page: #10142c;
+    --hd-ground: #0a0d20;
+    --hd-rule: #333a5c;
+
+    --hd-red: #ff8a80;
+    --hd-red-tint: #3a1618;
+    --hd-green: #74d6a0;
+    --hd-green-tint: #0f2e20;
+  }
+}
+
+/* Browser surfaces carry the design too. */
+::selection {
+  background: var(--hd-lapis);
+  color: var(--hd-on-lapis);
+}
+
+html {
+  scrollbar-color: var(--hd-rule) var(--hd-ground);
+  -webkit-text-size-adjust: 100%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--hd-ground);
+  color: var(--hd-ink);
+  font: var(--hd-text-m) / 1.55 var(--hd-font);
+  caret-color: var(--hd-link);
+  font-variant-numeric: tabular-nums;
+}
+
+h1,
+h2,
+p,
+ul,
+ol,
+dl,
+dd {
+  margin: 0;
+}
+
+a {
+  color: var(--hd-link);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  text-decoration-thickness: 3px;
+}
+
+code,
+.hd-code {
+  font-family: var(--hd-mono);
+  font-size: 1em;
+  /* Fallback mono faces run small. Match the x-height of the text around them. */
+  font-size-adjust: 0.53;
+  overflow-wrap: anywhere;
+}
+
+/* Focus: a yellow field with an ink underline, readable on lapis, white, and dark grounds. */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 3px solid var(--hd-focus);
+  outline-offset: 0;
+  box-shadow:
+    0 0 0 3px var(--hd-focus),
+    0 6px 0 0 var(--hd-focus-ink);
+}
+
+a:focus-visible {
+  outline: none;
+  background: var(--hd-focus);
+  color: var(--hd-focus-ink);
+  box-shadow:
+    0 -2px var(--hd-focus),
+    0 4px var(--hd-focus-ink);
+  text-decoration: none;
+}
+
+.hd-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- Text ---------- */
+
+.hd-title {
+  font-size: var(--hd-text-xl);
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.hd-heading {
+  font-size: var(--hd-text-l);
+  line-height: 1.25;
+  font-weight: 700;
+  text-wrap: balance;
+}
+
+.hd-lead {
+  max-width: 34em;
+  color: var(--hd-ink);
+  text-wrap: pretty;
+}
+
+.hd-muted {
+  color: var(--hd-ink-muted);
+}
+
+.hd-small {
+  font-size: var(--hd-text-xs);
+}
+
+.hd-stack > * + * {
+  margin-top: var(--hd-6);
+}
+
+.hd-stack-tight > * + * {
+  margin-top: var(--hd-3);
+}
+
+/* ---------- Form controls: square, 2px ink border, 48px tall ---------- */
+
+.hd-field {
+  display: grid;
+  gap: var(--hd-2);
+}
+
+.hd-label {
+  font-weight: 700;
+}
+
+.hd-hint {
+  color: var(--hd-ink-muted);
+  font-size: var(--hd-text-s);
+}
+
+.hd-field-error {
+  color: var(--hd-red);
+  font-weight: 700;
+  font-size: var(--hd-text-s);
+}
+
+.hd-input {
+  width: 100%;
+  min-height: var(--hd-control);
+  padding: var(--hd-2) var(--hd-3);
+  border: var(--hd-border) solid var(--hd-ink);
+  border-radius: 0;
+  background: var(--hd-page);
+  color: var(--hd-ink);
+  font: inherit;
+}
+
+.hd-input[aria-invalid='true'] {
+  border-color: var(--hd-red);
+  border-width: 4px;
+  padding: calc(var(--hd-2) - 2px) calc(var(--hd-3) - 2px);
+}
+
+.hd-input-row {
+  display: flex;
+}
+
+.hd-input-row .hd-input {
+  flex: 1;
+}
+
+.hd-input-row .hd-button {
+  width: auto;
+  margin-left: calc(var(--hd-border) * -1);
+}
+
+.hd-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--hd-2);
+  min-height: var(--hd-control);
+  padding: var(--hd-2) var(--hd-6);
+  border: var(--hd-border) solid var(--hd-lapis);
+  border-radius: 0;
+  background: var(--hd-lapis);
+  color: var(--hd-on-lapis);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 120ms var(--hd-ease-out);
+}
+
+.hd-button:hover {
+  background: var(--hd-lapis-strong);
+  border-color: var(--hd-lapis-strong);
+}
+
+.hd-button--block {
+  width: 100%;
+}
+
+.hd-button--secondary {
+  background: var(--hd-page);
+  color: var(--hd-ink);
+  border-color: var(--hd-ink);
+}
+
+.hd-button--secondary:hover {
+  background: var(--hd-ground);
+  border-color: var(--hd-ink);
+}
+
+.hd-button--quiet {
+  min-height: auto;
+  padding: var(--hd-1) var(--hd-3);
+  background: transparent;
+  color: inherit;
+  border-color: currentColor;
+  font-weight: 600;
+}
+
+.hd-button--quiet:hover {
+  background: transparent;
+  border-color: currentColor;
+  text-decoration: underline;
+}
+
+.hd-button[disabled],
+.hd-button[aria-disabled='true'] {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.hd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hd-3);
+}
+
+/* ---------- Messages: full boxes, never a thick side stripe ---------- */
+
+.hd-problem {
+  padding: var(--hd-4) var(--hd-6);
+  border: var(--hd-border) solid var(--hd-red);
+  background: var(--hd-red-tint);
+}
+
+.hd-problem__title {
+  color: var(--hd-red);
+  font-weight: 700;
+}
+
+.hd-confirm {
+  padding: var(--hd-4) var(--hd-6);
+  border: var(--hd-border) solid var(--hd-green);
+  background: var(--hd-green-tint);
+}
+
+.hd-confirm__title {
+  color: var(--hd-green);
+  font-weight: 700;
+}
+
+.hd-note {
+  padding: var(--hd-4) var(--hd-6);
+  border: 1px solid var(--hd-rule);
+  background: var(--hd-ground);
+}
+
+/* ---------- Lists and tables ---------- */
+
+.hd-rule-list {
+  list-style: none;
+  padding: 0;
+  border-top: 1px solid var(--hd-rule);
+}
+
+.hd-rule-list > li {
+  padding: var(--hd-4) 0;
+  border-bottom: 1px solid var(--hd-rule);
+}
+
+.hd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--hd-text-s);
+}
+
+.hd-table caption {
+  text-align: start;
+  font-weight: 700;
+  padding-bottom: var(--hd-1);
+}
+
+.hd-table thead th {
+  padding-top: var(--hd-1);
+}
+
+.hd-table th,
+.hd-table td {
+  text-align: start;
+  vertical-align: top;
+  padding: var(--hd-3) var(--hd-4) var(--hd-3) 0;
+  border-bottom: 1px solid var(--hd-rule);
+}
+
+.hd-table thead th {
+  border-bottom: var(--hd-border) solid var(--hd-ink);
+}
+
+/* ---------- Busy line: the one authored motion ---------- */
+
+@keyframes hd-busy {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}

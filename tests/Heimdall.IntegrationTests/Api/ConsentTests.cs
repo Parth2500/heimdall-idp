@@ -150,7 +150,7 @@ public sealed class ConsentTests
 
         // The denial ended the request: a later approval cannot turn it into a code.
         Assert.Equal(HttpStatusCode.BadRequest, approveLater.StatusCode);
-        Assert.Equal(HttpStatusCode.BadRequest, resumeAgain.StatusCode);
+        Assert.Equal("/account/error?error=invalid_request", resumeAgain.Headers.Location?.OriginalString);
         Assert.Equal(1, await AuditCountAsync(setup, AuditEventTypes.ConsentDenied));
     }
 
@@ -172,7 +172,7 @@ public sealed class ConsentTests
         using var resume = await ResumeAsync(setup);
 
         QueryOf(resume, out var path);
-        Assert.Equal("/consent", path);
+        Assert.Equal("/account/consent", path);
     }
 
     [DockerFact]
@@ -189,7 +189,7 @@ public sealed class ConsentTests
         Assert.Equal(HttpStatusCode.Forbidden, noXsrf.StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, foreignOrigin.StatusCode);
         QueryOf(resume, out var path);
-        Assert.Equal("/consent", path);
+        Assert.Equal("/account/consent", path);
     }
 
     [DockerFact]
@@ -242,7 +242,7 @@ public sealed class ConsentTests
         })))
         {
             requestId = QueryOf(authorize, out var path)["request_id"];
-            Assert.Equal("/login", path);
+            Assert.Equal("/account/login", path);
         }
 
         using (var login = await browser.LoginAsync(Email, Password))

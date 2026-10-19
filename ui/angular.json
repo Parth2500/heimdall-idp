@@ -25,9 +25,9 @@
               }
             ],
             "styles": [
+              "projects/ui-kit/styles/heimdall.css",
               "projects/demo/src/styles.css"
-            ],
-            "subresourceIntegrity": true
+            ]
           },
           "configurations": {
             "production": {
@@ -43,7 +43,8 @@
                   "maximumError": "8kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "subresourceIntegrity": true
             },
             "development": {
               "optimization": false,
@@ -69,6 +70,87 @@
             "port": 4300,
             "ssl": true
           }
+        },
+        "test": {
+          "builder": "@angular/build:unit-test"
+        }
+      }
+    },
+    "ui-kit": {
+      "projectType": "library",
+      "root": "projects/ui-kit",
+      "sourceRoot": "projects/ui-kit/src",
+      "prefix": "hd",
+      "architect": {
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "projects/ui-kit/tsconfig.spec.json",
+            "buildTarget": "account:build:development"
+          }
+        }
+      }
+    },
+    "account": {
+      "projectType": "application",
+      "schematics": {},
+      "root": "projects/account",
+      "sourceRoot": "projects/account/src",
+      "prefix": "acct",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "projects/account/src/main.ts",
+            "tsConfig": "projects/account/tsconfig.app.json",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "projects/account/public"
+              }
+            ],
+            "styles": [
+              "projects/ui-kit/styles/heimdall.css",
+              "projects/account/src/styles.css"
+            ],
+            "outputPath": {
+              "base": "../src/Heimdall.Api/wwwroot/account",
+              "browser": ""
+            },
+            "subresourceIntegrity": true
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all",
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": false
+              }
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "outputHashing": "all"
+            }
+          },
+          "defaultConfiguration": "production"
         },
         "test": {
           "builder": "@angular/build:unit-test"
