@@ -96,6 +96,9 @@ builder.Services.AddAntiforgery(options =>
     options.HeaderName = SessionEndpoints.XsrfHeader;
 });
 
+builder.Services.AddOptions<HealthOptions>().Bind(builder.Configuration.GetSection(HealthOptions.SectionName));
+builder.Services.AddHeimdallHealthChecks();
+
 builder.Services.AddOptions<BackgroundJobOptions>().Bind(builder.Configuration.GetSection(BackgroundJobOptions.SectionName));
 builder.Services.AddSingleton<SigningKeyJob>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<SigningKeyJob>());
@@ -138,6 +141,9 @@ if (!app.Environment.IsDevelopment())
 
 app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseMiddleware<CorrelationIdMiddleware>();
+
+// Before tenant resolution and the HTTPS check: probes call the container IP over plain HTTP.
+app.UseHeimdallHealthChecks(app.Services.GetRequiredService<IOptions<HealthOptions>>().Value);
 app.UseMiddleware<TenantResolutionMiddleware>();
 
 app.MapPost(TokenEndpoint.Path, TokenEndpoint.HandleAsync);

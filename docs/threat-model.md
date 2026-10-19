@@ -255,6 +255,16 @@ Decisions for this area:
 | Elevation of privilege | An admin disables a client or revokes a secret, but other servers still accept it. | Each server keeps a tenant's clients in memory for the server cache lifetime (1 minute). The server that makes the change drops its entry at once. This delay is accepted. Secret expiry has no delay: Heimdall checks it at each request. |
 | Elevation of privilege | A client loosens a rule that has no setting (D17) by a hidden field. | Heimdall binds only known fields. The code has no setting for D17 rules. |
 
+## Health endpoints
+
+Boundary: the orchestrator inside the deployment. `/health/live` and `/health/ready` run before tenant resolution and before the HTTPS check, because a probe calls the container IP over plain HTTP.
+
+| STRIDE | Threat | Mitigation |
+|---|---|---|
+| Information disclosure | A caller learns internal state, such as database errors, from a health response. | The body is one word: `Healthy` or `Unhealthy`. The reason stays on the server. |
+| Information disclosure | The health endpoints are reachable from the internet over plain HTTP. | Set `Heimdall:Health:Port` to a management port. The endpoints then answer only on that port. Do not publish the port. |
+| Denial of service | A database outage makes the orchestrator restart every server at once. | Liveness checks no dependency. Only readiness checks the database, so the orchestrator stops traffic but does not restart. |
+
 ## Limits and lifetimes
 
 These values are the platform defaults. A tenant or client can change a value only inside the limits (D15, D16). Change a default only with a recorded reason. Store each value in configuration, not in code.
