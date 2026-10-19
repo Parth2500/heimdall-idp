@@ -104,6 +104,14 @@ Health probes: `/health/live` (the process answers) and `/health/ready` (the dat
 
 To create a migration, use the pinned tool: `dotnet dotnet-ef migrations add <Name> --project src/Heimdall.Infrastructure --startup-project src/Heimdall.Api --output-dir Persistence/Migrations`.
 
+## Supply chain checks
+
+- NuGet audit runs at each restore (`Directory.Build.props`). A known-vulnerable package, direct or transitive, fails the build, on a developer machine and in CI.
+- CI pins each GitHub Action to a full commit SHA. A moved or hijacked tag cannot change the code that runs. Dependabot updates the pins.
+- CodeQL scans the C# code with the `security-extended` queries on each push, each pull request, and once a week.
+- Dependency review fails a pull request that adds a dependency with a known vulnerability.
+- GitHub secret scanning with push protection, Dependabot alerts, and Dependabot security updates are on for the repository.
+
 ## Roadmap
 
 1. **Phase 0:** threat model and design documents. Done.

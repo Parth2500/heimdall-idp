@@ -8,18 +8,28 @@ on:
 permissions:
   contents: read
 
+# Actions are pinned to full commit SHAs, so a moved or hijacked tag cannot change the code that runs.
+# Dependabot updates the pins.
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-dotnet@v6
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
 
+      # NuGet audit (Directory.Build.props) fails the restore on a known-vulnerable package.
       - name: Restore
         run: dotnet restore Heimdall.slnx
+
+      - name: List vulnerable packages
+        run: |
+          dotnet list Heimdall.slnx package --vulnerable --include-transitive 2>&1 | tee vulnerable.txt
+          if grep -qi "has the following vulnerable packages" vulnerable.txt; then exit 1; fi
 
       - name: Build
         run: dotnet build Heimdall.slnx --configuration Release --no-restore
