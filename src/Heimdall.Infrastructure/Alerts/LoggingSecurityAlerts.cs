@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Heimdall.Application.Alerts;
+using Heimdall.Infrastructure.Telemetry;
 using Microsoft.Extensions.Logging;
 
 namespace Heimdall.Infrastructure.Alerts;
@@ -11,10 +12,12 @@ namespace Heimdall.Infrastructure.Alerts;
 internal sealed partial class LoggingSecurityAlerts : ISecurityAlerts
 {
     private readonly ILogger<LoggingSecurityAlerts> _logger;
+    private readonly HeimdallMetrics _metrics;
 
-    public LoggingSecurityAlerts(ILogger<LoggingSecurityAlerts> logger)
+    public LoggingSecurityAlerts(ILogger<LoggingSecurityAlerts> logger, HeimdallMetrics metrics)
     {
         _logger = logger;
+        _metrics = metrics;
     }
 
     public void Raise(string type, Guid tenantId, IReadOnlyDictionary<string, string> data)
@@ -22,6 +25,7 @@ internal sealed partial class LoggingSecurityAlerts : ISecurityAlerts
         // An alert is rare and must never be dropped, so the data is always serialized.
         var json = JsonSerializer.Serialize(data);
         LogAlert(_logger, type, tenantId, json);
+        _metrics.SecurityAlert(type);
     }
 
     [LoggerMessage(EventId = 9000, EventName = "SecurityAlert", Level = LogLevel.Critical, Message = "Security alert {AlertType} in tenant {TenantId}: {Data}")]

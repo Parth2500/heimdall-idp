@@ -4,6 +4,7 @@ using Heimdall.Domain.Clients;
 using Heimdall.Domain.Common;
 using Heimdall.Infrastructure.Caching;
 using Heimdall.Infrastructure.Persistence;
+using Heimdall.Infrastructure.Telemetry;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -54,10 +55,10 @@ internal sealed class ClientCache
     private readonly IServiceScopeFactory _scopes;
     private readonly ExpiringCache<Guid, TenantClients> _cache;
 
-    public ClientCache(IServiceScopeFactory scopes, SigningKeyOptions options, TimeProvider time)
+    public ClientCache(IServiceScopeFactory scopes, SigningKeyOptions options, TimeProvider time, HeimdallMetrics metrics)
     {
         _scopes = scopes;
-        _cache = new ExpiringCache<Guid, TenantClients>(LoadAsync, options.ServerCacheLifetime, time);
+        _cache = new ExpiringCache<Guid, TenantClients>(LoadAsync, options.ServerCacheLifetime, time, hit => metrics.CacheLookup("clients", hit));
     }
 
     public async Task<ClientWithSecrets?> FindForAuthenticationAsync(

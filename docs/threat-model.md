@@ -265,6 +265,17 @@ Boundary: the orchestrator inside the deployment. `/health/live` and `/health/re
 | Information disclosure | The health endpoints are reachable from the internet over plain HTTP. | Set `Heimdall:Health:Port` to a management port. The endpoints then answer only on that port. Do not publish the port. |
 | Denial of service | A database outage makes the orchestrator restart every server at once. | Liveness checks no dependency. Only readiness checks the database, so the orchestrator stops traffic but does not restart. |
 
+## Telemetry
+
+Boundary: the telemetry backend. OpenTelemetry sends traces and metrics over OTLP, only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set. D7 applies to telemetry as it applies to logs.
+
+| STRIDE | Threat | Mitigation |
+|---|---|---|
+| Information disclosure | A trace holds a `state`, a code challenge, or a token from a query string. | Heimdall removes the `url.query` tag from every server span. No setting of the instrumentation can turn this off. A test checks it. |
+| Information disclosure | A trace holds the `Authorization` header or a cookie. | The instrumentation records no request headers. A test sends a bearer token and checks that no span holds it. |
+| Information disclosure | A trace holds parameter values of SQL statements. | Npgsql records the SQL text only. Every value in Heimdall's SQL is a parameter. |
+| Denial of service | A caller sends many different `grant_type` values and creates unbounded metric tag values. | Every tag value comes from a fixed set. An unknown grant type is counted as `other`. No tag holds a client ID or a user. |
+
 ## Limits and lifetimes
 
 These values are the platform defaults. A tenant or client can change a value only inside the limits (D15, D16). Change a default only with a recorded reason. Store each value in configuration, not in code.

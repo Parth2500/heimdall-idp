@@ -14,6 +14,7 @@ using Heimdall.Infrastructure.Keys;
 using Heimdall.Infrastructure.Persistence;
 using Heimdall.Infrastructure.Purge;
 using Heimdall.Infrastructure.Stores;
+using Heimdall.Infrastructure.Telemetry;
 using Heimdall.Infrastructure.Tenants;
 using Heimdall.Infrastructure.Users;
 using Microsoft.EntityFrameworkCore;
@@ -52,6 +53,8 @@ public static class DependencyInjection
         platformConnectionString ??= connectionString;
 
         services.TryAddSingleton(new SigningKeyOptions());
+        services.AddMetrics();
+        services.TryAddSingleton<HeimdallMetrics>();
         services.AddScoped<TenantScope>();
         services.AddDbContext<HeimdallDbContext>((provider, options) =>
             ConfigureDbContext(options, connectionString(provider), provider.GetRequiredService<TenantScope>()));

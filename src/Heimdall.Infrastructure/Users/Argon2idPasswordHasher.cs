@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using Heimdall.Application.Users;
+using Heimdall.Infrastructure.Telemetry;
 using Sodium;
 
 namespace Heimdall.Infrastructure.Users;
@@ -21,9 +23,11 @@ internal sealed class Argon2idPasswordHasher : IPasswordHasher, IDisposable
     private readonly TimeSpan _maxQueueWait;
     private readonly SemaphoreSlim _gate;
     private readonly Lazy<string> _dummyHash;
+    private readonly HeimdallMetrics? _metrics;
 
-    public Argon2idPasswordHasher(PasswordHashingOptions options)
+    public Argon2idPasswordHasher(PasswordHashingOptions options, HeimdallMetrics? metrics = null)
     {
+        _metrics = metrics;
         ArgumentNullException.ThrowIfNull(options);
         _opsLimit = options.Iterations;
         _memLimitBytes = checked(options.MemoryKiB * 1024);
@@ -83,9 +87,13 @@ internal sealed class Argon2idPasswordHasher : IPasswordHasher, IDisposable
 
     private async Task EnterAsync(CancellationToken cancellationToken)
     {
+        var started = Stopwatch.GetTimestamp();
         if (!await _gate.WaitAsync(_maxQueueWait, cancellationToken).ConfigureAwait(false))
         {
+            _metrics?.PasswordHashRejected();
             throw new PasswordHasherBusyException();
         }
+
+        _metrics?.PasswordHashQueueWait(Stopwatch.GetElapsedTime(started));
     }
 }

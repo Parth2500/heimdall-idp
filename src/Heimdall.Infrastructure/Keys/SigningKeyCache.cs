@@ -2,6 +2,7 @@ using Heimdall.Application.Keys;
 using Heimdall.Domain.Keys;
 using Heimdall.Infrastructure.Caching;
 using Heimdall.Infrastructure.Persistence;
+using Heimdall.Infrastructure.Telemetry;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,11 +22,11 @@ internal sealed class SigningKeyCache : ISigningKeyCache
     private readonly TimeProvider _time;
     private readonly ExpiringCache<Guid, TenantKeySet> _cache;
 
-    public SigningKeyCache(IServiceScopeFactory scopes, SigningKeyOptions options, TimeProvider time)
+    public SigningKeyCache(IServiceScopeFactory scopes, SigningKeyOptions options, TimeProvider time, HeimdallMetrics metrics)
     {
         _scopes = scopes;
         _time = time;
-        _cache = new ExpiringCache<Guid, TenantKeySet>(LoadAsync, options.ServerCacheLifetime, time);
+        _cache = new ExpiringCache<Guid, TenantKeySet>(LoadAsync, options.ServerCacheLifetime, time, hit => metrics.CacheLookup("signing_keys", hit));
     }
 
     public async ValueTask<ActiveSigningKey?> GetActiveKeyAsync(Guid tenantId, CancellationToken cancellationToken) =>

@@ -94,6 +94,8 @@ dotnet run --project src/Heimdall.Api -- remove-key <tenant host> <kid>
 ```
 The key leaves the JWKS at once, and tokens it signed stop working. Token issuance stops until the replacement key is active, at most one publish wait.
 
+Telemetry: set `OTEL_EXPORTER_OTLP_ENDPOINT` (for example `http://localhost:4317`) to send OpenTelemetry traces and metrics to a collector. Without it, Heimdall sends nothing. Heimdall's own metrics are in the meter `Heimdall` (`heimdall.token.requests`, `heimdall.login.attempts`, `heimdall.password_hash.*`, `heimdall.security.alerts`, `heimdall.cache.lookups`).
+
 Health probes: `/health/live` (the process answers) and `/health/ready` (the database answers). Set `Heimdall:Health:Port` to a management port in each deployment, so the probes answer only there.
 
 To create a migration, use the pinned tool: `dotnet dotnet-ef migrations add <Name> --project src/Heimdall.Infrastructure --startup-project src/Heimdall.Api --output-dir Persistence/Migrations`.

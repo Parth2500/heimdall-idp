@@ -37,6 +37,7 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddHeimdallTelemetry(builder.Configuration);
 
 builder.Services.AddOptions<SigningKeyOptions>()
     .Bind(builder.Configuration.GetSection(SigningKeyOptions.SectionName))

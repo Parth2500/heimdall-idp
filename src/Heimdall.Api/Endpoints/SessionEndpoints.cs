@@ -5,6 +5,7 @@ using Heimdall.Application.Authorization;
 using Heimdall.Application.Common;
 using Heimdall.Application.Sessions;
 using Heimdall.Application.Users;
+using Heimdall.Infrastructure.Telemetry;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http.Features;
 
@@ -64,7 +65,12 @@ internal static partial class SessionEndpoints
         return Results.NoContent();
     }
 
-    private static async Task<IResult> LoginAsync(HttpContext context, IAntiforgery antiforgery, SessionService sessions, ILoggerFactory loggers)
+    private static async Task<IResult> LoginAsync(
+        HttpContext context,
+        IAntiforgery antiforgery,
+        SessionService sessions,
+        HeimdallMetrics metrics,
+        ILoggerFactory loggers)
     {
         var logger = loggers.CreateLogger(typeof(SessionEndpoints));
         OAuthResponses.NoStore(context.Response);
@@ -97,10 +103,12 @@ internal static partial class SessionEndpoints
         }
         catch (PasswordHasherBusyException)
         {
+            metrics.LoginAttempt("busy");
             context.Response.Headers.RetryAfter = "5";
             return Error(StatusCodes.Status503ServiceUnavailable, "temporarily_unavailable");
         }
 
+        metrics.LoginAttempt(result.Succeeded ? "success" : "failure");
         if (!result.Succeeded)
         {
             // One answer for an unknown email, a wrong password, and a disabled account.

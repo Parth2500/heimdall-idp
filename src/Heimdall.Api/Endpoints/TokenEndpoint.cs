@@ -1,6 +1,7 @@
 using Heimdall.Api.Hosting;
 using Heimdall.Application.Common;
 using Heimdall.Application.Tokens;
+using Heimdall.Infrastructure.Telemetry;
 
 namespace Heimdall.Api.Endpoints;
 
@@ -21,6 +22,7 @@ internal static partial class TokenEndpoint
         ClientCredentialsGrant clientCredentials,
         AuthorizationCodeGrant authorizationCode,
         RefreshTokenGrant refreshToken,
+        HeimdallMetrics metrics,
         ILoggerFactory loggers)
     {
         var logger = loggers.CreateLogger(typeof(TokenEndpoint));
@@ -32,6 +34,7 @@ internal static partial class TokenEndpoint
 
         if (parsed.Error is { } error)
         {
+            metrics.TokenRequest(parsed.Form?["grant_type"].ToString(), error.Code);
             LogRejected(logger, error.Code, error.AuditDetail ?? string.Empty);
             await OAuthResponses.WriteErrorAsync(context, error).ConfigureAwait(false);
             return;
@@ -76,11 +79,13 @@ internal static partial class TokenEndpoint
 
             default:
                 var unsupported = OAuthError.UnsupportedGrantType("grant type not supported");
+                metrics.TokenRequest(null, unsupported.Code);
                 LogRejected(logger, unsupported.Code, unsupported.AuditDetail!);
                 await OAuthResponses.WriteErrorAsync(context, unsupported).ConfigureAwait(false);
                 return;
         }
 
+        metrics.TokenRequest(form["grant_type"].ToString(), result.IsSuccess ? "success" : result.Error.Code);
         if (result.IsSuccess)
         {
             await OAuthResponses.WriteTokenAsync(context, result.Value).ConfigureAwait(false);

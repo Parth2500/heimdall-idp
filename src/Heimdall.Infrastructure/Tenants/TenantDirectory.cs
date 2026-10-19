@@ -3,6 +3,7 @@ using Heimdall.Application.Tenants;
 using Heimdall.Domain.Tenants;
 using Heimdall.Infrastructure.Caching;
 using Heimdall.Infrastructure.Persistence;
+using Heimdall.Infrastructure.Telemetry;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -20,10 +21,11 @@ internal sealed class TenantDirectory : ITenantDirectory
     private readonly IServiceScopeFactory _scopes;
     private readonly ExpiringCache<byte, IReadOnlyDictionary<string, Tenant>> _cache;
 
-    public TenantDirectory(IServiceScopeFactory scopes, SigningKeyOptions options, TimeProvider time)
+    public TenantDirectory(IServiceScopeFactory scopes, SigningKeyOptions options, TimeProvider time, HeimdallMetrics metrics)
     {
         _scopes = scopes;
-        _cache = new ExpiringCache<byte, IReadOnlyDictionary<string, Tenant>>(_ => LoadAsync(), options.ServerCacheLifetime, time);
+        _cache = new ExpiringCache<byte, IReadOnlyDictionary<string, Tenant>>(
+            _ => LoadAsync(), options.ServerCacheLifetime, time, hit => metrics.CacheLookup("tenants", hit));
     }
 
     public async ValueTask<Tenant?> FindByHostAsync(string host, CancellationToken cancellationToken)

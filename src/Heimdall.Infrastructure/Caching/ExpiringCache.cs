@@ -12,14 +12,17 @@ internal sealed class ExpiringCache<TKey, TValue>
     private readonly Func<TKey, Task<TValue>> _load;
     private readonly TimeSpan _lifetime;
     private readonly TimeProvider _time;
+    private readonly Action<bool>? _onLookup;
     private readonly ConcurrentDictionary<TKey, Entry> _entries = new();
 
     /// <param name="load">Loads a value. It gets no cancellation token: all waiting callers share the load.</param>
-    public ExpiringCache(Func<TKey, Task<TValue>> load, TimeSpan lifetime, TimeProvider time)
+    /// <param name="onLookup">Called with true for a hit and false for a miss that starts a load. For metrics.</param>
+    public ExpiringCache(Func<TKey, Task<TValue>> load, TimeSpan lifetime, TimeProvider time, Action<bool>? onLookup = null)
     {
         _load = load;
         _lifetime = lifetime;
         _time = time;
+        _onLookup = onLookup;
     }
 
     public async ValueTask<TValue> GetAsync(TKey key, CancellationToken cancellationToken)
@@ -29,6 +32,7 @@ internal sealed class ExpiringCache<TKey, TValue>
             var now = _time.GetUtcNow();
             if (_entries.TryGetValue(key, out var entry) && entry.IsUsable(now))
             {
+                _onLookup?.Invoke(true);
                 return await entry.Load.Value.WaitAsync(cancellationToken).ConfigureAwait(false);
             }
 
@@ -39,6 +43,7 @@ internal sealed class ExpiringCache<TKey, TValue>
                 : _entries.TryUpdate(key, fresh, entry);
             if (swapped)
             {
+                _onLookup?.Invoke(false);
                 return await fresh.Load.Value.WaitAsync(cancellationToken).ConfigureAwait(false);
             }
         }
