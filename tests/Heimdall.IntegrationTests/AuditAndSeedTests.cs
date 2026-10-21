@@ -90,6 +90,8 @@ public sealed class AuditAndSeedTests
         Assert.Null(second.UserPassword);
         Assert.True(first.SpaCreated);
         Assert.False(second.SpaCreated);
+        Assert.NotNull(first.HuginnClientSecret);
+        Assert.Null(second.HuginnClientSecret);
 
         await using (var services = _postgres.CreateServices(connectionString: _postgres.AdminConnectionString))
         await using (var scope = services.CreateAsyncScope())
@@ -115,6 +117,14 @@ public sealed class AuditAndSeedTests
             Assert.Equal(ClientType.Public, spa.Type);
             Assert.Equal([DevelopmentSeeder.SpaRedirectUri], spa.RedirectUris);
             Assert.True(await store.IsBrowserOriginAllowedAsync(tenant.Id, "https://demo.localhost:4300", CancellationToken.None));
+
+            // Huginn: a confidential client. Its secret works, and its pages never call Heimdall from the browser.
+            var huginn = await store.FindAsync(tenant.Id, DevelopmentSeeder.HuginnClientId, CancellationToken.None);
+            Assert.NotNull(huginn);
+            Assert.Equal(ClientType.Confidential, huginn.Type);
+            Assert.Equal([DevelopmentSeeder.HuginnRedirectUri], huginn.RedirectUris);
+            Assert.True((await authenticator.AuthenticateAsync(tenant.Id, DevelopmentSeeder.HuginnClientId, first.HuginnClientSecret, CancellationToken.None)).IsSuccess);
+            Assert.False(await store.IsBrowserOriginAllowedAsync(tenant.Id, "http://localhost:4200", CancellationToken.None));
         }
     }
 }

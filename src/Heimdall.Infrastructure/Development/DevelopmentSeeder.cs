@@ -20,6 +20,7 @@ namespace Heimdall.Infrastructure.Development;
 /// <param name="UserPassword">The user's password when this run created the user, else null.</param>
 /// <param name="SpaClientId">The public client of the demo SPA.</param>
 /// <param name="SpaCreated">True when this run registered the demo SPA client.</param>
+/// <param name="HuginnClientSecret">The Huginn client's secret when this run registered it, else null.</param>
 public sealed record SeedResult(
     bool Created,
     string TenantHost,
@@ -32,7 +33,8 @@ public sealed record SeedResult(
     string UserEmail,
     string? UserPassword,
     string SpaClientId,
-    bool SpaCreated);
+    bool SpaCreated,
+    string? HuginnClientSecret);
 
 /// <summary>
 /// Creates one tenant, a confidential client, the demo SPA client, a user, and the tenant's first signing key for
@@ -50,6 +52,13 @@ public sealed class DevelopmentSeeder
     /// <summary>The demo SPA in <c>ui/projects/demo</c> (frontend-design.md, U9 and S6).</summary>
     public const string SpaClientId = "demo-spa";
     public const string SpaRedirectUri = "https://demo.localhost:4300/callback";
+
+    /// <summary>
+    /// Huginn, the chat app, signs in through its server (a backend-for-frontend). The redirect URI is the Angular dev
+    /// server, which proxies <c>/api</c> to the Huginn API. Loopback <c>http</c> is allowed for development only.
+    /// </summary>
+    public const string HuginnClientId = "huginn";
+    public const string HuginnRedirectUri = "http://localhost:4200/api/auth/heimdall/callback";
     private const string CorrelationId = "seed-dev";
 
     private readonly HeimdallDbContext _db;
@@ -103,6 +112,7 @@ public sealed class DevelopmentSeeder
 
         var userPassword = await EnsureUserAsync(tenantId, cancellationToken).ConfigureAwait(false);
         var spaCreated = await EnsureSpaClientAsync(tenantId, cancellationToken).ConfigureAwait(false);
+        var huginnSecret = await EnsureHuginnClientAsync(tenantId, cancellationToken).ConfigureAwait(false);
 
         // Creates the first key, or activates it when its wait has ended. The running server's key job does the same.
         await _keyService.MaintainAsync(tenantId, CorrelationId, cancellationToken).ConfigureAwait(false);
@@ -123,7 +133,8 @@ public sealed class DevelopmentSeeder
             UserEmail,
             userPassword,
             SpaClientId,
-            spaCreated);
+            spaCreated,
+            huginnSecret);
     }
 
     /// <summary>Creates the development user when it is missing. Returns its new password, or null.</summary>
@@ -173,6 +184,48 @@ public sealed class DevelopmentSeeder
         _db.Clients.Add(client);
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return true;
+    }
+
+    /// <summary>
+    /// Registers the Huginn client when it is missing. Returns its new secret, or null when it already existed.
+    /// </summary>
+    private async Task<string?> EnsureHuginnClientAsync(Guid tenantId, CancellationToken cancellationToken)
+    {
+        if (await _db.Clients.AnyAsync(c => c.TenantId == tenantId && c.ClientId == HuginnClientId, cancellationToken).ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        // A confidential client: the secret stays on Huginn's server, and the browser never sees a Heimdall token.
+        // Huginn needs only the identity at sign-in, so it has no refresh grant and no audience (D22). It keeps its own
+        // session after that. Consent is off, because Huginn is a first-party app.
+        var now = _time.GetUtcNow();
+        var client = Client.Create(
+            Guid.CreateVersion7(),
+            tenantId,
+            HuginnClientId,
+            "Huginn",
+            ClientType.Confidential,
+            [GrantType.AuthorizationCode],
+            ["openid", "email"],
+            [HuginnRedirectUri],
+            requireConsent: false,
+            overrides: null,
+            now);
+        client.Approve();
+
+        var secret = Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(32));
+        _db.Clients.Add(client);
+        _db.ClientSecrets.Add(new ClientSecretRecord
+        {
+            Id = Guid.CreateVersion7(),
+            TenantId = tenantId,
+            ClientPk = client.Id,
+            SecretHash = TokenHash.Compute(secret),
+            CreatedAt = now,
+        });
+        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return secret;
     }
 
     private async Task<(Guid TenantId, string Secret)> CreateTenantAndClientAsync(CancellationToken cancellationToken)

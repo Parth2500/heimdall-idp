@@ -209,6 +209,14 @@ static async Task<int> SeedDevelopmentDataAsync(WebApplication app)
         Console.WriteLine($"  audience:      {result.Audience}");
     }
 
+    if (result.HuginnClientSecret is { } huginnSecret)
+    {
+        Console.WriteLine("Huginn client registered. The secret is shown only now. Heimdall stores only its hash.");
+        Console.WriteLine($"  client_id:     {DevelopmentSeeder.HuginnClientId}");
+        Console.WriteLine($"  client_secret: {huginnSecret}");
+        Console.WriteLine($"  redirect_uri:  {DevelopmentSeeder.HuginnRedirectUri}");
+    }
+
     if (result.SpaCreated)
     {
         Console.WriteLine("Demo SPA client registered. It is a public client with no secret.");
