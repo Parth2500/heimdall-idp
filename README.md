@@ -21,10 +21,11 @@ Heimdall is a custom OAuth 2.1 and OpenID Connect identity provider. It is a por
 | `src/Heimdall.Api` | Endpoints and composition root. |
 | `tests/Heimdall.UnitTests` | Unit tests. No database. |
 | `tests/Heimdall.IntegrationTests` | Tests against PostgreSQL in a Testcontainers container. They need Docker. Without Docker they are skipped, except in CI, where they must run. |
-| `docs/` | Threat model, schema design, diagrams. |
+| `docs/` | Client integration guide, threat model, schema design, diagrams. |
 
 ## Documents
 
+- [Client documentation](docs/documentation.md): how to connect an application or API to Heimdall. Start here if you integrate with Heimdall.
 - [Threat model](docs/threat-model.md): STRIDE for each endpoint and trust boundary, with the security decisions (D1 to D23).
 - [Schema design](docs/schema-design.md): tables, constraints, and the atomic SQL statements.
 - [Domain model](docs/domain-model.md): the rules that each entity enforces, with references to the decisions.
