@@ -15,7 +15,20 @@ export type FrameTone = 'issuer' | 'client';
   template: `
     <header class="band">
       <div class="band__inner">
-        <p class="wordmark">{{ wordmark() }}</p>
+        <p class="brand">
+          @if (tone() === 'issuer') {
+            <!-- The watcher's eye (docs/brand). Only Heimdall's own pages carry it: a client is not Heimdall. -->
+            <svg class="eye" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+              <path
+                fill-rule="evenodd"
+                d="M7 32Q32 8 57 32Q32 56 7 32z M41.5 32a9.5 9.5 0 1 0-19 0a9.5 9.5 0 1 0 19 0z"
+              />
+              <circle cx="32" cy="29.5" r="3.2" />
+              <path d="M30.5 31 29.2 38.5h5.6L33.5 31z" />
+            </svg>
+          }
+          <span class="wordmark">{{ wordmark() }}</span>
+        </p>
         <div class="band__end"><ng-content select="[hdBandEnd]" /></div>
       </div>
       @if (busy()) {
@@ -72,6 +85,19 @@ export type FrameTone = 'issuer' | 'client';
       justify-content: space-between;
       gap: var(--hd-4);
       min-height: var(--hd-band-height);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: var(--hd-3);
+    }
+
+    .eye {
+      flex: none;
+      width: 2rem;
+      height: 2rem;
+      fill: currentColor;
     }
 
     .wordmark {

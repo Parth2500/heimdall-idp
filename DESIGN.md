@@ -270,6 +270,18 @@ The one non-rectangular shape is the origin plate. Its bottom edge has a shallow
 ### Named Rules
 **The Square Corner Rule.** No element has a border radius. The plate notch is the only shaped edge.
 
+## Logo
+
+The watcher's eye: an open eye with a keyhole pupil. It watches, and it grants access. The brand book, the four SVG files and the tokens are in [`docs/brand/`](docs/brand/README.md).
+
+- **Files:** `heimdall-mark.svg` is the favicon and app icon. `heimdall-mark-dark.svg` is the dark variant. `heimdall-eye-on-lapis.svg` goes in the band. `heimdall-eye-ink.svg` is for one-ink use.
+- **The band:** the eye is 32px and sits 12px (`space-3`) before the wordmark. `HdFrame` draws it for the issuer tone only.
+- **The Client Band Rule:** a client band never carries the eye. A client is not Heimdall.
+- **The tile:** the tile is square. The Square Corner Rule applies to the logo.
+- **Colours:** use lapis and white, or ink alone. Do not use Signal Yellow, red or green on the logo. Each of these colours has one other meaning.
+- **Minimum size:** 16px. Below 16px, the keyhole disappears.
+- **Never** round the tile, add a gradient, glow or shadow, or put the eye on a client's band or plate.
+
 ## Components
 
 ### Buttons
