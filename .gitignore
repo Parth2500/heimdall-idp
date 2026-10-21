@@ -500,3 +500,6 @@ src/Heimdall.Api/wwwroot/account/
 .impeccable/review/
 .impeccable/questions/
 .impeccable/hook.cache.json
+
+# Stryker.NET mutation reports
+StrykerOutput/

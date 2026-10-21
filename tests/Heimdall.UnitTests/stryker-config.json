@@ -1,0 +1,14 @@
+{
+  "stryker-config": {
+    "solution": "../../Heimdall.slnx",
+    "test-projects": ["Heimdall.UnitTests.csproj"],
+    "reporters": ["progress", "html", "json"],
+    "ignore-methods": [
+      "*Exception.ctor",
+      "ArgumentNullException.ThrowIfNull",
+      "ArgumentException.ThrowIfNullOrWhiteSpace",
+      "ArgumentException.ThrowIfNullOrEmpty"
+    ],
+    "thresholds": { "high": 90, "low": 80, "break": 0 }
+  }
+}
