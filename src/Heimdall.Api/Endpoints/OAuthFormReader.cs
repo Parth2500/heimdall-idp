@@ -43,6 +43,13 @@ internal static class OAuthFormReader
             return OAuthForm.Fail(OAuthError.InvalidRequest("content type is not form-urlencoded"));
         }
 
+        // RFC 6749, appendix B: the form is UTF-8. The form reader decodes with the charset that the client names, and
+        // some charsets (UTF-7) make it throw. Any other charset is refused before the body is read.
+        if (mediaType.CharSet is { } charset && !string.Equals(charset.Trim('"'), "utf-8", StringComparison.OrdinalIgnoreCase))
+        {
+            return OAuthForm.Fail(OAuthError.InvalidRequest("charset is not UTF-8"));
+        }
+
         if (request.ContentLength is > MaxBodyBytes)
         {
             return OAuthForm.Fail(OAuthError.InvalidRequest("body too large"));
@@ -61,7 +68,8 @@ internal static class OAuthFormReader
         }
         catch (InvalidDataException)
         {
-            return OAuthForm.Fail(OAuthError.InvalidRequest("form over limits"));
+            // Over a limit, or a NUL character in a key or value, which ASP.NET Core refuses.
+            return OAuthForm.Fail(OAuthError.InvalidRequest("form malformed or over limits"));
         }
         catch (BadHttpRequestException)
         {

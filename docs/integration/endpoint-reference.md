@@ -78,9 +78,10 @@ Rate limit: 120 requests each minute for each IP address.
 
 Issues tokens. Rules for every request:
 
-- `Content-Type: application/x-www-form-urlencoded`.
+- `Content-Type: application/x-www-form-urlencoded`. A `charset` parameter must be `utf-8`. Heimdall refuses every other charset.
 - No query string.
-- No repeated parameter.
+- No repeated parameter. Heimdall compares parameter names without case, so `grant_type` and `GRANT_TYPE` are the same name.
+- No NUL character in a name or a value.
 - Body at most 16 KiB.
 - A confidential client authenticates with HTTP Basic (`client_secret_basic`). A public client sends `client_id` in the body (`none`).
 - `client_secret` in the body is refused.

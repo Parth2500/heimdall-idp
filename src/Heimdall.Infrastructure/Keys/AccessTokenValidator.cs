@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Unicode;
 using Heimdall.Application.Keys;
 using Heimdall.Application.UserInfo;
 using Heimdall.Domain.Keys;
@@ -138,11 +139,12 @@ internal sealed class AccessTokenValidator : IAccessTokenValidator
         return value.Length > 0;
     }
 
-    // Stryker disable Block : an undecodable segment leaves no bytes, and no bytes also fail to parse. Both paths give null.
     private static JsonDocument? DecodeJson(string segment)
     {
+        // JSON text is UTF-8 (RFC 8259, section 8.1). The parser checks the bytes of a string only when the string is
+        // read, and then it throws. This check refuses the token instead, before any value is read.
         var bytes = Decode(segment);
-        if (bytes is null)
+        if (bytes is null || !Utf8.IsValid(bytes))
         {
             return null;
         }
@@ -151,13 +153,12 @@ internal sealed class AccessTokenValidator : IAccessTokenValidator
         {
             return JsonDocument.Parse(bytes, new JsonDocumentOptions { MaxDepth = 8 });
         }
+        // Stryker disable once Block : an empty catch also ends the method with null.
         catch (JsonException)
         {
             return null;
         }
     }
-
-    // Stryker restore Block
 
     // Base64url with no padding (RFC 7515, section 2), or null. Any other character fails.
     private static byte[]? Decode(string segment)

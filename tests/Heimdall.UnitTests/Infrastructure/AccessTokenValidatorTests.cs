@@ -24,7 +24,7 @@ public sealed class AccessTokenValidatorTests : IDisposable
     public AccessTokenValidatorTests()
     {
         _validator = new AccessTokenValidator(_cache);
-        var jwk = JwkOf(_key);
+        var jwk = TestJwt.JwkOf(_key);
         _kid = jwk.Kid;
         _cache.Keys[_tenantId] = [jwk];
     }
@@ -33,14 +33,6 @@ public sealed class AccessTokenValidatorTests : IDisposable
     {
         _key.Dispose();
         _otherKey.Dispose();
-    }
-
-    private static RsaPublicJwk JwkOf(RSA rsa)
-    {
-        var parameters = rsa.ExportParameters(includePrivateParameters: false);
-        return RsaPublicJwk.FromPublicParameters(
-            Base64Url.EncodeToString(parameters.Modulus!),
-            Base64Url.EncodeToString(parameters.Exponent!));
     }
 
     private JsonObject Header() => new() { ["alg"] = "RS256", ["typ"] = "at+jwt", ["kid"] = _kid };
@@ -55,16 +47,9 @@ public sealed class AccessTokenValidatorTests : IDisposable
         ["exp"] = Expiry.ToUnixTimeSeconds(),
     };
 
-    private static string Encode(JsonNode node) => Base64Url.EncodeToString(Encoding.UTF8.GetBytes(node.ToJsonString()));
+    private string Sign(JsonNode header, JsonNode payload, RSA? key = null) => SignSegments(TestJwt.Encode(header), TestJwt.Encode(payload), key);
 
-    private string Sign(JsonNode header, JsonNode payload, RSA? key = null) => SignSegments(Encode(header), Encode(payload), key);
-
-    private string SignSegments(string header, string payload, RSA? key = null)
-    {
-        var input = header + "." + payload;
-        var signature = (key ?? _key).SignData(Encoding.ASCII.GetBytes(input), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-        return input + "." + Base64Url.EncodeToString(signature);
-    }
+    private string SignSegments(string header, string payload, RSA? key = null) => TestJwt.SignSegments(header, payload, key ?? _key);
 
     private ValueTask<VerifiedAccessToken?> Validate(string token, Guid? tenantId = null) =>
         _validator.ValidateAsync(tenantId ?? _tenantId, token, CancellationToken.None);
@@ -179,14 +164,14 @@ public sealed class AccessTokenValidatorTests : IDisposable
     [Fact]
     public async Task Kid_that_is_not_published_is_refused()
     {
-        Assert.Null(await Validate(Sign(With(Header(), "kid", JwkOf(_otherKey).Kid), Payload(), _otherKey)));
+        Assert.Null(await Validate(Sign(With(Header(), "kid", TestJwt.JwkOf(_otherKey).Kid), Payload(), _otherKey)));
     }
 
     [Fact]
     public async Task Key_of_another_tenant_is_refused()
     {
         var otherTenant = Guid.CreateVersion7();
-        _cache.Keys[otherTenant] = [JwkOf(_otherKey)];
+        _cache.Keys[otherTenant] = [TestJwt.JwkOf(_otherKey)];
 
         Assert.Null(await Validate(Sign(Header(), Payload()), otherTenant));
     }
@@ -211,7 +196,7 @@ public sealed class AccessTokenValidatorTests : IDisposable
     public async Task Changed_payload_is_refused()
     {
         var parts = Sign(Header(), Payload()).Split('.');
-        var changed = Encode(With(Payload(), "sub", "admin"));
+        var changed = TestJwt.Encode(With(Payload(), "sub", "admin"));
 
         Assert.Null(await Validate(parts[0] + "." + changed + "." + parts[2]));
     }
@@ -220,9 +205,22 @@ public sealed class AccessTokenValidatorTests : IDisposable
     public async Task Changed_header_is_refused()
     {
         var parts = Sign(Header(), Payload()).Split('.');
-        var changed = Encode(With(Header(), "typ", "application/at+jwt"));
+        var changed = TestJwt.Encode(With(Header(), "typ", "application/at+jwt"));
 
         Assert.Null(await Validate(changed + "." + parts[1] + "." + parts[2]));
+    }
+
+    [Fact]
+    public async Task Signature_with_non_zero_unused_bits_is_refused()
+    {
+        // 256 signature bytes take 342 characters, so the last character has 4 unused bits. Setting one gives a second
+        // spelling of the same bytes. The .NET decoder refuses it; this test keeps that true after a runtime update.
+        const string Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+        var token = Sign(Header(), Payload());
+        var last = Alphabet.IndexOf(token[^1], StringComparison.Ordinal);
+
+        Assert.Equal(0, last & 0b1111);
+        Assert.Null(await Validate(token[..^1] + Alphabet[last | 1]));
     }
 
     [Fact]
@@ -252,7 +250,7 @@ public sealed class AccessTokenValidatorTests : IDisposable
     [Fact]
     public async Task Valid_header_and_payload_without_a_signature_part_is_refused()
     {
-        Assert.Null(await Validate(Encode(Header()) + "." + Encode(Payload())));
+        Assert.Null(await Validate(TestJwt.Encode(Header()) + "." + TestJwt.Encode(Payload())));
     }
 
     [Fact]
@@ -319,11 +317,11 @@ public sealed class AccessTokenValidatorTests : IDisposable
     public async Task White_space_in_a_signed_header_is_refused(string space)
     {
         // The decoder skips white space. Without the strict check, one token would have many valid spellings.
-        var header = Encode(Header());
+        var header = TestJwt.Encode(Header());
         var spaced = header[..10] + space + header[10..];
 
-        Assert.NotNull(await Validate(SignSegments(header, Encode(Payload()))));
-        Assert.Null(await Validate(SignSegments(spaced, Encode(Payload()))));
+        Assert.NotNull(await Validate(SignSegments(header, TestJwt.Encode(Payload()))));
+        Assert.Null(await Validate(SignSegments(spaced, TestJwt.Encode(Payload()))));
     }
 
     [Fact]
@@ -349,7 +347,7 @@ public sealed class AccessTokenValidatorTests : IDisposable
     [InlineData("\"RS256\"")]
     public async Task Header_that_is_not_a_json_object_is_refused(string header)
     {
-        var payload = Encode(Payload());
+        var payload = TestJwt.Encode(Payload());
         var encoded = Base64Url.EncodeToString(Encoding.UTF8.GetBytes(header));
 
         Assert.Null(await Validate(SignSegments(encoded, payload)));
@@ -442,11 +440,35 @@ public sealed class AccessTokenValidatorTests : IDisposable
     }
 
     [Fact]
+    public async Task Header_with_invalid_UTF8_in_a_string_is_refused_without_an_exception()
+    {
+        // Found by the property tests: the parser accepted these bytes and GetString() threw later.
+        // The header is read before the signature check, so anyone can send this.
+        // A lead byte with no continuation byte, inside the alg value. A property name is not decoded, so it must be a value.
+        var header = Encoding.UTF8.GetBytes(Header().ToJsonString());
+        header[IndexOf(header, "RS256") + 1] = 0xC3;
+
+        Assert.Null(await Validate(SignSegments(Base64Url.EncodeToString(header), TestJwt.Encode(Payload()))));
+        Assert.Equal(0, _cache.Reads);
+    }
+
+    [Fact]
+    public async Task Payload_with_invalid_UTF8_in_a_string_is_refused_without_an_exception()
+    {
+        var payload = Encoding.UTF8.GetBytes(Payload().ToJsonString());
+        payload[IndexOf(payload, "https") + 1] = 0xFF;
+
+        Assert.Null(await Validate(SignSegments(TestJwt.Encode(Header()), Base64Url.EncodeToString(payload))));
+    }
+
+    private static int IndexOf(byte[] bytes, string ascii) => bytes.AsSpan().IndexOf(Encoding.ASCII.GetBytes(ascii));
+
+    [Fact]
     public async Task Payload_that_is_not_a_json_object_is_refused()
     {
         var payload = Base64Url.EncodeToString(Encoding.UTF8.GetBytes("[1,2,3]"));
 
-        Assert.Null(await Validate(SignSegments(Encode(Header()), payload)));
+        Assert.Null(await Validate(SignSegments(TestJwt.Encode(Header()), payload)));
     }
 
     [Fact]
@@ -454,26 +476,6 @@ public sealed class AccessTokenValidatorTests : IDisposable
     {
         var payload = Base64Url.EncodeToString(Encoding.UTF8.GetBytes("{\"iss\":"));
 
-        Assert.Null(await Validate(SignSegments(Encode(Header()), payload)));
-    }
-
-    private sealed class FakeKeyCache : ISigningKeyCache
-    {
-        public Dictionary<Guid, IReadOnlyList<RsaPublicJwk>> Keys { get; } = [];
-
-        public int Reads { get; private set; }
-
-        public ValueTask<ActiveSigningKey?> GetActiveKeyAsync(Guid tenantId, CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
-
-        public ValueTask<IReadOnlyList<RsaPublicJwk>> GetPublishedKeysAsync(Guid tenantId, CancellationToken cancellationToken)
-        {
-            Reads++;
-            return ValueTask.FromResult(Keys.TryGetValue(tenantId, out var keys) ? keys : []);
-        }
-
-        public void Invalidate(Guid tenantId)
-        {
-        }
+        Assert.Null(await Validate(SignSegments(TestJwt.Encode(Header()), payload)));
     }
 }

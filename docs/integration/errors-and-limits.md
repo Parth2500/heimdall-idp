@@ -38,7 +38,7 @@ If `client_id` or `redirect_uri` is wrong, Heimdall shows its own error page and
 
 | Status | `error` | Cause | Action |
 |---|---|---|---|
-| `400` | `invalid_request` | A malformed request: a query string, a body that is not `application/x-www-form-urlencoded`, a body over 16 KiB, a repeated parameter, `client_secret` in the body, a `client_id` that differs from the Basic header, or a missing parameter. | Fix the request. |
+| `400` | `invalid_request` | A malformed request: a query string, a body that is not `application/x-www-form-urlencoded`, a `charset` other than `utf-8`, a body over 16 KiB, a NUL character, a repeated parameter, `client_secret` in the body, a `client_id` that differs from the Basic header, or a missing parameter. | Fix the request. |
 | `401` | `invalid_client` | Client authentication failed. The client is unknown, disabled, or the secret is wrong. | Check the client ID and secret, and the Basic encoding. |
 | `400` | `invalid_grant` | The code or refresh token is unknown, expired, used, or revoked. Or the `code_verifier` or `redirect_uri` does not match. Or the user is disabled. | Sign the user in again. Do not retry with the same code or token. |
 | `400` | `unauthorized_client` | Your client does not have this grant. | Ask the operator. |

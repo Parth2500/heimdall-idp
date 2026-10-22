@@ -157,6 +157,7 @@ public class OAuthFormReaderTests
     [InlineData("multipart/form-data; boundary=x")]
     [InlineData("text/plain")]
     [InlineData("not a media type")]
+    [InlineData("application/x-www-form-urlencoded; charset=")]
     public async Task Content_type_other_than_form_is_refused(string? contentType)
     {
         AssertFails(
@@ -169,6 +170,27 @@ public class OAuthFormReaderTests
     [InlineData("application/x-www-form-urlencoded; charset=utf-8")]
     [InlineData("Application/X-WWW-Form-Urlencoded")]
     public async Task Form_content_type_with_parameters_or_other_case_is_accepted(string contentType)
+    {
+        Assert.Null((await Read(Request("grant_type=client_credentials", contentType))).Error);
+    }
+
+    [Theory]
+    [InlineData("application/x-www-form-urlencoded; charset=utf-7")] // Found by the property tests: the form reader threw.
+    [InlineData("application/x-www-form-urlencoded; charset=utf-16")]
+    [InlineData("application/x-www-form-urlencoded; charset=iso-8859-1")]
+    [InlineData("application/x-www-form-urlencoded; charset=no-such-charset")]
+    public async Task Charset_other_than_UTF8_is_refused(string contentType)
+    {
+        var context = Request("grant_type=client_credentials", contentType);
+
+        AssertFails(await Read(context), OAuthError.InvalidRequestCode, "charset is not UTF-8");
+        Assert.Equal(0, context.Request.Body.Position);
+    }
+
+    [Theory]
+    [InlineData("application/x-www-form-urlencoded; charset=UTF-8")]
+    [InlineData("application/x-www-form-urlencoded; charset=\"utf-8\"")]
+    public async Task UTF8_charset_is_accepted(string contentType)
     {
         Assert.Null((await Read(Request("grant_type=client_credentials", contentType))).Error);
     }
@@ -223,7 +245,7 @@ public class OAuthFormReaderTests
     {
         var body = string.Join("&", Enumerable.Range(0, 17).Select(i => $"p{i}=v"));
 
-        AssertFails(await Read(Request(body)), OAuthError.InvalidRequestCode, "form over limits");
+        AssertFails(await Read(Request(body)), OAuthError.InvalidRequestCode, "form malformed or over limits");
     }
 
     [Fact]
@@ -237,7 +259,7 @@ public class OAuthFormReaderTests
     [Fact]
     public async Task Value_over_4096_characters_is_refused()
     {
-        AssertFails(await Read(Request("token=" + new string('x', 4097))), OAuthError.InvalidRequestCode, "form over limits");
+        AssertFails(await Read(Request("token=" + new string('x', 4097))), OAuthError.InvalidRequestCode, "form malformed or over limits");
     }
 
     [Fact]
@@ -249,7 +271,15 @@ public class OAuthFormReaderTests
     [Fact]
     public async Task Key_over_64_characters_is_refused()
     {
-        AssertFails(await Read(Request(new string('k', 65) + "=v")), OAuthError.InvalidRequestCode, "form over limits");
+        AssertFails(await Read(Request(new string('k', 65) + "=v")), OAuthError.InvalidRequestCode, "form malformed or over limits");
+    }
+
+    [Theory]
+    [InlineData("grant_type=client%00credentials")]
+    [InlineData("grant%00type=client_credentials")]
+    public async Task NUL_in_a_key_or_value_is_refused(string body)
+    {
+        AssertFails(await Read(Request(body)), OAuthError.InvalidRequestCode, "form malformed or over limits");
     }
 
     [Fact]
@@ -269,6 +299,16 @@ public class OAuthFormReaderTests
     {
         // RFC 6749, section 3.2 and RFC 7009, section 2.1: a repeated parameter makes the request ambiguous.
         AssertFails(await Read(Request(body)), OAuthError.InvalidRequestCode, "repeated parameter");
+    }
+
+    [Fact]
+    public async Task Same_name_in_another_case_is_a_repeated_parameter()
+    {
+        // ASP.NET Core compares form names without case. Two spellings of one name are ambiguous, so they are refused.
+        AssertFails(
+            await Read(Request("grant_type=client_credentials&GRANT_TYPE=refresh_token")),
+            OAuthError.InvalidRequestCode,
+            "repeated parameter");
     }
 
     [Fact]

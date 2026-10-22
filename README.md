@@ -50,6 +50,16 @@ export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock
 export TESTCONTAINERS_RYUK_DISABLED=true   # Ryuk often fails under rootless Podman
 ```
 
+### Property tests
+
+The tests in `tests/Heimdall.UnitTests/Properties` use CsCheck. Each test states a rule for every input, and CsCheck tries thousands of generated inputs against it. The parsers of client input must refuse bad input without an exception.
+
+Each run uses new random inputs. A failure prints a seed. To run the same inputs again, set the seed:
+```
+CsCheck_Seed=<seed> dotnet test tests/Heimdall.UnitTests --filter "FullyQualifiedName~Properties"
+```
+Add each failure as an example test too, so that it stays tested.
+
 ### Mutation testing
 
 Stryker.NET is a local tool. It mutates one project and runs the unit tests against each mutant.
