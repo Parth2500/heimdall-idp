@@ -132,8 +132,13 @@ public sealed class SessionService
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        if (TryHash(sessionId) is not { } hash
-            || await _sessions.FindAsync(context.Tenant.Id, hash, cancellationToken).ConfigureAwait(false) is not { RevokedAt: null } session)
+        if (TryHash(sessionId) is not { } hash)
+        {
+            return;
+        }
+
+        var session = await _sessions.FindAsync(context.Tenant.Id, hash, cancellationToken).ConfigureAwait(false);
+        if (session is not { RevokedAt: null })
         {
             return;
         }
