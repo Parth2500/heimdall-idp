@@ -25,3 +25,11 @@ npm ci --ignore-scripts
 2. Build the account pages: `npm run build` or `npm run watch:account`.
 3. Run Heimdall with the `https` launch profile, then `npm start`.
 4. Open `https://demo.localhost:4300` and accept the development certificates of both origins.
+
+## Dependency overrides
+
+`package.json` has one override. Remove it when it is no longer needed.
+
+| Override                            | Reason                                                                                                                                                                                                                               | Remove when                                                     |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| `vite` 8.3.4 under `@angular/build` | `@angular/build` 22.2.3 pins `vite` 8.3.0, which has six advisories (GHSA-9jrq-w75r-8gcw, GHSA-rq7h-c2jc-7f22, GHSA-vfpm-58rq-9qcg, GHSA-r825-w8mm-5pxw, GHSA-587h-7wmj-h5pm, GHSA-698v-4r3x-3vcv). They affect the dev server only. | A release of `@angular/build` depends on `vite` 8.3.3 or later. |
