@@ -124,6 +124,24 @@ You need Docker for PostgreSQL.
    CREATE ROLE heimdall_platform_login LOGIN PASSWORD '<password>' IN ROLE heimdall_platform;
    ```
 
+## Container image
+
+The `Dockerfile` builds the account pages and the server into one image. It also builds the migration bundle as a separate target.
+```
+docker build -t heimdall .
+docker build -t heimdall-migrate --target migrate .
+```
+
+- The server listens on port 8080 over plain HTTP. TLS ends at the proxy in front, such as Cloudflare or an ingress. Set `Heimdall:ForwardedHeaders` to that proxy, or every request looks like it comes from the proxy.
+- The image is chiseled: it has no shell and no package manager, and the server runs as a non-root user (uid 1654). The `-extra` variant adds ICU, which password normalization (NFKC) needs.
+- The platform probes `/health/live` and `/health/ready`. The image has no curl for a Docker `HEALTHCHECK`.
+- Configuration comes from environment variables, for example `ConnectionStrings__Heimdall` and `ConnectionStrings__HeimdallPlatform`.
+- The server never applies migrations. Run the bundle once for each release, with an owner connection string:
+  ```
+  docker run --rm heimdall-migrate --connection "<owner connection string>"
+  ```
+- Outside Development, the server refuses to start until a production key store exists (#34). The development key file holds plain private keys, so it is allowed only in Development.
+
 ## Operations
 
 Emergency removal of a stolen signing key (see `docs/threat-model.md`, JWKS):

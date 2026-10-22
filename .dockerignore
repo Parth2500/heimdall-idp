@@ -1,0 +1,20 @@
+# Only what the image build needs. Secrets, local keys, and build output stay out of the build context.
+**/bin/
+**/obj/
+**/node_modules/
+**/.angular/
+ui/dist/
+src/Heimdall.Api/wwwroot/account/
+**/.local/
+**/appsettings.*.local.json
+**/*.user
+.env
+.git/
+.github/
+.notes/
+.impeccable/
+.vscode/
+.idea/
+tests/
+docs/
+**/StrykerOutput/

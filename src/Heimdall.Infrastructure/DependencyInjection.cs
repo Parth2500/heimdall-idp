@@ -17,7 +17,9 @@ using Heimdall.Infrastructure.Stores;
 using Heimdall.Infrastructure.Telemetry;
 using Heimdall.Infrastructure.Tenants;
 using Heimdall.Infrastructure.Users;
+using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -93,11 +95,31 @@ public static class DependencyInjection
         return services;
     }
 
+    /// <summary>
+    /// Heimdall signs in to PostgreSQL with a password, never with Kerberos. By default Npgsql first asks the server for
+    /// GSS encryption on each new physical connection, which costs a handshake step and logs a library error in an
+    /// image without Kerberos. An explicit setting in the connection string wins.
+    /// </summary>
+    internal static string WithoutGssEncryption(string connectionString)
+    {
+        // NpgsqlConnectionStringBuilder.ContainsKey is true for every keyword it knows, so the generic builder reads
+        // which keys the string really has. Npgsql ignores spaces and case in keywords.
+        var written = new DbConnectionStringBuilder { ConnectionString = connectionString };
+        var hasSetting = written.Keys.Cast<string>()
+            .Any(key => string.Equals(key.Replace(" ", string.Empty, StringComparison.Ordinal), "GssEncryptionMode", StringComparison.OrdinalIgnoreCase));
+        if (hasSetting)
+        {
+            return connectionString;
+        }
+
+        return new NpgsqlConnectionStringBuilder(connectionString) { GssEncryptionMode = GssEncryptionMode.Disable }.ConnectionString;
+    }
+
     /// <param name="scope">The tenant of the context. When set, each connection open sets <c>app.tenant_id</c> (D20).</param>
     internal static void ConfigureDbContext(DbContextOptionsBuilder options, string connectionString, TenantScope? scope = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
-        options.UseNpgsql(connectionString).UseSnakeCaseNamingConvention();
+        options.UseNpgsql(WithoutGssEncryption(connectionString)).UseSnakeCaseNamingConvention();
         if (scope is not null)
         {
             options.AddInterceptors(new TenantConnectionInterceptor(scope));

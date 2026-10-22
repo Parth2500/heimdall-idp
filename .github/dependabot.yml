@@ -8,6 +8,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
+  # The base images in the Dockerfile are pinned by digest. Dependabot moves the tag and the digest together.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
   - package-ecosystem: npm
     directory: /ui
     schedule:
