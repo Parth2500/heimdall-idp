@@ -143,8 +143,10 @@ public sealed class RefreshTokenGrant
         RefreshToken? used;
         TokenResponse? response = null;
         TokenFamily? family = null;
+        // Stryker disable Boolean : the flags are read only after a match, and a match sets both.
         var scopeTooWide = false;
         var userDisabled = false;
+        // Stryker restore Boolean
         var transaction = await _tokens.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         await using (transaction.ConfigureAwait(false))
         {

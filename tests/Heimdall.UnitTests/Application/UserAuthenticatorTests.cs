@@ -284,27 +284,6 @@ public class UserAuthenticatorTests
         }
     }
 
-    private sealed class InMemoryUserStore : IUserStore
-    {
-        public List<User> Users { get; } = [];
-
-        public int SaveCount { get; private set; }
-
-        public Task<User?> FindByEmailAsync(Guid tenantId, string emailNormalized, CancellationToken cancellationToken) =>
-            Task.FromResult(Users.SingleOrDefault(u => u.TenantId == tenantId && u.EmailNormalized == emailNormalized));
-
-        public Task<User?> FindByIdAsync(Guid tenantId, Guid userId, CancellationToken cancellationToken) =>
-            Task.FromResult(Users.SingleOrDefault(u => u.TenantId == tenantId && u.Id == userId));
-
-        public void Add(User user) => Users.Add(user);
-
-        public Task SaveChangesAsync(CancellationToken cancellationToken)
-        {
-            SaveCount++;
-            return Task.CompletedTask;
-        }
-    }
-
     /// <summary>Records every verification. A "hash" is the password with a prefix, so tests stay fast.</summary>
     private sealed class FakePasswordHasher : IPasswordHasher
     {
