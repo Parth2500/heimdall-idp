@@ -19,7 +19,11 @@ public sealed record CodeRedemption(
 
 /// <summary>The inputs of the atomic refresh token rotation. Every binding is part of the one conditional statement.</summary>
 /// <param name="ClientPk">The authenticated client. A token of another client's family never matches.</param>
-public sealed record RefreshRotation(Guid TenantId, TokenHash TokenHash, Guid ClientPk, DateTimeOffset Now);
+/// <param name="DpopKeyThumbprint">
+/// The key of the request's DPoP proof, or null. A bound family matches only this key, so a thief without the key
+/// cannot use the token, and cannot use it up either (D24).
+/// </param>
+public sealed record RefreshRotation(Guid TenantId, TokenHash TokenHash, Guid ClientPk, DateTimeOffset Now, string? DpopKeyThumbprint = null);
 
 /// <summary>A database transaction. Dispose without commit rolls back.</summary>
 public interface IGrantTransaction : IAsyncDisposable

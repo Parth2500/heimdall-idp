@@ -4,6 +4,7 @@ using Heimdall.Application.Alerts;
 using Heimdall.Application.Audit;
 using Heimdall.Application.Clients;
 using Heimdall.Application.Common;
+using Heimdall.Application.Dpop;
 using Heimdall.Application.UserInfo;
 using Heimdall.Application.Users;
 using Heimdall.Domain.Audit;
@@ -20,12 +21,14 @@ namespace Heimdall.Application.Tokens;
 /// <param name="RefreshToken">The <c>refresh_token</c> parameter.</param>
 /// <param name="Scope">The <c>scope</c> parameter, or null to keep the family's scope.</param>
 /// <param name="Resource">The <c>resource</c> parameter (RFC 8707), or null.</param>
+/// <param name="DpopProof">The DPoP header, or null.</param>
 public sealed record RefreshTokenRequest(
     string? ClientId,
     string? ClientSecret,
     string? RefreshToken,
     string? Scope,
-    string? Resource);
+    string? Resource,
+    string? DpopProof = null);
 
 /// <summary>
 /// The <c>refresh_token</c> grant at /token, with rotation (threat model, "Refresh flow"). Each use returns a new refresh
@@ -41,6 +44,7 @@ public sealed class RefreshTokenGrant
     private const string GrantName = "refresh_token";
 
     private readonly ClientAuthenticator _authenticator;
+    private readonly DpopTokenCheck _dpop;
     private readonly ITokenStore _tokens;
     private readonly IUserStore _users;
     private readonly ITokenSigner _signer;
@@ -50,6 +54,7 @@ public sealed class RefreshTokenGrant
 
     public RefreshTokenGrant(
         ClientAuthenticator authenticator,
+        DpopTokenCheck dpop,
         ITokenStore tokens,
         IUserStore users,
         ITokenSigner signer,
@@ -58,6 +63,7 @@ public sealed class RefreshTokenGrant
         TimeProvider time)
     {
         _authenticator = authenticator;
+        _dpop = dpop;
         _tokens = tokens;
         _users = users;
         _signer = signer;
@@ -137,6 +143,14 @@ public sealed class RefreshTokenGrant
             return Result.Failure<TokenResponse>(OAuthError.InvalidTarget("resource missing or not allowed"));
         }
 
+        // Last before the rotation: the replay check is a database write (D24 to D26).
+        var dpop = await _dpop.CheckAsync(context, client, request.DpopProof, cancellationToken).ConfigureAwait(false);
+        if (!dpop.IsSuccess)
+        {
+            return Result.Failure<TokenResponse>(dpop.Error);
+        }
+
+        var keyThumbprint = dpop.Value;
         var now = _time.GetUtcNow();
         var hash = TokenHash.Compute(request.RefreshToken);
 
@@ -150,7 +164,7 @@ public sealed class RefreshTokenGrant
         var transaction = await _tokens.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         await using (transaction.ConfigureAwait(false))
         {
-            used = await _tokens.UseRefreshTokenAsync(new RefreshRotation(context.Tenant.Id, hash, client.Id, now), cancellationToken)
+            used = await _tokens.UseRefreshTokenAsync(new RefreshRotation(context.Tenant.Id, hash, client.Id, now, keyThumbprint), cancellationToken)
                 .ConfigureAwait(false);
 
             if (used is not null)
@@ -165,7 +179,7 @@ public sealed class RefreshTokenGrant
                 userDisabled = user is not { Status: UserStatus.Active };
                 if (!scopeTooWide && !userDisabled)
                 {
-                    response = await RotateAsync(context, client, used, family, scopes, audience, now, cancellationToken).ConfigureAwait(false);
+                    response = await RotateAsync(context, client, used, family, scopes, audience, keyThumbprint, now, cancellationToken).ConfigureAwait(false);
                     await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
@@ -174,7 +188,7 @@ public sealed class RefreshTokenGrant
         if (used is null)
         {
             // Outside the transaction, so a reuse revocation and its audit events are never rolled back.
-            return await ExplainFailureAsync(context, client, hash, now, cancellationToken).ConfigureAwait(false);
+            return await ExplainFailureAsync(context, client, hash, keyThumbprint, now, cancellationToken).ConfigureAwait(false);
         }
 
         if (userDisabled)
@@ -196,10 +210,10 @@ public sealed class RefreshTokenGrant
             client.Id,
             family!.UserId,
             family.Id,
-            new Dictionary<string, string> { ["scope"] = response!.Scope, ["aud"] = audience },
+            RotatedData(response!, audience, keyThumbprint),
             cancellationToken).ConfigureAwait(false);
 
-        return Result.Success(response);
+        return Result.Success(response!);
     }
 
     /// <summary>Runs in the rotation transaction: signs the access token, stores the next refresh token, moves the idle limit.</summary>
@@ -210,6 +224,7 @@ public sealed class RefreshTokenGrant
         TokenFamily family,
         IReadOnlyList<string> scopes,
         string audience,
+        string? keyThumbprint,
         DateTimeOffset now,
         CancellationToken cancellationToken)
     {
@@ -224,7 +239,8 @@ public sealed class RefreshTokenGrant
                 scopes,
                 now,
                 now + lifetimes.AccessToken,
-                Guid.NewGuid().ToString("N")),
+                Guid.NewGuid().ToString("N"),
+                KeyThumbprint: keyThumbprint),
             cancellationToken).ConfigureAwait(false);
 
         var refreshToken = Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(32));
@@ -233,7 +249,7 @@ public sealed class RefreshTokenGrant
 
         return new TokenResponse(
             accessToken,
-            TokenResponse.BearerType,
+            TokenResponse.TypeFor(keyThumbprint),
             (int)lifetimes.AccessToken.TotalSeconds,
             string.Join(' ', scopes),
             refreshToken);
@@ -247,6 +263,7 @@ public sealed class RefreshTokenGrant
         RequestContext context,
         Client client,
         TokenHash hash,
+        string? keyThumbprint,
         DateTimeOffset now,
         CancellationToken cancellationToken)
     {
@@ -276,12 +293,36 @@ public sealed class RefreshTokenGrant
             return Result.Failure<TokenResponse>(OAuthError.InvalidGrant("refresh token reused"));
         }
 
-        var reason = family.ClientPk != client.Id
-            ? "refresh token of another client"
-            : family.RevokedAt is not null
-                ? "family revoked"
-                : "family expired";
-        return Result.Failure<TokenResponse>(OAuthError.InvalidGrant(reason));
+        if (family.ClientPk != client.Id)
+        {
+            return Result.Failure<TokenResponse>(OAuthError.InvalidGrant("refresh token of another client"));
+        }
+
+        if (family.RevokedAt is not null)
+        {
+            return Result.Failure<TokenResponse>(OAuthError.InvalidGrant("family revoked"));
+        }
+
+        // D24: the rotation statement matched no row because the key differs. The token is not used up.
+        if (family.DpopKeyThumbprint is { } boundKey && !string.Equals(boundKey, keyThumbprint, StringComparison.Ordinal))
+        {
+            return Result.Failure<TokenResponse>(keyThumbprint is null
+                ? OAuthError.InvalidDpopProof("proof required for a bound refresh token")
+                : OAuthError.InvalidGrant("DPoP key differs from the family's key"));
+        }
+
+        return Result.Failure<TokenResponse>(OAuthError.InvalidGrant("family expired"));
+    }
+
+    private static Dictionary<string, string> RotatedData(TokenResponse response, string audience, string? keyThumbprint)
+    {
+        var data = new Dictionary<string, string> { ["scope"] = response.Scope, ["aud"] = audience };
+        if (keyThumbprint is not null)
+        {
+            data["dpop_jkt"] = keyThumbprint;
+        }
+
+        return data;
     }
 
     private async Task<bool> RevokeAsync(

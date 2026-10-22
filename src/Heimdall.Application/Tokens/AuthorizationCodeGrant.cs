@@ -5,6 +5,7 @@ using Heimdall.Application.Alerts;
 using Heimdall.Application.Audit;
 using Heimdall.Application.Clients;
 using Heimdall.Application.Common;
+using Heimdall.Application.Dpop;
 using Heimdall.Application.UserInfo;
 using Heimdall.Domain.Audit;
 using Heimdall.Domain.Clients;
@@ -20,13 +21,15 @@ namespace Heimdall.Application.Tokens;
 /// <param name="CodeVerifier">The PKCE <c>code_verifier</c> (RFC 7636).</param>
 /// <param name="RedirectUri">The <c>redirect_uri</c> parameter, or null.</param>
 /// <param name="Resource">The <c>resource</c> parameter (RFC 8707), or null.</param>
+/// <param name="DpopProof">The DPoP header, or null.</param>
 public sealed record AuthorizationCodeRequest(
     string? ClientId,
     string? ClientSecret,
     string? Code,
     string? CodeVerifier,
     string? RedirectUri,
-    string? Resource);
+    string? Resource,
+    string? DpopProof = null);
 
 /// <summary>
 /// The <c>authorization_code</c> grant at /token. The code is redeemed by one atomic conditional UPDATE that also checks
@@ -38,6 +41,7 @@ public sealed class AuthorizationCodeGrant
     private const string GrantName = "authorization_code";
 
     private readonly ClientAuthenticator _authenticator;
+    private readonly DpopTokenCheck _dpop;
     private readonly ITokenStore _tokens;
     private readonly ITokenSigner _signer;
     private readonly IAuditLog _audit;
@@ -46,6 +50,7 @@ public sealed class AuthorizationCodeGrant
 
     public AuthorizationCodeGrant(
         ClientAuthenticator authenticator,
+        DpopTokenCheck dpop,
         ITokenStore tokens,
         ITokenSigner signer,
         IAuditLog audit,
@@ -53,6 +58,7 @@ public sealed class AuthorizationCodeGrant
         TimeProvider time)
     {
         _authenticator = authenticator;
+        _dpop = dpop;
         _tokens = tokens;
         _signer = signer;
         _audit = audit;
@@ -138,6 +144,13 @@ public sealed class AuthorizationCodeGrant
             return Result.Failure<TokenResponse>(OAuthError.InvalidTarget("resource missing or not allowed"));
         }
 
+        // Last before the redemption: the replay check is a database write (D24 to D26).
+        var dpop = await _dpop.CheckAsync(context, client, request.DpopProof, cancellationToken).ConfigureAwait(false);
+        if (!dpop.IsSuccess)
+        {
+            return Result.Failure<TokenResponse>(dpop.Error);
+        }
+
         var now = _time.GetUtcNow();
         var codeHash = TokenHash.Compute(request.Code);
         var challenge = Base64Url.EncodeToString(SHA256.HashData(Encoding.ASCII.GetBytes(request.CodeVerifier)));
@@ -155,7 +168,7 @@ public sealed class AuthorizationCodeGrant
 
             if (code is not null)
             {
-                (response, family) = await CompleteRedemptionAsync(context, client, code, familyId, audience, now, cancellationToken)
+                (response, family) = await CompleteRedemptionAsync(context, client, code, familyId, audience, dpop.Value, now, cancellationToken)
                     .ConfigureAwait(false);
                 await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             }
@@ -174,16 +187,10 @@ public sealed class AuthorizationCodeGrant
             client.Id,
             code.UserId,
             family!.Id,
-            new Dictionary<string, string>
-            {
-                ["grant_type"] = GrantName,
-                ["scope"] = code.Scope,
-                ["aud"] = audience,
-                ["refresh_issued"] = response!.RefreshToken is null ? "no" : "yes",
-            },
+            RedeemedData(code, audience, response!, dpop.Value),
             cancellationToken).ConfigureAwait(false);
 
-        return Result.Success(response);
+        return Result.Success(response!);
     }
 
     /// <summary>
@@ -196,12 +203,17 @@ public sealed class AuthorizationCodeGrant
         AuthorizationCode code,
         Guid familyId,
         string audience,
+        string? keyThumbprint,
         DateTimeOffset now,
         CancellationToken cancellationToken)
     {
         var lifetimes = client.ResolveLifetimes(context.Tenant.Settings);
-        var family = TokenFamily.Start(familyId, context.Tenant.Id, client.Id, code.UserId, code.Id, code.Scope, lifetimes, now);
-        var response = await CreateTokensAsync(context, client, code, audience, lifetimes, now, cancellationToken).ConfigureAwait(false);
+
+        // D24: a public client's family is bound to the DPoP key, so its refresh tokens need that key. A confidential
+        // client authenticates at each refresh, so its family stays unbound.
+        var familyKey = client.Type == ClientType.Public ? keyThumbprint : null;
+        var family = TokenFamily.Start(familyId, context.Tenant.Id, client.Id, code.UserId, code.Id, code.Scope, lifetimes, now, familyKey);
+        var response = await CreateTokensAsync(context, client, code, audience, lifetimes, keyThumbprint, now, cancellationToken).ConfigureAwait(false);
 
         _tokens.AddFamily(family);
         if (response.RefreshToken is { } refreshToken)
@@ -219,6 +231,7 @@ public sealed class AuthorizationCodeGrant
         AuthorizationCode code,
         string audience,
         TokenLifetimes lifetimes,
+        string? keyThumbprint,
         DateTimeOffset now,
         CancellationToken cancellationToken)
     {
@@ -234,7 +247,8 @@ public sealed class AuthorizationCodeGrant
                 now,
                 now + lifetimes.AccessToken,
                 Guid.NewGuid().ToString("N"),
-                code.AuthTime),
+                code.AuthTime,
+                keyThumbprint),
             cancellationToken).ConfigureAwait(false);
 
         string? idToken = null;
@@ -255,7 +269,7 @@ public sealed class AuthorizationCodeGrant
 
         return new TokenResponse(
             accessToken,
-            TokenResponse.BearerType,
+            TokenResponse.TypeFor(keyThumbprint),
             (int)lifetimes.AccessToken.TotalSeconds,
             code.Scope,
             refreshToken,
@@ -340,6 +354,23 @@ public sealed class AuthorizationCodeGrant
     }
 
     // Stryker disable once Equality : at that exact length, value[..maxLength] equals value.
+    private static Dictionary<string, string> RedeemedData(AuthorizationCode code, string audience, TokenResponse response, string? keyThumbprint)
+    {
+        var data = new Dictionary<string, string>
+        {
+            ["grant_type"] = GrantName,
+            ["scope"] = code.Scope,
+            ["aud"] = audience,
+            ["refresh_issued"] = response.RefreshToken is null ? "no" : "yes",
+        };
+        if (keyThumbprint is not null)
+        {
+            data["dpop_jkt"] = keyThumbprint;
+        }
+
+        return data;
+    }
+
     private static string Truncate(string? value, int maxLength) =>
         value is null ? string.Empty : value.Length <= maxLength ? value : value[..maxLength];
 

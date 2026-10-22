@@ -12,4 +12,9 @@ public sealed record TokenResponse(
     string? IdToken = null)
 {
     public const string BearerType = "Bearer";
+
+    /// <summary>The token type of a DPoP-bound access token (RFC 9449, section 5).</summary>
+    public const string DpopType = "DPoP";
+
+    public static string TypeFor(string? keyThumbprint) => keyThumbprint is null ? BearerType : DpopType;
 }

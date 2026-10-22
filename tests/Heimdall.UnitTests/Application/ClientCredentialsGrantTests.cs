@@ -2,6 +2,7 @@ using System.Net;
 using Heimdall.Application.Audit;
 using Heimdall.Application.Clients;
 using Heimdall.Application.Common;
+using Heimdall.Application.Dpop;
 using Heimdall.Application.Tokens;
 using Heimdall.Domain.Audit;
 using Heimdall.Domain.Clients;
@@ -19,13 +20,15 @@ public class ClientCredentialsGrantTests
     private readonly Tenant _tenant = Tenant.Create(Guid.CreateVersion7(), "acme.example.com", "Acme", TenantSettings.Default, Now);
     private readonly InMemoryClientStore _store = new();
     private readonly FakeTimeProvider _time = new(Now);
+    private readonly FakeDpopProofValidator _dpop = new();
+    private readonly InMemoryDpopReplayStore _dpopReplay = new();
     private readonly FakeSigner _signer = new();
     private readonly FakeAuditLog _audit = new();
     private readonly ClientCredentialsGrant _grant;
 
     public ClientCredentialsGrantTests()
     {
-        _grant = new ClientCredentialsGrant(new ClientAuthenticator(_store, _time), _signer, _audit, _time);
+        _grant = new ClientCredentialsGrant(new ClientAuthenticator(_store, _time), new DpopTokenCheck(_dpop, _dpopReplay), _signer, _audit, _time);
     }
 
     private RequestContext Context => new(_tenant, "https://acme.example.com", "corr-1", IPAddress.Parse("203.0.113.7"));
@@ -34,7 +37,8 @@ public class ClientCredentialsGrantTests
         string[]? scopes = null,
         string[]? audiences = null,
         GrantType[]? grants = null,
-        ClientTokenOverrides? overrides = null)
+        ClientTokenOverrides? overrides = null,
+        bool requireDpop = false)
     {
         var client = Client.Create(
             Guid.CreateVersion7(),
@@ -48,14 +52,15 @@ public class ClientCredentialsGrantTests
             requireConsent: false,
             overrides,
             Now,
-            audiences ?? [Api]);
+            audiences ?? [Api],
+            requireDpop);
         client.Approve();
         _store.Add(client, (Secret, null));
         return client;
     }
 
-    private Task<Result<TokenResponse>> Request(string? scope = null, string? resource = null, string secret = Secret) =>
-        _grant.HandleAsync(Context, new ClientCredentialsRequest("billing-service", secret, scope, resource), CancellationToken.None);
+    private Task<Result<TokenResponse>> Request(string? scope = null, string? resource = null, string secret = Secret, string? dpop = null) =>
+        _grant.HandleAsync(Context, new ClientCredentialsRequest("billing-service", secret, scope, resource, dpop), CancellationToken.None);
 
     private void AssertError(Result<TokenResponse> result, string code)
     {
@@ -260,6 +265,59 @@ public class ClientCredentialsGrantTests
         await _grant.HandleAsync(Context, new ClientCredentialsRequest(longId, Secret, null, null), CancellationToken.None);
 
         Assert.Equal(128, _audit.Events[0].Data["client_id"].Length);
+    }
+
+    private const string DpopKey = "0ZcOCORZNYy-DWpqq30jZyJGHTN0d2HglBV3uiguA4I";
+
+    [Fact]
+    public async Task DPoP_proof_binds_the_access_token()
+    {
+        AddClient();
+
+        var result = await Request(dpop: FakeDpopProofValidator.Proof(DpopKey));
+
+        Assert.Equal("DPoP", result.Value.TokenType);
+        Assert.Equal(DpopKey, _signer.Signed[0].Claims.KeyThumbprint);
+        Assert.Equal(DpopKey, _audit.Events[0].Data["dpop_jkt"]);
+    }
+
+    [Fact]
+    public async Task Without_a_proof_the_token_is_a_bearer_token()
+    {
+        AddClient();
+
+        var result = await Request();
+
+        Assert.Equal("Bearer", result.Value.TokenType);
+        Assert.Null(_signer.Signed[0].Claims.KeyThumbprint);
+        Assert.False(_audit.Events[0].Data.ContainsKey("dpop_jkt"));
+    }
+
+    [Fact]
+    public async Task Client_that_requires_DPoP_gets_no_token_without_a_proof()
+    {
+        AddClient(requireDpop: true);
+
+        AssertError(await Request(), OAuthError.InvalidDpopProofCode);
+        Assert.Equal("client requires DPoP", _audit.Events[0].Data["reason"]);
+    }
+
+    [Fact]
+    public async Task Invalid_proof_issues_nothing()
+    {
+        AddClient();
+
+        AssertError(await Request(dpop: "not a proof"), OAuthError.InvalidDpopProofCode);
+    }
+
+    [Fact]
+    public async Task Cheap_checks_run_before_the_DPoP_replay_write()
+    {
+        AddClient();
+
+        await Request("admin", dpop: FakeDpopProofValidator.Proof(DpopKey));
+
+        Assert.Empty(_dpopReplay.Seen);
     }
 
     private sealed class FakeSigner : ITokenSigner

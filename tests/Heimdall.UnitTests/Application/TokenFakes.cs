@@ -94,7 +94,8 @@ internal sealed class InMemoryTokenStore : ITokenStore
                 && f.ClientPk == rotation.ClientPk
                 && f.RevokedAt is null
                 && f.IdleExpiresAt > rotation.Now
-                && f.AbsoluteExpiresAt > rotation.Now));
+                && f.AbsoluteExpiresAt > rotation.Now
+                && (f.DpopKeyThumbprint is null || f.DpopKeyThumbprint == rotation.DpopKeyThumbprint)));
         if (token is not null)
         {
             Change(token, nameof(RefreshToken.UsedAt), rotation.Now);
@@ -231,4 +232,33 @@ internal sealed class RecordingSecurityAlerts : ISecurityAlerts
     public List<(string Type, Guid TenantId, IReadOnlyDictionary<string, string> Data)> Raised { get; } = [];
 
     public void Raise(string type, Guid tenantId, IReadOnlyDictionary<string, string> data) => Raised.Add((type, tenantId, data));
+}
+
+/// <summary>
+/// A test fake of the proof validator. A proof "proof:&lt;thumbprint&gt;:&lt;jti&gt;" passes with that key and
+/// <c>jti</c>. Any other text fails. The real rules are in DpopProofValidatorTests.
+/// </summary>
+internal sealed class FakeDpopProofValidator : Heimdall.Application.Dpop.IDpopProofValidator
+{
+    public List<(string Proof, Heimdall.Application.Dpop.DpopRequest Request)> Checked { get; } = [];
+
+    public static string Proof(string keyThumbprint, string jti = "jti-1") => $"proof:{keyThumbprint}:{jti}";
+
+    public Heimdall.Application.Common.Result<Heimdall.Application.Dpop.DpopProof> Validate(string proof, Heimdall.Application.Dpop.DpopRequest request)
+    {
+        Checked.Add((proof, request));
+        var parts = proof.Split(':');
+        return parts is ["proof", var key, var jti]
+            ? Heimdall.Application.Common.Result.Success(new Heimdall.Application.Dpop.DpopProof(key, jti, DateTimeOffset.UnixEpoch))
+            : Heimdall.Application.Common.Result.Failure<Heimdall.Application.Dpop.DpopProof>(Heimdall.Application.Common.OAuthError.InvalidDpopProof("fake refused"));
+    }
+}
+
+/// <summary>A test fake of the replay store: the same tenant, key, and jti work once.</summary>
+internal sealed class InMemoryDpopReplayStore : Heimdall.Application.Dpop.IDpopReplayStore
+{
+    public HashSet<(Guid Tenant, string Key, string Jti)> Seen { get; } = [];
+
+    public Task<bool> TryUseAsync(Guid tenantId, Heimdall.Application.Dpop.DpopProof proof, CancellationToken cancellationToken) =>
+        Task.FromResult(Seen.Add((tenantId, proof.KeyThumbprint, proof.Jti)));
 }

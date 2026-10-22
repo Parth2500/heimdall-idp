@@ -15,7 +15,10 @@ namespace Heimdall.Api.Endpoints;
 /// </remarks>
 internal static partial class TokenEndpoint
 {
-    public const string Path = "/oauth/v1/token";
+    public const string Path = TokenEndpointAddress.Path;
+
+    /// <summary>The request header that carries a DPoP proof (RFC 9449, section 4.1).</summary>
+    public const string DpopHeader = "DPoP";
 
     public static async Task HandleAsync(
         HttpContext context,
@@ -42,11 +45,20 @@ internal static partial class TokenEndpoint
             parsed = OAuthForm.Fail(OAuthError.InvalidRequest("grant_type missing"));
         }
 
+        // RFC 9449, section 4.3: at most one DPoP header. Two would make the request ambiguous.
+        var dpopHeaders = context.Request.Headers[DpopHeader];
+        if (parsed.Error is null && dpopHeaders.Count > 1)
+        {
+            parsed = OAuthForm.Fail(OAuthError.InvalidDpopProof("repeated DPoP header"));
+        }
+
+        var dpopProof = dpopHeaders.Count == 1 ? dpopHeaders[0] ?? string.Empty : null;
+
         if (parsed.Error is { } error)
         {
             metrics.TokenRequest(parsed.Form?["grant_type"].ToString(), error.Code);
             limiter.RecordFailure(context);
-            LogRejected(logger, error.Code, error.AuditDetail ?? string.Empty);
+            LogRejected(logger, error.Code, error.AuditDetail);
             await OAuthResponses.WriteErrorAsync(context, error).ConfigureAwait(false);
             return;
         }
@@ -66,7 +78,12 @@ internal static partial class TokenEndpoint
             case "client_credentials":
                 result = await clientCredentials.HandleAsync(
                     requestContext,
-                    new ClientCredentialsRequest(parsed.ClientId, parsed.ClientSecret, OAuthFormReader.NullIfEmpty(form["scope"]), OAuthFormReader.NullIfEmpty(form["resource"])),
+                    new ClientCredentialsRequest(
+                        parsed.ClientId,
+                        parsed.ClientSecret,
+                        OAuthFormReader.NullIfEmpty(form["scope"]),
+                        OAuthFormReader.NullIfEmpty(form["resource"]),
+                        dpopProof),
                     context.RequestAborted).ConfigureAwait(false);
                 break;
 
@@ -79,7 +96,8 @@ internal static partial class TokenEndpoint
                         OAuthFormReader.NullIfEmpty(form["code"]),
                         OAuthFormReader.NullIfEmpty(form["code_verifier"]),
                         OAuthFormReader.NullIfEmpty(form["redirect_uri"]),
-                        OAuthFormReader.NullIfEmpty(form["resource"])),
+                        OAuthFormReader.NullIfEmpty(form["resource"]),
+                        dpopProof),
                     context.RequestAborted).ConfigureAwait(false);
                 break;
 
@@ -91,7 +109,8 @@ internal static partial class TokenEndpoint
                         parsed.ClientSecret,
                         OAuthFormReader.NullIfEmpty(form["refresh_token"]),
                         OAuthFormReader.NullIfEmpty(form["scope"]),
-                        OAuthFormReader.NullIfEmpty(form["resource"])),
+                        OAuthFormReader.NullIfEmpty(form["resource"]),
+                        dpopProof),
                     context.RequestAborted).ConfigureAwait(false);
                 break;
 

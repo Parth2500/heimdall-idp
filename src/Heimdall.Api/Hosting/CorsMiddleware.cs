@@ -27,8 +27,8 @@ internal sealed class CorsMiddleware
 
     private static readonly FrozenDictionary<string, Rule> ClientRules = new Dictionary<string, Rule>(StringComparer.OrdinalIgnoreCase)
     {
-        // A form POST with no custom header is a simple request. The browser sends no preflight for it.
-        [TokenEndpoint.Path] = new([HttpMethods.Post], [], []),
+        // A form POST is a simple request. With a DPoP header (RFC 9449) the browser sends a preflight first.
+        [TokenEndpoint.Path] = new([HttpMethods.Post], [TokenEndpoint.DpopHeader], []),
         [RevokeEndpoint.Path] = new([HttpMethods.Post], [], []),
 
         // The bearer token goes in the Authorization header, so the browser sends a preflight. The client may read

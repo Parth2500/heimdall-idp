@@ -32,9 +32,11 @@ public sealed class TokenFamily
         string scope,
         DateTimeOffset createdAt,
         DateTimeOffset absoluteExpiresAt,
-        DateTimeOffset idleExpiresAt)
+        DateTimeOffset idleExpiresAt,
+        string? dpopKeyThumbprint)
     {
         Id = id;
+        DpopKeyThumbprint = dpopKeyThumbprint;
         TenantId = tenantId;
         ClientPk = clientPk;
         UserId = userId;
@@ -69,6 +71,12 @@ public sealed class TokenFamily
 
     public DateTimeOffset? RevokedAt { get; private set; }
 
+    /// <summary>
+    /// The DPoP key that the family is bound to, or null for an unbound family (D24). Each refresh of a bound family
+    /// needs a proof from this key. Only a public client's family is bound.
+    /// </summary>
+    public string? DpopKeyThumbprint { get; }
+
     public FamilyRevocationReason? RevocationReason { get; private set; }
 
     public static TokenFamily Start(
@@ -79,7 +87,8 @@ public sealed class TokenFamily
         Guid sourceCodeId,
         string scope,
         TokenLifetimes lifetimes,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        string? dpopKeyThumbprint = null)
     {
         Guard.NotEmpty(id, nameof(id));
         Guard.NotEmpty(tenantId, nameof(tenantId));
@@ -91,7 +100,9 @@ public sealed class TokenFamily
         var absolute = now + lifetimes.RefreshAbsolute;
         var idle = Earlier(now + lifetimes.RefreshIdle, absolute);
 
-        return new TokenFamily(id, tenantId, clientPk, userId, sourceCodeId, Guard.NotBlank(scope, nameof(scope)), now, absolute, idle);
+        var thumbprint = dpopKeyThumbprint is null ? null : KeyThumbprint.Require(dpopKeyThumbprint, nameof(dpopKeyThumbprint));
+
+        return new TokenFamily(id, tenantId, clientPk, userId, sourceCodeId, Guard.NotBlank(scope, nameof(scope)), now, absolute, idle, thumbprint);
     }
 
     public bool IsActive(DateTimeOffset now) =>

@@ -4,6 +4,7 @@ namespace Heimdall.Application.Tokens;
 /// The claims of an access token (RFC 9068). The signer adds the header (<c>alg</c> = RS256, <c>kid</c>,
 /// <c>typ</c> = <c>at+jwt</c>).
 /// </summary>
+/// <param name="KeyThumbprint">The DPoP key that the token is bound to (<c>cnf.jkt</c>, RFC 9449), or null for a bearer token.</param>
 public sealed record AccessTokenClaims(
     string Issuer,
     string Subject,
@@ -13,7 +14,8 @@ public sealed record AccessTokenClaims(
     DateTimeOffset IssuedAt,
     DateTimeOffset ExpiresAt,
     string JwtId,
-    DateTimeOffset? AuthTime = null);
+    DateTimeOffset? AuthTime = null,
+    string? KeyThumbprint = null);
 
 /// <summary>
 /// The claims of an OpenID Connect ID token (OpenID Connect Core, section 2). The audience is the client. The signer

@@ -1,6 +1,7 @@
 using System.Net;
 using Heimdall.Application.Clients;
 using Heimdall.Application.Common;
+using Heimdall.Application.Dpop;
 using Heimdall.Application.Keys;
 using Heimdall.Application.Tokens;
 using Heimdall.Domain.Audit;
@@ -27,6 +28,8 @@ public class RefreshTokenGrantTests
     private readonly InMemoryTokenStore _tokens = new();
     private readonly InMemoryUserStore _users = new();
     private readonly FakeTimeProvider _time = new(Now);
+    private readonly FakeDpopProofValidator _dpop = new();
+    private readonly InMemoryDpopReplayStore _dpopReplay = new();
     private readonly RecordingTokenSigner _signer = new();
     private readonly RecordingAuditLog _audit = new();
     private readonly RecordingSecurityAlerts _alerts = new();
@@ -38,7 +41,7 @@ public class RefreshTokenGrantTests
 
     public RefreshTokenGrantTests()
     {
-        _grant = new RefreshTokenGrant(new ClientAuthenticator(_clients, _time), _tokens, _users, _signer, _audit, _alerts, _time);
+        _grant = new RefreshTokenGrant(new ClientAuthenticator(_clients, _time), new DpopTokenCheck(_dpop, _dpopReplay), _tokens, _users, _signer, _audit, _alerts, _time);
         _spa = AddPublicClient("spa");
         _user = User.Create(Guid.CreateVersion7(), _tenant.Id, "alice@example.com", "hash", Now);
         _users.Add(_user);
@@ -69,12 +72,12 @@ public class RefreshTokenGrantTests
         return client;
     }
 
-    private (TokenFamily Family, RefreshToken Token) StartFamily(Client client, string token, Guid? tenantId = null)
+    private (TokenFamily Family, RefreshToken Token) StartFamily(Client client, string token, Guid? tenantId = null, string? dpopKey = null)
     {
         var tenant = tenantId ?? _tenant.Id;
         var family = TokenFamily.Start(
             Guid.CreateVersion7(), tenant, client.Id, _user.Id, Guid.CreateVersion7(), FamilyScope,
-            client.ResolveLifetimes(_tenant.Settings), _time.GetUtcNow());
+            client.ResolveLifetimes(_tenant.Settings), _time.GetUtcNow(), dpopKey);
         var refresh = RefreshToken.Create(Guid.CreateVersion7(), tenant, family.Id, TokenHash.Compute(token), _time.GetUtcNow());
         _tokens.Families.Add(family);
         _tokens.RefreshTokens.Add(refresh);
@@ -86,8 +89,9 @@ public class RefreshTokenGrantTests
         string? clientId = "spa",
         string? scope = null,
         string? resource = null,
-        string? secret = null) =>
-        _grant.HandleAsync(Context, new RefreshTokenRequest(clientId, secret, token, scope, resource), CancellationToken.None);
+        string? secret = null,
+        string? dpop = null) =>
+        _grant.HandleAsync(Context, new RefreshTokenRequest(clientId, secret, token, scope, resource, dpop), CancellationToken.None);
 
     private AuditEvent Rejected(Result<TokenResponse> result, string error, string reason)
     {
@@ -217,7 +221,7 @@ public class RefreshTokenGrantTests
         // Another server revoked the family between the rotation and the revocation.
         _user.Disable();
         var revokeFirst = new RevokingTokenStore(_tokens, _family);
-        var grant = new RefreshTokenGrant(new ClientAuthenticator(_clients, _time), revokeFirst, _users, _signer, _audit, _alerts, _time);
+        var grant = new RefreshTokenGrant(new ClientAuthenticator(_clients, _time), new DpopTokenCheck(_dpop, _dpopReplay), revokeFirst, _users, _signer, _audit, _alerts, _time);
 
         await grant.HandleAsync(Context, new RefreshTokenRequest("spa", null, Token, null, null), CancellationToken.None);
 
@@ -433,6 +437,75 @@ public class RefreshTokenGrantTests
     }
 
     /// <summary>Revokes the family when the grant reads it, as if another server revoked it at that moment.</summary>
+
+    private const string DpopKey = "0ZcOCORZNYy-DWpqq30jZyJGHTN0d2HglBV3uiguA4I";
+    private const string OtherKey = "NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs";
+
+    [Fact]
+    public async Task Bound_family_rotates_with_a_proof_from_its_key()
+    {
+        StartFamily(_spa, "bound-token", dpopKey: DpopKey);
+
+        var result = await Refresh("bound-token", dpop: FakeDpopProofValidator.Proof(DpopKey));
+
+        Assert.Equal("DPoP", result.Value.TokenType);
+        Assert.Equal(DpopKey, _signer.Signed[0].Claims.KeyThumbprint);
+        Assert.Equal(DpopKey, _audit.Events[0].Data["dpop_jkt"]);
+    }
+
+    [Fact]
+    public async Task Bound_family_refuses_a_request_without_a_proof_and_keeps_the_token()
+    {
+        var (family, token) = StartFamily(_spa, "bound-token", dpopKey: DpopKey);
+
+        Rejected(await Refresh("bound-token"), OAuthError.InvalidDpopProofCode, "proof required for a bound refresh token");
+
+        Assert.Null(token.UsedAt);
+        Assert.Null(family.RevokedAt);
+    }
+
+    [Fact]
+    public async Task Bound_family_refuses_another_key_and_a_thief_cannot_use_up_the_token()
+    {
+        // The key check is inside the rotation statement, so the wrong key matches no row and burns nothing.
+        var (family, token) = StartFamily(_spa, "bound-token", dpopKey: DpopKey);
+
+        Rejected(await Refresh("bound-token", dpop: FakeDpopProofValidator.Proof(OtherKey)), OAuthError.InvalidGrantCode, "DPoP key differs from the family's key");
+
+        Assert.Null(token.UsedAt);
+        Assert.Null(family.RevokedAt);
+        Assert.Empty(_alerts.Raised);
+        Assert.True((await Refresh("bound-token", dpop: FakeDpopProofValidator.Proof(DpopKey, "jti-2"))).IsSuccess);
+    }
+
+    [Fact]
+    public async Task Unbound_family_with_a_proof_gets_a_bound_access_token_and_stays_unbound()
+    {
+        var result = await Refresh(dpop: FakeDpopProofValidator.Proof(DpopKey));
+
+        Assert.Equal("DPoP", result.Value.TokenType);
+        Assert.Equal(DpopKey, _signer.Signed[0].Claims.KeyThumbprint);
+        Assert.Null(_family.DpopKeyThumbprint);
+    }
+
+    [Fact]
+    public async Task Reused_token_of_a_bound_family_still_revokes_it_whatever_the_key()
+    {
+        StartFamily(_spa, "bound-token", dpopKey: DpopKey);
+        await Refresh("bound-token", dpop: FakeDpopProofValidator.Proof(DpopKey));
+
+        Rejected(await Refresh("bound-token", dpop: FakeDpopProofValidator.Proof(OtherKey)), OAuthError.InvalidGrantCode, "refresh token reused");
+
+        Assert.Single(_alerts.Raised);
+    }
+
+    [Fact]
+    public async Task Invalid_proof_does_not_use_the_token()
+    {
+        Rejected(await Refresh(dpop: "not a proof"), OAuthError.InvalidDpopProofCode, "fake refused");
+        Assert.Null(_first.UsedAt);
+    }
+
     private sealed class RevokingTokenStore(InMemoryTokenStore inner, TokenFamily family) : ITokenStore
     {
         public Task<IGrantTransaction> BeginTransactionAsync(CancellationToken cancellationToken) => inner.BeginTransactionAsync(cancellationToken);

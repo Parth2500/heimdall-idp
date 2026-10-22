@@ -96,6 +96,14 @@ internal sealed class JwtTokenSigner : ITokenSigner
         {
             writer.WriteNumber("auth_time", authTime.ToUnixTimeSeconds());
         }
+
+        // RFC 9449, section 6.1: a DPoP-bound token names its key's thumbprint in cnf.jkt (RFC 7800).
+        if (claims.KeyThumbprint is { } keyThumbprint)
+        {
+            writer.WriteStartObject("cnf");
+            writer.WriteString("jkt", keyThumbprint);
+            writer.WriteEndObject();
+        }
     });
 
     // OpenID Connect Core, section 2: iss, sub, aud, exp, iat are required. auth_time and nonce when known.

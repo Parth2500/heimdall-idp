@@ -60,9 +60,11 @@ public sealed class Client
         List<string> allowedAudiences,
         bool requireConsent,
         ClientTokenOverrides overrides,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt,
+        bool requireDpop)
     {
         _allowedAudiences = allowedAudiences;
+        RequireDpop = requireDpop;
         Id = id;
         TenantId = tenantId;
         ClientId = clientId;
@@ -105,6 +107,12 @@ public sealed class Client
 
     public bool RequireConsent { get; private set; }
 
+    /// <summary>
+    /// RFC 9449, section 5.2 (<c>dpop_bound_access_tokens</c>): every token request of this client must carry a DPoP
+    /// proof, so its tokens are always bound (D24).
+    /// </summary>
+    public bool RequireDpop { get; private set; }
+
     public ClientTokenOverrides TokenOverrides { get; private set; }
 
     public ClientStatus Status { get; private set; }
@@ -126,7 +134,8 @@ public sealed class Client
         bool requireConsent,
         ClientTokenOverrides? overrides,
         DateTimeOffset now,
-        IEnumerable<string>? allowedAudiences = null)
+        IEnumerable<string>? allowedAudiences = null,
+        bool requireDpop = false)
     {
         Guard.NotEmpty(id, nameof(id));
         Guard.NotEmpty(tenantId, nameof(tenantId));
@@ -185,7 +194,8 @@ public sealed class Client
             audiences,
             requireConsent,
             overrides ?? ClientTokenOverrides.None,
-            now);
+            now,
+            requireDpop);
     }
 
     /// <summary>

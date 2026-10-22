@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Heimdall.Application.Clients;
 using Heimdall.Application.Common;
+using Heimdall.Application.Dpop;
 using Heimdall.Application.Keys;
 using Heimdall.Application.Tokens;
 using Heimdall.Domain.Audit;
@@ -30,6 +31,8 @@ public class AuthorizationCodeGrantTests
     private readonly InMemoryClientStore _clients = new();
     private readonly InMemoryTokenStore _tokens = new();
     private readonly FakeTimeProvider _time = new(Now);
+    private readonly FakeDpopProofValidator _dpop = new();
+    private readonly InMemoryDpopReplayStore _dpopReplay = new();
     private readonly RecordingTokenSigner _signer = new();
     private readonly RecordingAuditLog _audit = new();
     private readonly RecordingSecurityAlerts _alerts = new();
@@ -38,7 +41,7 @@ public class AuthorizationCodeGrantTests
 
     public AuthorizationCodeGrantTests()
     {
-        _grant = new AuthorizationCodeGrant(new ClientAuthenticator(_clients, _time), _tokens, _signer, _audit, _alerts, _time);
+        _grant = new AuthorizationCodeGrant(new ClientAuthenticator(_clients, _time), new DpopTokenCheck(_dpop, _dpopReplay), _tokens, _signer, _audit, _alerts, _time);
         _spa = AddPublicClient("spa");
     }
 
@@ -51,7 +54,8 @@ public class AuthorizationCodeGrantTests
         string clientId,
         string[]? redirectUris = null,
         GrantType[]? grants = null,
-        string[]? audiences = null)
+        string[]? audiences = null,
+        bool requireDpop = false)
     {
         var client = Client.Create(
             Guid.CreateVersion7(),
@@ -65,7 +69,8 @@ public class AuthorizationCodeGrantTests
             requireConsent: false,
             overrides: null,
             Now,
-            audiences);
+            audiences,
+            requireDpop);
         client.Approve();
         _clients.Add(client);
         return client;
@@ -100,10 +105,11 @@ public class AuthorizationCodeGrantTests
         string? verifier = Verifier,
         string? redirectUri = Callback,
         string? resource = null,
-        string? secret = null) =>
+        string? secret = null,
+        string? dpop = null) =>
         _grant.HandleAsync(
             Context,
-            new AuthorizationCodeRequest(clientId, secret, code, verifier, redirectUri, resource),
+            new AuthorizationCodeRequest(clientId, secret, code, verifier, redirectUri, resource, dpop),
             CancellationToken.None);
 
     private AuditEvent Rejected(Result<TokenResponse> result, string error, string reason)
@@ -522,5 +528,69 @@ public class AuthorizationCodeGrantTests
         await Redeem(clientId: null);
 
         Assert.Equal(string.Empty, _audit.Events[0].Data["client_id"]);
+    }
+
+    private const string DpopKey = "0ZcOCORZNYy-DWpqq30jZyJGHTN0d2HglBV3uiguA4I";
+
+    [Fact]
+    public async Task DPoP_proof_binds_the_access_token_and_the_public_client_family()
+    {
+        IssueCode();
+
+        var result = await Redeem(dpop: FakeDpopProofValidator.Proof(DpopKey));
+
+        Assert.Equal("DPoP", result.Value.TokenType);
+        Assert.Equal(DpopKey, _signer.Signed[0].Claims.KeyThumbprint);
+        Assert.Equal(DpopKey, Assert.Single(_tokens.Families).DpopKeyThumbprint);
+        Assert.Equal(DpopKey, _audit.Events[0].Data["dpop_jkt"]);
+    }
+
+    [Fact]
+    public async Task Confidential_client_family_stays_unbound_but_its_access_token_is_bound()
+    {
+        // D24: a confidential client authenticates at each refresh, so only its access token is bound.
+        var client = Client.Create(
+            Guid.CreateVersion7(), _tenant.Id, "web", "Web app", ClientType.Confidential,
+            [GrantType.AuthorizationCode, GrantType.RefreshToken], ["openid", "offline_access"], [Callback],
+            requireConsent: false, overrides: null, Now);
+        client.Approve();
+        _clients.Add(client, ("web-secret", null));
+        IssueCode(client);
+
+        var result = await Redeem(clientId: "web", secret: "web-secret", dpop: FakeDpopProofValidator.Proof(DpopKey));
+
+        Assert.Equal("DPoP", result.Value.TokenType);
+        Assert.Equal(DpopKey, _signer.Signed[0].Claims.KeyThumbprint);
+        Assert.Null(Assert.Single(_tokens.Families).DpopKeyThumbprint);
+    }
+
+    [Fact]
+    public async Task Without_a_proof_the_family_is_unbound()
+    {
+        IssueCode();
+
+        var result = await Redeem();
+
+        Assert.Equal("Bearer", result.Value.TokenType);
+        Assert.Null(Assert.Single(_tokens.Families).DpopKeyThumbprint);
+    }
+
+    [Fact]
+    public async Task Invalid_proof_does_not_redeem_the_code()
+    {
+        var code = IssueCode();
+
+        Rejected(await Redeem(dpop: "not a proof"), OAuthError.InvalidDpopProofCode, "fake refused");
+        Assert.Null(code.RedeemedAt);
+    }
+
+    [Fact]
+    public async Task Client_that_requires_DPoP_cannot_redeem_without_a_proof()
+    {
+        var client = AddPublicClient("dpop-only", requireDpop: true);
+        var code = IssueCode(client);
+
+        Rejected(await Redeem(clientId: "dpop-only"), OAuthError.InvalidDpopProofCode, "client requires DPoP");
+        Assert.Null(code.RedeemedAt);
     }
 }

@@ -1,6 +1,7 @@
 using Heimdall.Application.Audit;
 using Heimdall.Application.Clients;
 using Heimdall.Application.Common;
+using Heimdall.Application.Dpop;
 using Heimdall.Domain.Audit;
 using Heimdall.Domain.Clients;
 using Heimdall.Domain.Tenants;
@@ -11,7 +12,8 @@ namespace Heimdall.Application.Tokens;
 /// <param name="ClientSecret">From the Basic header.</param>
 /// <param name="Scope">The <c>scope</c> parameter, or null.</param>
 /// <param name="Resource">The <c>resource</c> parameter (RFC 8707), or null.</param>
-public sealed record ClientCredentialsRequest(string? ClientId, string? ClientSecret, string? Scope, string? Resource);
+/// <param name="DpopProof">The DPoP header, or null.</param>
+public sealed record ClientCredentialsRequest(string? ClientId, string? ClientSecret, string? Scope, string? Resource, string? DpopProof = null);
 
 /// <summary>
 /// The <c>client_credentials</c> grant at /token. There is no user and no refresh token (OAuth 2.1).
@@ -23,13 +25,15 @@ public sealed class ClientCredentialsGrant
     private static readonly string[] UserScopes = ["openid", "profile", "email", "address", "phone", "offline_access"];
 
     private readonly ClientAuthenticator _authenticator;
+    private readonly DpopTokenCheck _dpop;
     private readonly ITokenSigner _signer;
     private readonly IAuditLog _audit;
     private readonly TimeProvider _time;
 
-    public ClientCredentialsGrant(ClientAuthenticator authenticator, ITokenSigner signer, IAuditLog audit, TimeProvider time)
+    public ClientCredentialsGrant(ClientAuthenticator authenticator, DpopTokenCheck dpop, ITokenSigner signer, IAuditLog audit, TimeProvider time)
     {
         _authenticator = authenticator;
+        _dpop = dpop;
         _signer = signer;
         _audit = audit;
         _time = time;
@@ -116,6 +120,13 @@ public sealed class ClientCredentialsGrant
             return Result.Failure<TokenResponse>(OAuthError.InvalidTarget("resource missing or not allowed"));
         }
 
+        // Last before signing: the replay check is a database write (D24 to D26).
+        var dpop = await _dpop.CheckAsync(context, client, request.DpopProof, cancellationToken).ConfigureAwait(false);
+        if (!dpop.IsSuccess)
+        {
+            return Result.Failure<TokenResponse>(dpop.Error);
+        }
+
         var lifetimes = client.ResolveLifetimes(context.Tenant.Settings);
         var now = _time.GetUtcNow();
         var claims = new AccessTokenClaims(
@@ -126,28 +137,30 @@ public sealed class ClientCredentialsGrant
             Scopes: scopes,
             IssuedAt: now,
             ExpiresAt: now + lifetimes.AccessToken,
-            JwtId: Guid.NewGuid().ToString("N"));
+            JwtId: Guid.NewGuid().ToString("N"),
+            KeyThumbprint: dpop.Value);
 
         var accessToken = await _signer
             .SignAccessTokenAsync(context.Tenant.Id, claims, cancellationToken)
             .ConfigureAwait(false);
 
-        await WriteAuditAsync(
-            context,
-            AuditEventTypes.TokenIssued,
-            client.Id,
-            new Dictionary<string, string>
-            {
-                ["grant_type"] = "client_credentials",
-                ["jti"] = claims.JwtId,
-                ["aud"] = audience,
-                ["scope"] = string.Join(' ', scopes),
-            },
-            cancellationToken).ConfigureAwait(false);
+        var issued = new Dictionary<string, string>
+        {
+            ["grant_type"] = "client_credentials",
+            ["jti"] = claims.JwtId,
+            ["aud"] = audience,
+            ["scope"] = string.Join(' ', scopes),
+        };
+        if (dpop.Value is { } keyThumbprint)
+        {
+            issued["dpop_jkt"] = keyThumbprint;
+        }
+
+        await WriteAuditAsync(context, AuditEventTypes.TokenIssued, client.Id, issued, cancellationToken).ConfigureAwait(false);
 
         return Result.Success(new TokenResponse(
             accessToken,
-            TokenResponse.BearerType,
+            TokenResponse.TypeFor(dpop.Value),
             (int)lifetimes.AccessToken.TotalSeconds,
             string.Join(' ', scopes)));
     }

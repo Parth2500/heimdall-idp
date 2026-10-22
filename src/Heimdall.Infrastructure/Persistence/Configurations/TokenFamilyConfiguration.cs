@@ -17,6 +17,7 @@ internal sealed class TokenFamilyConfiguration : IEntityTypeConfiguration<TokenF
                 "ck_token_families_revoked_reason",
                 "revoked_reason IS NULL OR revoked_reason IN ('reuse_detected', 'user_logout', 'admin', 'user_disabled', 'consent_removed')");
             t.HasCheckConstraint("ck_token_families_idle", "idle_expires_at <= absolute_expires_at");
+            t.HasCheckConstraint("ck_token_families_dpop_key", "dpop_key_thumbprint IS NULL OR length(dpop_key_thumbprint) = 43");
         });
 
         builder.HasKey(f => f.Id);
@@ -35,6 +36,7 @@ internal sealed class TokenFamilyConfiguration : IEntityTypeConfiguration<TokenF
         builder.Property(f => f.CreatedAt);
         builder.Property(f => f.AbsoluteExpiresAt);
         builder.Property(f => f.IdleExpiresAt);
+        builder.Property(f => f.DpopKeyThumbprint).HasMaxLength(43);
         builder.Property(f => f.RevokedAt);
         builder.Property(f => f.RevocationReason)
             .HasColumnName("revoked_reason")

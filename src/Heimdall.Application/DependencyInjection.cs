@@ -1,5 +1,6 @@
 using Heimdall.Application.Authorization;
 using Heimdall.Application.Clients;
+using Heimdall.Application.Dpop;
 using Heimdall.Application.Keys;
 using Heimdall.Application.Sessions;
 using Heimdall.Application.Settings;
@@ -23,6 +24,7 @@ public static class DependencyInjection
         services.TryAddSingleton(new PasswordHashingOptions());
         services.TryAddSingleton(new LoginThrottleOptions());
         services.AddScoped<ClientAuthenticator>();
+        services.AddScoped<DpopTokenCheck>();
         services.AddScoped<ClientCredentialsGrant>();
         services.AddScoped<AuthorizationCodeGrant>();
         services.AddScoped<RefreshTokenGrant>();

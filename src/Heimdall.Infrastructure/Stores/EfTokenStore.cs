@@ -56,8 +56,9 @@ internal sealed class EfTokenStore : ITokenStore
         var hash = rotation.TokenHash.ToArray();
 
         // docs/schema-design.md, "Rotate a refresh token". One statement. The family conditions are in it too: the
-        // calling client must own the family, and the family must be unrevoked and inside both limits. A token sent by
-        // another client matches no row, so it cannot burn the real client's token.
+        // calling client must own the family, the family must be unrevoked and inside both limits, and a bound family
+        // needs the request's DPoP key (D24). A token sent by another client, or without the key, matches no row, so it
+        // cannot burn the real client's token.
         var rows = await _db.RefreshTokens
             .FromSql($"""
                 UPDATE refresh_tokens AS t
@@ -68,6 +69,7 @@ internal sealed class EfTokenStore : ITokenStore
                   AND  f.client_pk = {rotation.ClientPk}
                   AND  f.revoked_at IS NULL
                   AND  f.idle_expires_at > {rotation.Now} AND f.absolute_expires_at > {rotation.Now}
+                  AND  (f.dpop_key_thumbprint IS NULL OR f.dpop_key_thumbprint = {rotation.DpopKeyThumbprint})
                 RETURNING t.*
                 """)
             .IgnoreQueryFilters()
