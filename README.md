@@ -67,6 +67,9 @@ Some mutants change only the timing or the text, and no test can detect them. Ma
 - `ConfigureAwait`. The test host has no synchronization context.
 - The audit detail of `OAuthError`. The client sees only the error code (D5).
 
+The configuration also excludes `DependencyInjection.cs`. The integration tests cover the service wiring.
+The unit tests use in-memory fakes for the stores. `InMemoryTokenStore` has the same conditions as each SQL statement in `EfTokenStore`, and a rollback undoes its changes. The integration tests check the SQL itself.
+
 ## Run locally
 
 You need Docker for PostgreSQL.

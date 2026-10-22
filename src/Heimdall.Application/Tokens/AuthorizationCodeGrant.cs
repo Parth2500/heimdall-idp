@@ -82,7 +82,7 @@ public sealed class AuthorizationCodeGrant
                     ["grant_type"] = GrantName,
                     ["client_id"] = Truncate(request.ClientId, 128),
                     ["error"] = result.Error.Code,
-                    ["reason"] = result.Error.AuditDetail ?? string.Empty,
+                    ["reason"] = result.Error.AuditDetail,
                 },
                 cancellationToken).ConfigureAwait(false);
         }

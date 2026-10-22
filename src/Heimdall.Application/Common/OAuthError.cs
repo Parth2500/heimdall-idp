@@ -4,7 +4,7 @@ namespace Heimdall.Application.Common;
 /// An OAuth error response (RFC 6749, section 5.2). The code is what the client sees. The detail is for the audit
 /// log only and never goes into a response (D5).
 /// </summary>
-public sealed record OAuthError(string Code, string? AuditDetail = null)
+public sealed record OAuthError(string Code, string AuditDetail)
 {
     public const string InvalidRequestCode = "invalid_request";
     public const string InvalidClientCode = "invalid_client";

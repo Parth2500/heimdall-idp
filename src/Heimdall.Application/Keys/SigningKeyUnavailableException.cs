@@ -20,6 +20,7 @@ public sealed class SigningKeyUnavailableException : Exception
     {
     }
 
+    // Stryker disable once String : message text only; callers check the type.
     public SigningKeyUnavailableException(Guid tenantId)
         : base($"Tenant {tenantId} has no active signing key.")
     {

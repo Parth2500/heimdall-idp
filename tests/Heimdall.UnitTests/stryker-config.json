@@ -2,6 +2,7 @@
   "stryker-config": {
     "solution": "../../Heimdall.slnx",
     "test-projects": ["Heimdall.UnitTests.csproj"],
+    "mutate": ["**/*.cs", "!**/DependencyInjection.cs"],
     "reporters": ["progress", "html", "json"],
     "ignore-methods": [
       "*Exception.ctor",

@@ -401,4 +401,10 @@ public class SigningKeyServiceTests
         Assert.Equal(AuditEventTypes.KeyRemoved, _audit.Events[^1].Type);
         Assert.DoesNotContain(_keys.Keys, k => k.Status == SigningKeyStatus.Pending);
     }
+
+    [Fact]
+    public void Unavailable_key_names_the_tenant()
+    {
+        Assert.Equal(_tenantId, new SigningKeyUnavailableException(_tenantId).TenantId);
+    }
 }

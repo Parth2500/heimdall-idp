@@ -219,7 +219,7 @@ internal static partial class SessionEndpoints
     // The reason goes to the log only (D5).
     private static IResult ConsentError(OAuthError error, ILogger logger)
     {
-        LogRefused(logger, error.AuditDetail ?? error.Code);
+        LogRefused(logger, error.AuditDetail);
         return error.Code == ConsentService.LoginRequiredCode
             ? Error(StatusCodes.Status401Unauthorized, error.Code)
             : Error(StatusCodes.Status400BadRequest, error.Code);

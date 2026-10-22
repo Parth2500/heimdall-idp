@@ -57,7 +57,7 @@ public sealed class ClientCredentialsGrant
                     // The caller controls this value. Cap it so a failed request cannot flood the audit log.
                     ["client_id"] = Truncate(request.ClientId, 128),
                     ["error"] = result.Error.Code,
-                    ["reason"] = result.Error.AuditDetail ?? string.Empty,
+                    ["reason"] = result.Error.AuditDetail,
                 },
                 cancellationToken).ConfigureAwait(false);
         }

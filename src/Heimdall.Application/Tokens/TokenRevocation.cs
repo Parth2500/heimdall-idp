@@ -77,7 +77,7 @@ public sealed class TokenRevocation
                 {
                     ["client_id"] = request.ClientId is { Length: > 128 } id ? id[..128] : request.ClientId ?? string.Empty,
                     ["error"] = authentication.Error.Code,
-                    ["reason"] = authentication.Error.AuditDetail ?? string.Empty,
+                    ["reason"] = authentication.Error.AuditDetail,
                 },
                 cancellationToken).ConfigureAwait(false);
             return Result.Failure<RevocationOutcome>(authentication.Error);

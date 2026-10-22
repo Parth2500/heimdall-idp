@@ -99,7 +99,7 @@ internal static partial class TokenEndpoint
                 var unsupported = OAuthError.UnsupportedGrantType("grant type not supported");
                 metrics.TokenRequest(null, unsupported.Code);
                 limiter.RecordFailure(context);
-                LogRejected(logger, unsupported.Code, unsupported.AuditDetail!);
+                LogRejected(logger, unsupported.Code, unsupported.AuditDetail);
                 await OAuthResponses.WriteErrorAsync(context, unsupported).ConfigureAwait(false);
                 return;
         }

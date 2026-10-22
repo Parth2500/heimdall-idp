@@ -251,4 +251,41 @@ public class UserAuthenticatorTests
 
         Assert.Empty(_throttle.Rows);
     }
+
+    [Fact]
+    public void Throttle_options_reject_values_that_disable_the_throttle()
+    {
+        var options = new LoginThrottleOptions { FreeFailures = 0, MaxDelay = TimeSpan.Zero, ResetAfter = TimeSpan.Zero };
+
+        Assert.Equal(
+            [
+                "FreeFailures: the value must be at least 1.",
+                "MaxDelay: the value must be greater than zero.",
+                "ResetAfter: the value must be longer than MaxDelay.",
+            ],
+            options.Validate());
+        Assert.Empty(new LoginThrottleOptions().Validate());
+    }
+
+    [Fact]
+    public void Throttle_options_accept_the_lowest_allowed_values()
+    {
+        var options = new LoginThrottleOptions
+        {
+            FreeFailures = 1,
+            MaxDelay = TimeSpan.FromTicks(1),
+            ResetAfter = TimeSpan.FromTicks(2),
+        };
+
+        Assert.Empty(options.Validate());
+    }
+
+    [Fact]
+    public void Throttle_reset_must_be_longer_than_the_longest_wait()
+    {
+        // Otherwise a throttled source would start again from zero before its wait ends.
+        var options = new LoginThrottleOptions { MaxDelay = TimeSpan.FromHours(1), ResetAfter = TimeSpan.FromHours(1) };
+
+        Assert.Single(options.Validate());
+    }
 }

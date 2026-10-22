@@ -88,7 +88,7 @@ public sealed class RefreshTokenGrant
                     ["grant_type"] = GrantName,
                     ["client_id"] = request.ClientId is { Length: > 128 } id ? id[..128] : request.ClientId ?? string.Empty,
                     ["error"] = result.Error.Code,
-                    ["reason"] = result.Error.AuditDetail ?? string.Empty,
+                    ["reason"] = result.Error.AuditDetail,
                 },
                 cancellationToken).ConfigureAwait(false);
         }
