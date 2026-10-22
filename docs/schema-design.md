@@ -204,6 +204,10 @@ Each status change is one conditional statement: `UPDATE signing_keys SET status
 
 The application database role has `INSERT` and `SELECT` on this table. It has no `UPDATE` or `DELETE`. A separate role purges old rows.
 
+This table has no row-level security, because platform events have no tenant. A query that reads it must filter by `tenant_id` itself. Today no application path reads it. The audit viewer of the admin portal (Phase 3) must filter by tenant, or the table must get a policy first.
+
+How the application writes it (group commit): `BatchingAuditLog` keeps one queue for each server. A request adds its event and waits until a committed transaction holds it. So a response never leaves before its audit row is durable. One writer drains the queue. All events that wait go into one transaction, with up to 256 events in each. With no load, each transaction holds one event, and no timer adds a delay. Under load, events collect during each commit, so the transactions grow. When a transaction fails, the writer writes each event alone, so one bad event fails only its own request. The metric `heimdall.audit.batch_size` shows the size of each transaction.
+
 ## The atomic statements
 
 These statements are the core of the security design. Each one is a single SQL command. A check in application code, followed by an update, is not allowed.

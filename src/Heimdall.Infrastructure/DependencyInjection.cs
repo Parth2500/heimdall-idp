@@ -70,7 +70,8 @@ public static class DependencyInjection
         services.AddSingleton<ISecurityAlerts, LoggingSecurityAlerts>();
         services.TryAddSingleton(new PasswordHashingOptions());
         services.AddSingleton<IPasswordHasher, Argon2idPasswordHasher>();
-        services.AddScoped<IAuditLog, EfAuditLog>();
+        services.AddSingleton<BatchingAuditLog>();
+        services.AddSingleton<IAuditLog>(provider => provider.GetRequiredService<BatchingAuditLog>());
         services.AddScoped<ISigningKeyStore, EfSigningKeyStore>();
         services.AddSingleton<ISigningKeyCache, SigningKeyCache>();
         services.AddSingleton<ITokenSigner, JwtTokenSigner>();
