@@ -81,6 +81,7 @@ public static class DependencyInjection
         services.AddSingleton<ITokenSigner, JwtTokenSigner>();
         services.AddSingleton<IAccessTokenValidator, AccessTokenValidator>();
         services.AddSingleton<IDpopProofValidator, DpopProofValidator>();
+        services.AddScoped<IDpopReplayStore, EfDpopReplayStore>();
         services.TryAddSingleton(new PurgeOptions());
         services.AddScoped<DataPurger>();
         services.AddScoped<DevelopmentSeeder>();

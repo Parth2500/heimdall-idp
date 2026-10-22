@@ -9,6 +9,7 @@ erDiagram
     tenants ||--o{ clients : has
     tenants ||--o{ signing_keys : has
     tenants ||--o{ sessions : has
+    tenants ||--o{ dpop_proofs : "has seen"
     clients ||--o{ client_secrets : "has (max 2 valid)"
     clients ||--o{ authorization_requests : receives
     clients ||--o{ authorization_codes : receives
@@ -88,6 +89,11 @@ erDiagram
         uuid user_id FK
         timestamptz absolute_expires_at
         timestamptz revoked_at
+    }
+    dpop_proofs {
+        uuid tenant_id PK
+        bytea proof_hash PK
+        timestamptz expires_at
     }
     consents {
         uuid id PK

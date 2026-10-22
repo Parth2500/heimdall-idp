@@ -55,6 +55,16 @@ Failed sign-ins of one account from one source. The throttle keeps no state for 
 
 One `INSERT ... ON CONFLICT DO UPDATE` statement records a failure, so concurrent failures on two servers both count. A successful sign-in deletes the row. Row-level security applies, as for the other tenant-owned tables.
 
+### `dpop_proofs`
+DPoP proofs that the tenant has seen (D26). A row lives only while its proof could still pass the `iat` check.
+
+| Column | Type | Note |
+|---|---|---|
+| `tenant_id`, `proof_hash` | uuid, bytea | **Primary key.** `proof_hash` is SHA-256 of the key thumbprint, a colon, and the `jti`. Check: 32 bytes. |
+| `expires_at` | timestamptz | The proof's `iat` plus 61 seconds: the 60-second window, plus one second because `iat` is rounded down. |
+
+One `INSERT ... ON CONFLICT DO NOTHING` statement records a proof. One affected row means a new proof. No affected row means a replay. Two servers that see one proof at the same time get one of each, without a read first. The hash includes the key thumbprint, so a client cannot use up another client's `jti`. Row-level security applies, as for the other tenant-owned tables.
+
 ### `clients`
 | Column | Type | Note |
 |---|---|---|
@@ -334,6 +344,7 @@ Indexes for the job: `token_families (idle_expires_at)`, `token_families (revoke
 | `authorization_codes` | `expires_at` is more than 24 hours ago, and the code has no family | A replayed code must still show as `redeemed` for a short time after expiry. |
 | `authorization_requests` | `expires_at` has passed | |
 | `login_throttles` | No failure for 24 hours, and no wait is running | The row would start again at zero anyway. |
+| `dpop_proofs` | `expires_at` has passed | None. After that time the proof fails the `iat` check anyway. |
 | `sessions` | `absolute_expires_at` or `revoked_at` is more than 7 days ago | A session that ended by its idle timeout stays until this time. The idle timeout is a tenant setting, so this rule keeps the statement on one table. |
 
 Order: delete families first, then codes. `authorization_codes.family_id` has `ON DELETE SET NULL`, so a code survives its family for the 24-hour delay. `token_families.source_code_id` is a plain column with no foreign key. It is an audit reference only. This avoids a circular foreign key between the two tables.

@@ -812,6 +812,32 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Heimdall.Infrastructure.Persistence.DpopProofRecord", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<byte[]>("ProofHash")
+                        .HasColumnType("bytea")
+                        .HasColumnName("proof_hash");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.HasKey("TenantId", "ProofHash")
+                        .HasName("pk_dpop_proofs");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_dpop_proofs_expires_at");
+
+                    b.ToTable("dpop_proofs", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_dpop_proofs_hash_length", "octet_length(proof_hash) = 32");
+                        });
+                });
+
             modelBuilder.Entity("Heimdall.Infrastructure.Persistence.LoginThrottleRecord", b =>
                 {
                     b.Property<Guid>("TenantId")
@@ -1005,6 +1031,16 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_client_secrets_clients_tenant_id_client_pk");
+                });
+
+            modelBuilder.Entity("Heimdall.Infrastructure.Persistence.DpopProofRecord", b =>
+                {
+                    b.HasOne("Heimdall.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_dpop_proofs_tenants_tenant_id");
                 });
 
             modelBuilder.Entity("Heimdall.Infrastructure.Persistence.LoginThrottleRecord", b =>

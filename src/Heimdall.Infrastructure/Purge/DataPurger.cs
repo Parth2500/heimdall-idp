@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Heimdall.Infrastructure.Purge;
 
 /// <summary>The rows that one purge pass deleted, for each table.</summary>
-public sealed record PurgeResult(int Families, int Codes, int Requests, int Sessions, int LoginThrottles);
+public sealed record PurgeResult(int Families, int Codes, int Requests, int Sessions, int LoginThrottles, int DpopProofs);
 
 /// <summary>
 /// Deletes rows that no flow needs any more (docs/schema-design.md, "Purge job"). It is a platform operation across all
@@ -115,7 +115,21 @@ public sealed class DataPurger
                 cancellationToken),
             cancellationToken).ConfigureAwait(false);
 
-        return new PurgeResult(families, codes, requests, sessions, throttles);
+        // A DPoP proof row matters only while its iat window lasts (D26). After that it needs no retention.
+        var proofs = await RepeatAsync(
+            () => db.Database.ExecuteSqlAsync(
+                $"""
+                DELETE FROM dpop_proofs
+                WHERE (tenant_id, proof_hash) IN (
+                    SELECT tenant_id, proof_hash FROM dpop_proofs
+                    WHERE  expires_at < {now}
+                    LIMIT  {batch}
+                    FOR UPDATE SKIP LOCKED)
+                """,
+                cancellationToken),
+            cancellationToken).ConfigureAwait(false);
+
+        return new PurgeResult(families, codes, requests, sessions, throttles, proofs);
     }
 
     private async Task<int> RepeatAsync(Func<Task<int>> deleteBatch, CancellationToken cancellationToken)

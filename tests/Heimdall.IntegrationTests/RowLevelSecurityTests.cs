@@ -138,4 +138,35 @@ public sealed class RowLevelSecurityTests
             Assert.Equal(PostgresErrorCodes.InsufficientPrivilege, exception.SqlState);
         }
     }
+
+    [DockerFact]
+    public async Task Every_tenant_owned_table_has_row_level_security()
+    {
+        // A new table with a tenant_id column must get the same policies in its migration. This test finds one that
+        // did not. audit_events is the documented exception: platform events have no tenant (docs/schema-design.md).
+        await using var connection = new Npgsql.NpgsqlConnection(_postgres.AdminConnectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT c.relname, c.relrowsecurity, c.relforcerowsecurity,
+                   EXISTS (SELECT 1 FROM pg_policy p WHERE p.polrelid = c.oid AND p.polname = 'tenant_isolation')
+            FROM   pg_class c
+            JOIN   pg_namespace n ON n.oid = c.relnamespace
+            WHERE  n.nspname = 'public' AND c.relkind = 'r'
+              AND  EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = c.oid AND a.attname = 'tenant_id' AND NOT a.attisdropped)
+              AND  c.relname <> 'audit_events'
+            ORDER  BY c.relname
+            """;
+        var tables = new List<(string Name, bool Enabled, bool Forced, bool Policy)>();
+        await using (var reader = await command.ExecuteReaderAsync())
+        {
+            while (await reader.ReadAsync())
+            {
+                tables.Add((reader.GetString(0), reader.GetBoolean(1), reader.GetBoolean(2), reader.GetBoolean(3)));
+            }
+        }
+
+        Assert.Contains(tables, t => t.Name == "dpop_proofs");
+        Assert.All(tables, t => Assert.True(t.Enabled && t.Forced && t.Policy, $"{t.Name}: row-level security is not complete."));
+    }
 }

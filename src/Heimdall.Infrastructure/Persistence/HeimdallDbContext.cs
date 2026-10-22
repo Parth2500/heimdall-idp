@@ -43,6 +43,8 @@ public sealed class HeimdallDbContext : DbContext
 
     public DbSet<LoginThrottleRecord> LoginThrottles => Set<LoginThrottleRecord>();
 
+    public DbSet<DpopProofRecord> DpopProofs => Set<DpopProofRecord>();
+
     // EF Core reads this property for each query, so the filter uses the tenant of this context instance.
     private Guid? CurrentTenantId => _scope.TenantId;
 
@@ -62,5 +64,6 @@ public sealed class HeimdallDbContext : DbContext
         modelBuilder.Entity<ClientSecretRecord>().HasQueryFilter(s => s.TenantId == CurrentTenantId);
         modelBuilder.Entity<SigningKey>().HasQueryFilter(k => k.TenantId == CurrentTenantId);
         modelBuilder.Entity<LoginThrottleRecord>().HasQueryFilter(r => r.TenantId == CurrentTenantId);
+        modelBuilder.Entity<DpopProofRecord>().HasQueryFilter(r => r.TenantId == CurrentTenantId);
     }
 }
