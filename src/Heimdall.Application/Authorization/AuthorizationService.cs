@@ -199,15 +199,10 @@ public sealed class AuthorizationService
             maxAge,
             now);
 
-        var promptNone = prompts.Contains("none");
-        if (!promptNone)
-        {
-            // prompt=none never leaves Heimdall to show a page, so it needs no stored request.
-            _store.AddRequest(request);
-            await _store.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        return await ContinueAsync(context, client, request, sessionId, promptNone, cancellationToken).ConfigureAwait(false);
+        // The request is stored only when Heimdall must show a page (sign-in or consent). A signed-in user gets the code
+        // at once, and prompt=none never shows a page, so both need no stored request.
+        return await ContinueAsync(context, client, request, stored: false, sessionId, prompts.Contains("none"), cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <summary>
@@ -240,13 +235,16 @@ public sealed class AuthorizationService
             return new AuthorizeErrorPage(OAuthError.InvalidClientCode, "client changed during sign-in");
         }
 
-        return await ContinueAsync(context, client, request, sessionId, promptNone: false, cancellationToken).ConfigureAwait(false);
+        return await ContinueAsync(context, client, request, stored: true, sessionId, promptNone: false, cancellationToken)
+            .ConfigureAwait(false);
     }
 
+    /// <param name="stored">True when the request is already stored: a resume after the sign-in or consent page.</param>
     private async Task<AuthorizeOutcome> ContinueAsync(
         RequestContext context,
         Client client,
         AuthorizationRequest request,
+        bool stored,
         string? sessionId,
         bool promptNone,
         CancellationToken cancellationToken)
@@ -257,7 +255,7 @@ public sealed class AuthorizationService
         {
             return promptNone
                 ? ErrorRedirect(context, request.RedirectUri, request.State, "login_required", "prompt=none without a usable session")
-                : new AuthorizeLogin(request.Id);
+                : await ShowPageAsync(request, stored, new AuthorizeLogin(request.Id), cancellationToken).ConfigureAwait(false);
         }
 
         if (client.RequireConsent)
@@ -271,7 +269,7 @@ public sealed class AuthorizationService
             var decision = request.ConsentDecisionOf(session.User.Id);
             if (decision is null)
             {
-                return new AuthorizeConsent(request.Id);
+                return await ShowPageAsync(request, stored, new AuthorizeConsent(request.Id), cancellationToken).ConfigureAwait(false);
             }
 
             if (decision == false)
@@ -307,7 +305,7 @@ public sealed class AuthorizationService
             now);
 
         _store.AddCode(authorizationCode);
-        if (!promptNone)
+        if (stored)
         {
             _store.RemoveRequest(request);
         }
@@ -343,6 +341,22 @@ public sealed class AuthorizationService
 
         parameters.Add(new("iss", context.Issuer));
         return new AuthorizeRedirect(request.RedirectUri, parameters);
+    }
+
+    /// <summary>Stores a new request, so the page can send the browser back to it by ID.</summary>
+    private async Task<AuthorizeOutcome> ShowPageAsync(
+        AuthorizationRequest request,
+        bool stored,
+        AuthorizeOutcome page,
+        CancellationToken cancellationToken)
+    {
+        if (!stored)
+        {
+            _store.AddRequest(request);
+            await _store.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return page;
     }
 
     private static AuthorizeRedirect ErrorRedirect(RequestContext context, string redirectUri, string? state, string error, string reason)

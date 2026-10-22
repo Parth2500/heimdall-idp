@@ -18,14 +18,16 @@ public class SessionServiceTests
 
     private readonly Tenant _tenant = Tenant.Create(Guid.CreateVersion7(), "acme.example.com", "Acme", TenantSettings.Default, Now);
     private readonly FakeTimeProvider _time = new(Now);
-    private readonly InMemoryUserStore _users = new();
-    private readonly InMemorySessionStore _sessions = new();
+    private readonly InMemoryUserStore _users;
+    private readonly InMemorySessionStore _sessions;
     private readonly RecordingAuditLog _audit = new();
     private readonly SessionService _service;
     private readonly User _user;
 
     public SessionServiceTests()
     {
+        _users = new InMemoryUserStore();
+        _sessions = new InMemorySessionStore { Users = _users };
         var authenticator = new UserAuthenticator(
             _users,
             new FakePasswordHasher(),
@@ -33,7 +35,7 @@ public class SessionServiceTests
             new LoginThrottleOptions(),
             _audit,
             _time);
-        _service = new SessionService(authenticator, _users, _sessions, _audit, _time);
+        _service = new SessionService(authenticator, _sessions, _audit, _time);
         _user = User.Create(Guid.CreateVersion7(), _tenant.Id, "alice@example.com", FakePasswordHasher.HashOf(Password), Now);
         _users.Add(_user);
     }

@@ -36,20 +36,17 @@ public sealed class SessionService
     private static readonly TimeSpan TouchInterval = TimeSpan.FromMinutes(1);
 
     private readonly UserAuthenticator _authenticator;
-    private readonly IUserStore _users;
     private readonly ISessionStore _sessions;
     private readonly IAuditLog _audit;
     private readonly TimeProvider _time;
 
     public SessionService(
         UserAuthenticator authenticator,
-        IUserStore users,
         ISessionStore sessions,
         IAuditLog audit,
         TimeProvider time)
     {
         _authenticator = authenticator;
-        _users = users;
         _sessions = sessions;
         _audit = audit;
         _time = time;
@@ -105,15 +102,13 @@ public sealed class SessionService
             return null;
         }
 
-        var session = await _sessions.FindAsync(context.Tenant.Id, hash, cancellationToken).ConfigureAwait(false);
-        if (session is null)
+        if (await _sessions.FindWithUserAsync(context.Tenant.Id, hash, cancellationToken).ConfigureAwait(false) is not var (session, user))
         {
             return null;
         }
 
-        var user = await _users.FindByIdAsync(context.Tenant.Id, session.UserId, cancellationToken).ConfigureAwait(false);
         var now = _time.GetUtcNow();
-        if (user is null || !session.IsValid(context.Tenant.Id, user, context.Tenant.Settings.SessionIdle, now))
+        if (!session.IsValid(context.Tenant.Id, user, context.Tenant.Settings.SessionIdle, now))
         {
             return null;
         }

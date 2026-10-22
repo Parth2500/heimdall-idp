@@ -26,8 +26,8 @@ public class AuthorizationServiceTests
     private readonly FakeTimeProvider _time = new(Now);
     private readonly InMemoryClientStore _clients = new();
     private readonly InMemoryAuthorizationStore _store = new();
-    private readonly InMemoryUserStore _users = new();
-    private readonly InMemorySessionStore _sessions = new();
+    private readonly InMemoryUserStore _users;
+    private readonly InMemorySessionStore _sessions;
     private readonly RecordingAuditLog _audit = new();
     private readonly AuthorizationService _service;
     private readonly Client _spa;
@@ -35,9 +35,11 @@ public class AuthorizationServiceTests
 
     public AuthorizationServiceTests()
     {
+        _users = new InMemoryUserStore();
+        _sessions = new InMemorySessionStore { Users = _users };
         var authenticator = new UserAuthenticator(
             _users, new FakePasswordHasher(), new InMemoryLoginThrottleStore(), new LoginThrottleOptions(), _audit, _time);
-        var sessions = new SessionService(authenticator, _users, _sessions, _audit, _time);
+        var sessions = new SessionService(authenticator, _sessions, _audit, _time);
         _service = new AuthorizationService(_clients, _store, sessions, _audit, _time);
         _spa = AddClient("spa");
         _user = User.Create(Guid.CreateVersion7(), _tenant.Id, "alice@example.com", "hash", Now.AddDays(-1));
@@ -425,9 +427,9 @@ public class AuthorizationServiceTests
         Assert.Equal(authTime, stored.AuthTime);
         Assert.Equal(Now, stored.CreatedAt);
 
-        // The request was stored and then removed in the same save as the code.
+        // A signed-in user gets the code at once, so the request is never stored: one save, for the code only.
         Assert.Empty(_store.Requests);
-        Assert.Equal(2, _store.SaveCount);
+        Assert.Equal(1, _store.SaveCount);
 
         var issued = Assert.Single(_audit.Events);
         Assert.Equal(AuditEventTypes.CodeIssued, issued.Type);

@@ -24,8 +24,8 @@ public class ConsentServiceTests
     private readonly FakeTimeProvider _time = new(Now);
     private readonly InMemoryClientStore _clients = new();
     private readonly InMemoryAuthorizationStore _store = new();
-    private readonly InMemoryUserStore _users = new();
-    private readonly InMemorySessionStore _sessions = new();
+    private readonly InMemoryUserStore _users;
+    private readonly InMemorySessionStore _sessions;
     private readonly RecordingAuditLog _audit = new();
     private readonly ConsentService _service;
     private readonly Client _app;
@@ -35,9 +35,11 @@ public class ConsentServiceTests
 
     public ConsentServiceTests()
     {
+        _users = new InMemoryUserStore();
+        _sessions = new InMemorySessionStore { Users = _users };
         var authenticator = new UserAuthenticator(
             _users, new FakePasswordHasher(), new InMemoryLoginThrottleStore(), new LoginThrottleOptions(), _audit, _time);
-        var sessions = new SessionService(authenticator, _users, _sessions, _audit, _time);
+        var sessions = new SessionService(authenticator, _sessions, _audit, _time);
         _service = new ConsentService(_clients, _store, sessions, _audit, _time);
         _app = AddClient("huginn", requireConsent: true);
         _user = User.Create(Guid.CreateVersion7(), _tenant.Id, "alice@example.com", "hash", Now.AddDays(-1));

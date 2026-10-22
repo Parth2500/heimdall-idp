@@ -4,6 +4,7 @@ using Heimdall.Application.Sessions;
 using Heimdall.Domain.Common;
 using Heimdall.Domain.Sessions;
 using Heimdall.Domain.Tokens;
+using Heimdall.Domain.Users;
 
 namespace Heimdall.UnitTests.Application;
 
@@ -20,6 +21,20 @@ internal sealed class InMemorySessionStore : ISessionStore
     {
         Queries++;
         return Task.FromResult(Sessions.SingleOrDefault(s => s.TenantId == tenantId && s.IdHash == idHash));
+    }
+
+    /// <summary>The users to join with, as the real store joins the users table.</summary>
+    public required InMemoryUserStore Users { get; init; }
+
+    public Task<(Session Session, User User)?> FindWithUserAsync(Guid tenantId, TokenHash idHash, CancellationToken cancellationToken)
+    {
+        Queries++;
+        var found =
+            from s in Sessions
+            where s.TenantId == tenantId && s.IdHash == idHash
+            join u in Users.Users on new { s.TenantId, Id = s.UserId } equals new { u.TenantId, u.Id }
+            select ((Session Session, User User)?)(s, u);
+        return Task.FromResult(found.SingleOrDefault());
     }
 
     public void Add(Session session) => Sessions.Add(session);

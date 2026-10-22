@@ -26,6 +26,7 @@ sequenceDiagram
         H->>DB: Load the stored request
     end
     alt Client requires consent (decision for this request only until Phase 3)
+        H->>DB: Store the checked request, if it is not stored yet
         H->>B: 302 to /consent?request_id=...
         B->>H: GET /session/v1/consent?request_id=... (client name, scopes, redirect host)
         U->>B: Approve or deny
@@ -34,7 +35,8 @@ sequenceDiagram
         B->>H: GET /oauth/v1/authorize/resume?request_id=...
         Note over H: A denial deletes the request and redirects with error=access_denied
     end
-    H->>DB: Insert code hash (expires in 5 minutes) and delete the stored request, in one transaction
+    H->>DB: Insert code hash (expires in 5 minutes) and delete the stored request if there is one, in one transaction
+    Note over H,DB: A signed-in user with no consent step gets the code at once. That request is never stored.
     H->>B: Redirect to redirect_uri (code, state, iss)
     B->>C: GET callback
     C->>H: POST /token (grant_type, code, code_verifier, redirect_uri, client auth)
