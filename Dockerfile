@@ -41,14 +41,14 @@ RUN dotnet tool restore \
       --project src/Heimdall.Infrastructure --startup-project src/Heimdall.Api \
       --configuration Release --self-contained --target-runtime linux-x64 --output /bundle/efbundle
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled-extra@sha256:6ed4a30314e8aefd56b7e7f41d2bfdefc1a7c0f967a7543ae58ac6f389fa1a40 AS migrate
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled-extra@sha256:9e3919aff68057f3e45125c5255a71d3b5f40364e45ede883348688851b9f0df AS migrate
 COPY --from=migrate-build /bundle/efbundle /efbundle
 ENTRYPOINT ["/efbundle"]
 
 # ---- Server (default target) ----
 # Chiseled: no shell and no package manager, and the app runs as a non-root user. "extra" adds ICU, which password
 # normalization (NFKC) needs, and time zone data.
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled-extra@sha256:6ed4a30314e8aefd56b7e7f41d2bfdefc1a7c0f967a7543ae58ac6f389fa1a40 AS server
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled-extra@sha256:9e3919aff68057f3e45125c5255a71d3b5f40364e45ede883348688851b9f0df AS server
 WORKDIR /app
 COPY --from=build /app ./
 ENV ASPNETCORE_HTTP_PORTS=8080
