@@ -58,10 +58,16 @@ dotnet tool restore
 cd tests/Heimdall.UnitTests
 dotnet stryker --project Heimdall.Domain.csproj
 dotnet stryker --project Heimdall.Application.csproj
+dotnet stryker --project Heimdall.Infrastructure.csproj -m "**/Keys/AccessTokenValidator.cs"
+dotnet stryker --project Heimdall.Api.csproj -m "**/Endpoints/OAuthFormReader.cs"
 ```
+
+In Infrastructure and Api, only the token validator and the form reader have unit tests. The integration tests cover the rest.
 
 A surviving mutant shows a rule that no test checks. Write a test that kills it.
 Some mutants change only the timing or the text, and no test can detect them. Mark each one in the code with `// Stryker disable once <mutator> : <reason>`.
+A marker disables every variant of that mutator on the line. When a marker would also hide a mutant that a test kills, change the code instead.
+When Stryker logs "Safe Mode", it skipped every mutant of a method, because one mutant did not compile. An `out` variable that is read after a `||` chain is the usual cause. Change the code so that Stryker can test the method.
 `stryker-config.json` ignores three groups of mutants:
 - Argument guards and exception constructors.
 - `ConfigureAwait`. The test host has no synchronization context.

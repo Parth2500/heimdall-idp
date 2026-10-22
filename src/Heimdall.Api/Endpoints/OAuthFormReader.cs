@@ -24,6 +24,7 @@ internal static class OAuthFormReader
         MultipartBodyLengthLimit = 0,
     };
 
+    // Stryker disable once Boolean : the identifier applies to encoding only, and this reader only decodes.
     private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
     public static async Task<OAuthForm> ReadAsync(HttpContext context)
@@ -85,13 +86,20 @@ internal static class OAuthFormReader
             return OAuthForm.Fail(basicError);
         }
 
+        // A public client sends client_id in the body only.
         var bodyClientId = NullIfEmpty(form["client_id"]);
-        if (basic.ClientId is not null && bodyClientId is not null && !string.Equals(basic.ClientId, bodyClientId, StringComparison.Ordinal))
+        if (basic.ClientId is null)
+        {
+            return new OAuthForm(form, bodyClientId, null, null);
+        }
+
+        // A confidential client may repeat its client_id in the body, but only the same value.
+        if (bodyClientId is not null && !string.Equals(basic.ClientId, bodyClientId, StringComparison.Ordinal))
         {
             return OAuthForm.Fail(OAuthError.InvalidRequest("client_id in body differs from the header"));
         }
 
-        return new OAuthForm(form, basic.ClientId ?? bodyClientId, basic.ClientSecret, null);
+        return new OAuthForm(form, basic.ClientId, basic.ClientSecret, null);
     }
 
     public static string? NullIfEmpty(StringValues value) => StringValues.IsNullOrEmpty(value) ? null : value.ToString();
