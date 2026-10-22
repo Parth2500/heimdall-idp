@@ -4,6 +4,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    groups:
+      # The OpenTelemetry packages release together and must stay at one version.
+      opentelemetry:
+        patterns:
+          - "OpenTelemetry*"
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -13,6 +18,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # The UI build stage uses the Node major in ui/.nvmrc, which Angular supports. A new major moves with Angular,
+      # not on its own. Patch and minor updates still come.
+      - dependency-name: "library/node"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: npm
     directory: /ui
     schedule:
