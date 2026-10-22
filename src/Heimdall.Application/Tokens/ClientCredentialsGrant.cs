@@ -152,6 +152,7 @@ public sealed class ClientCredentialsGrant
             string.Join(' ', scopes)));
     }
 
+    // Stryker disable once Equality : at that exact length, value[..maxLength] equals value.
     private static string Truncate(string? value, int maxLength) =>
         value is null ? string.Empty : value.Length <= maxLength ? value : value[..maxLength];
 

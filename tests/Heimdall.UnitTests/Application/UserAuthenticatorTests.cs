@@ -61,6 +61,7 @@ public class UserAuthenticatorTests
         var succeeded = Assert.Single(_audit.Events);
         Assert.Equal(AuditEventTypes.LoginSucceeded, succeeded.Type);
         Assert.Equal(user.Id, succeeded.SubjectUserId);
+        Assert.False(succeeded.Data.ContainsKey("reason"));
     }
 
     [Fact]

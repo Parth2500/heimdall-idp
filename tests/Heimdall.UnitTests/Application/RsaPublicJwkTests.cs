@@ -39,6 +39,7 @@ public class RsaPublicJwkTests
         Assert.Equal("RS256", document.RootElement.GetProperty("alg").GetString());
         Assert.Equal("RSA", document.RootElement.GetProperty("kty").GetString());
         Assert.Equal("sig", document.RootElement.GetProperty("use").GetString());
+        Assert.DoesNotContain('\n', json);
     }
 
     [Fact]

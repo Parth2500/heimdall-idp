@@ -40,7 +40,17 @@ public class SettingsPolicyTests
             refreshIdle: TimeSpan.FromMinutes(10),
             refreshAbsolute: TimeSpan.FromDays(365));
 
-        Assert.Equal(5, _policy.Validate(settings).Count);
+        var errors = _policy.Validate(settings);
+
+        Assert.Equal(
+            [
+                "Session idle timeout",
+                "Session absolute lifetime",
+                "Access token lifetime",
+                "Refresh idle timeout",
+                "Refresh absolute lifetime",
+            ],
+            errors.Select(e => e[..e.IndexOf(" must", StringComparison.Ordinal)]));
     }
 
     [Fact]
@@ -54,7 +64,20 @@ public class SettingsPolicyTests
     {
         var overrides = new ClientTokenOverrides(TimeSpan.FromDays(1), null, null);
 
-        Assert.Single(_policy.Validate(overrides));
+        Assert.StartsWith("Access token lifetime", Assert.Single(_policy.Validate(overrides)), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Client_refresh_overrides_outside_the_limits_are_rejected()
+    {
+        // Each refresh value is inside the Domain rule (idle not longer than absolute) but outside the platform limits.
+        var overrides = new ClientTokenOverrides(null, TimeSpan.FromMinutes(10), TimeSpan.FromDays(365));
+
+        var errors = _policy.Validate(overrides);
+
+        Assert.Equal(2, errors.Count);
+        Assert.StartsWith("Refresh idle timeout", errors[0], StringComparison.Ordinal);
+        Assert.StartsWith("Refresh absolute lifetime", errors[1], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -81,6 +104,52 @@ public class SettingsPolicyTests
     {
         var limits = new PlatformLimits { SessionIdle = new DurationLimit(TimeSpan.Zero, TimeSpan.FromHours(1)) };
 
-        Assert.NotEmpty(limits.Validate());
+        Assert.StartsWith("SessionIdle: the minimum must be greater than zero", Assert.Single(limits.Validate()), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Limit_contains_both_ends()
+    {
+        var limit = new DurationLimit(TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(60));
+
+        Assert.True(limit.Contains(TimeSpan.FromMinutes(1)));
+        Assert.True(limit.Contains(TimeSpan.FromMinutes(60)));
+        Assert.False(limit.Contains(TimeSpan.FromMinutes(1) - TimeSpan.FromTicks(1)));
+        Assert.False(limit.Contains(TimeSpan.FromMinutes(60) + TimeSpan.FromTicks(1)));
+        Assert.Equal("00:01:00 to 01:00:00", limit.ToString());
+    }
+
+    [Fact]
+    public void Limit_with_the_same_minimum_and_maximum_is_valid()
+    {
+        var limits = new PlatformLimits { AccessToken = new DurationLimit(TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5)) };
+
+        Assert.Empty(limits.Validate());
+    }
+
+    [Theory]
+    [InlineData(nameof(PlatformLimits.SessionIdle))]
+    [InlineData(nameof(PlatformLimits.SessionAbsolute))]
+    [InlineData(nameof(PlatformLimits.AccessToken))]
+    [InlineData(nameof(PlatformLimits.RefreshIdle))]
+    [InlineData(nameof(PlatformLimits.RefreshAbsolute))]
+    public void Every_platform_limit_is_checked(string name)
+    {
+        var limits = new PlatformLimits();
+        var inverted = new DurationLimit(TimeSpan.FromHours(2), TimeSpan.FromHours(1));
+        typeof(PlatformLimits).GetProperty(name)!.SetValue(limits, inverted);
+
+        Assert.Equal(
+            $"{name}: the minimum must not be greater than the maximum.",
+            Assert.Single(limits.Validate()));
+    }
+
+    [Fact]
+    public void Missing_platform_limit_is_reported()
+    {
+        // A configuration section can bind null to a limit.
+        var limits = new PlatformLimits { RefreshIdle = null! };
+
+        Assert.Equal("RefreshIdle: the limit is missing.", Assert.Single(limits.Validate()));
     }
 }

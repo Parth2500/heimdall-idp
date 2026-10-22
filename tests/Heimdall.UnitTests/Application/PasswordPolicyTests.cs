@@ -24,6 +24,32 @@ public class PasswordPolicyTests
         Assert.Null(PasswordPolicy.Check(emoji));
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void Empty_password_is_refused(string? password)
+    {
+        Assert.Equal("The password is empty.", PasswordPolicy.Check(password));
+    }
+
+    [Fact]
+    public void Refusal_reasons_name_the_limit()
+    {
+        Assert.Equal("The password must have at least 12 characters.", PasswordPolicy.Check("short"));
+        Assert.Equal("The password must have at most 128 characters.", PasswordPolicy.Check(new string('a', 129)));
+    }
+
+    [Fact]
+    public void Input_of_four_code_units_for_each_allowed_character_is_still_checked()
+    {
+        // A flag emoji is one character and four UTF-16 code units. 128 flags is the longest such valid password.
+        var flags = string.Concat(Enumerable.Repeat("\U0001F1FA\U0001F1F8", 128));
+
+        Assert.Equal(128 * 4, flags.Length);
+        Assert.False(PasswordPolicy.IsTooLongToHash(flags));
+        Assert.True(PasswordPolicy.IsTooLongToHash(flags + "a"));
+    }
+
     [Fact]
     public void More_than_128_characters_is_refused()
     {
@@ -36,10 +62,37 @@ public class PasswordPolicyTests
     [Fact]
     public void Hashing_options_reject_weak_parameters()
     {
-        var options = new PasswordHashingOptions { MemoryKiB = 1024, Iterations = 1, MaxConcurrentHashes = 0 };
+        var options = new PasswordHashingOptions
+        {
+            MemoryKiB = 19 * 1024 - 1,
+            Iterations = 2,
+            MaxConcurrentHashes = 0,
+            MaxQueueWait = TimeSpan.FromTicks(-1),
+        };
 
-        Assert.Equal(3, options.Validate().Count);
+        Assert.Equal(
+            [
+                "MemoryKiB: the value must be at least 19456 (19 MiB).",
+                "Iterations: the value must be at least 3.",
+                "MaxConcurrentHashes: the value must be at least 1.",
+                "MaxQueueWait: the value must not be negative.",
+            ],
+            options.Validate());
         Assert.Empty(new PasswordHashingOptions().Validate());
+    }
+
+    [Fact]
+    public void Hashing_options_accept_the_lowest_allowed_values()
+    {
+        var options = new PasswordHashingOptions
+        {
+            MemoryKiB = 19 * 1024,
+            Iterations = 3,
+            MaxConcurrentHashes = 1,
+            MaxQueueWait = TimeSpan.Zero,
+        };
+
+        Assert.Empty(options.Validate());
     }
 
     [Fact]

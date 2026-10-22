@@ -94,7 +94,41 @@ public class ClientCredentialsGrantTests
         Assert.Equal(AuditEventTypes.TokenIssued, issued.Type);
         Assert.Equal(client.Id, issued.ClientPk);
         Assert.Equal(claims.JwtId, issued.Data["jti"]);
+        Assert.Equal("client_credentials", issued.Data["grant_type"]);
+        Assert.Equal(Api, issued.Data["aud"]);
+        Assert.Equal("invoices.read", issued.Data["scope"]);
         Assert.Equal("corr-1", issued.CorrelationId);
+    }
+
+    [Fact]
+    public async Task Jti_is_32_hex_characters()
+    {
+        AddClient();
+
+        await Request();
+
+        Assert.Matches("^[0-9a-f]{32}$", _signer.Signed[0].Claims.JwtId);
+    }
+
+    [Fact]
+    public async Task Rejection_audit_records_the_grant_the_client_and_the_reason()
+    {
+        AddClient();
+
+        await Request(secret: "wrong");
+
+        var rejected = Assert.Single(_audit.Events);
+        Assert.Equal("client_credentials", rejected.Data["grant_type"]);
+        Assert.Equal("billing-service", rejected.Data["client_id"]);
+        Assert.Equal("wrong secret", rejected.Data["reason"]);
+    }
+
+    [Fact]
+    public async Task Missing_client_id_is_audited_as_empty()
+    {
+        await _grant.HandleAsync(Context, new ClientCredentialsRequest(null, Secret, null, null), CancellationToken.None);
+
+        Assert.Equal(string.Empty, Assert.Single(_audit.Events).Data["client_id"]);
     }
 
     [Fact]
@@ -164,12 +198,20 @@ public class ClientCredentialsGrantTests
 
     [Theory]
     [InlineData("openid")]
+    [InlineData("profile")]
+    [InlineData("email")]
+    [InlineData("address")]
+    [InlineData("phone")]
     [InlineData("invoices.read offline_access")]
     public async Task User_scopes_are_rejected(string scope)
     {
-        AddClient(scopes: ["invoices.read", "openid", "offline_access"]);
+        // The client is allowed every scope, so only the user-scope rule can reject the request.
+        AddClient(scopes: ["invoices.read", "openid", "profile", "email", "address", "phone", "offline_access"]);
 
-        AssertError(await Request(scope), OAuthError.InvalidScopeCode);
+        var result = await Request(scope);
+
+        AssertError(result, OAuthError.InvalidScopeCode);
+        Assert.Equal("user scope in client_credentials", result.Error!.AuditDetail);
     }
 
     [Theory]

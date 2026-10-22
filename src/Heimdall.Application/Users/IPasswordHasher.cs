@@ -25,6 +25,7 @@ public interface IPasswordHasher
 /// <summary>Too many password hashes are waiting. The caller should answer "try again later", not "wrong password".</summary>
 public sealed class PasswordHasherBusyException : Exception
 {
+    // Stryker disable once String : message text only; callers check the type.
     public PasswordHasherBusyException()
         : base("Too many password hashes are waiting.")
     {

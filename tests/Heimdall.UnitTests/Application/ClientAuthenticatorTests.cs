@@ -94,7 +94,11 @@ public class ClientAuthenticatorTests
     {
         _store.Add(Confidential(), ("s3cret-value-1", null));
 
-        AssertInvalidClient(await Authenticate("billing-service", null));
+        var result = await Authenticate("billing-service", null);
+
+        // The wrong-secret path also returns invalid_client. Only the audit detail shows which check rejected it.
+        AssertInvalidClient(result);
+        Assert.Equal("confidential client sent no secret", result.Error!.AuditDetail);
     }
 
     [Fact]
@@ -163,6 +167,28 @@ public class ClientAuthenticatorTests
         _store.Add(Public());
 
         Assert.True((await Authenticate("spa", null)).IsSuccess);
+    }
+
+    [Fact]
+    public async Task Disabled_public_client_is_rejected()
+    {
+        var client = Public();
+        client.Disable();
+        _store.Add(client);
+
+        var result = await Authenticate("spa", null);
+
+        AssertInvalidClient(result);
+        Assert.Contains("Disabled", result.Error!.AuditDetail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Every_valid_secret_is_compared_when_there_are_more_than_the_maximum()
+    {
+        // The store returns what is valid. Slots above MaxValidSecrets must still be compared.
+        _store.Add(Confidential(), ("first", null), ("second", null), ("third", null));
+
+        Assert.True((await Authenticate("billing-service", "third")).IsSuccess);
     }
 
     [Fact]

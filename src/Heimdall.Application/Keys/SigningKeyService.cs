@@ -100,7 +100,7 @@ public sealed class SigningKeyService
     }
 
     /// <summary>
-    /// Activates the oldest pending key whose <see cref="SigningKey.SigningFrom"/> has passed, when the tenant has no
+    /// Activates the pending key when its <see cref="SigningKey.SigningFrom"/> has passed and the tenant has no
     /// active key. Returns the activated key, or null when there is nothing to do or another server was first.
     /// </summary>
     public async Task<SigningKey?> ActivateFirstKeyAsync(Guid tenantId, string correlationId, CancellationToken cancellationToken)
@@ -120,7 +120,8 @@ public sealed class SigningKeyService
         var keys = await _keys.ListAsync(tenantId, cancellationToken).ConfigureAwait(false);
         var now = _time.GetUtcNow();
         var active = keys.SingleOrDefault(k => k.Status == SigningKeyStatus.Active);
-        var pending = keys.Where(k => k.Status == SigningKeyStatus.Pending).OrderBy(k => k.SigningFrom).FirstOrDefault();
+        // The database allows one pending key for each tenant (ux_signing_keys_one_pending).
+        var pending = keys.SingleOrDefault(k => k.Status == SigningKeyStatus.Pending);
 
         try
         {
@@ -203,10 +204,7 @@ public sealed class SigningKeyService
         CancellationToken cancellationToken)
     {
         var now = _time.GetUtcNow();
-        var ready = keys
-            .Where(k => k.Status == SigningKeyStatus.Pending && k.SigningFrom <= now)
-            .OrderBy(k => k.SigningFrom)
-            .FirstOrDefault();
+        var ready = keys.SingleOrDefault(k => k.Status == SigningKeyStatus.Pending && k.SigningFrom <= now);
         if (ready is null)
         {
             return null;

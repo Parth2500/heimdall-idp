@@ -160,13 +160,29 @@ public class SigningKeyServiceTests
         var options = new SigningKeyOptions
         {
             JwksCacheLifetime = TimeSpan.Zero,
-            ServerCacheLifetime = TimeSpan.FromSeconds(-1),
+            ServerCacheLifetime = TimeSpan.Zero,
             ActivationCheckInterval = TimeSpan.Zero,
             ClockSkew = TimeSpan.FromSeconds(-1),
         };
 
-        Assert.Equal(4, options.Validate().Count);
+        var errors = options.Validate();
+
+        Assert.Equal(
+            [
+                nameof(SigningKeyOptions.JwksCacheLifetime),
+                nameof(SigningKeyOptions.ServerCacheLifetime),
+                nameof(SigningKeyOptions.ActivationCheckInterval),
+                nameof(SigningKeyOptions.ClockSkew),
+            ],
+            errors.Select(e => e[..e.IndexOf(':', StringComparison.Ordinal)]));
+        Assert.All(errors, e => Assert.True(e.Length > e.IndexOf(':', StringComparison.Ordinal) + 2));
         Assert.Empty(new SigningKeyOptions().Validate());
+    }
+
+    [Fact]
+    public void Zero_clock_skew_is_allowed()
+    {
+        Assert.Empty(new SigningKeyOptions { ClockSkew = TimeSpan.Zero }.Validate());
     }
 
     [Fact]
@@ -174,7 +190,7 @@ public class SigningKeyServiceTests
     {
         var options = new SigningKeyOptions { RotationInterval = TimeSpan.FromMinutes(11) };
 
-        Assert.Single(options.Validate());
+        Assert.StartsWith(nameof(SigningKeyOptions.RotationInterval) + ":", Assert.Single(options.Validate()), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -236,6 +252,7 @@ public class SigningKeyServiceTests
         Assert.Equal(KeyMaintenanceAction.None, await Maintain());
         _time.Advance(TimeSpan.FromSeconds(1));
         var auditBefore = _audit.Events.Count;
+        _cache.Invalidated.Clear();
 
         Assert.Equal(KeyMaintenanceAction.Rotated, await Maintain());
 
@@ -252,6 +269,42 @@ public class SigningKeyServiceTests
             _audit.Events.Skip(auditBefore).Select(e => e.Type));
         Assert.Equal(old.Kid, _audit.Events[^1].Data["kid"]);
         Assert.True(_audit.Events[^1].Data.ContainsKey("remove_after"));
+        Assert.Equal([_tenantId], _cache.Invalidated);
+    }
+
+    [Fact]
+    public async Task Ready_next_key_does_not_rotate_before_the_interval()
+    {
+        // An operator can create the next key early. It is ready after the wait, but rotation is not due.
+        await ActiveKey();
+        await Create();
+        _time.Advance(Wait);
+
+        Assert.Equal(KeyMaintenanceAction.None, await Maintain());
+        Assert.Single(_keys.Keys, k => k.Status == SigningKeyStatus.Pending);
+    }
+
+    [Fact]
+    public async Task Lost_creation_race_in_maintain_returns_none_and_invalidates_the_cache()
+    {
+        _keys.LoseNextSave = true;
+
+        Assert.Equal(KeyMaintenanceAction.None, await Maintain());
+
+        Assert.Empty(_keys.Keys);
+        Assert.Empty(_audit.Events);
+        Assert.Equal([_tenantId], _cache.Invalidated);
+    }
+
+    [Fact]
+    public async Task Audit_times_have_the_microsecond_precision_of_the_database()
+    {
+        // Seven ticks (700 ns) is below one microsecond. PostgreSQL drops it, so the audit value drops it too.
+        _time.Advance(TimeSpan.FromTicks(7));
+
+        await Create();
+
+        Assert.Equal("2026-10-18T12:11:00.000000+00:00", _audit.Events[0].Data["signing_from"]);
     }
 
     [Fact]
@@ -323,6 +376,29 @@ public class SigningKeyServiceTests
         var result = await _service.RemoveCompromisedKeyAsync(_tenantId, "no-such-kid", "corr-r", CancellationToken.None);
 
         Assert.False(result.Found);
+        Assert.False(result.WasActive);
+        Assert.Equal(KeyMaintenanceAction.None, result.Replacement);
         Assert.Equal(auditBefore, _audit.Events.Count);
+    }
+
+    [Fact]
+    public async Task Removing_a_pending_key_invalidates_the_cache_and_starts_no_replacement()
+    {
+        // Rotation is near, so a maintenance pass here would create a new next key. Removal must not run one.
+        await ActiveKey();
+        _time.Advance(Options.RotationInterval - Wait);
+        Assert.Equal(KeyMaintenanceAction.Created, await Maintain());
+        var pending = _keys.Keys.Single(k => k.Status == SigningKeyStatus.Pending);
+        _cache.Invalidated.Clear();
+
+        var result = await _service.RemoveCompromisedKeyAsync(_tenantId, pending.Kid, "corr-r", CancellationToken.None);
+
+        Assert.True(result.Found);
+        Assert.False(result.WasActive);
+        Assert.Equal(KeyMaintenanceAction.None, result.Replacement);
+        Assert.False(pending.IsPublished(_time.GetUtcNow()));
+        Assert.Equal([_tenantId], _cache.Invalidated);
+        Assert.Equal(AuditEventTypes.KeyRemoved, _audit.Events[^1].Type);
+        Assert.DoesNotContain(_keys.Keys, k => k.Status == SigningKeyStatus.Pending);
     }
 }

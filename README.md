@@ -50,6 +50,23 @@ export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock
 export TESTCONTAINERS_RYUK_DISABLED=true   # Ryuk often fails under rootless Podman
 ```
 
+### Mutation testing
+
+Stryker.NET is a local tool. It mutates one project and runs the unit tests against each mutant.
+```
+dotnet tool restore
+cd tests/Heimdall.UnitTests
+dotnet stryker --project Heimdall.Domain.csproj
+dotnet stryker --project Heimdall.Application.csproj
+```
+
+A surviving mutant shows a rule that no test checks. Write a test that kills it.
+Some mutants change only the timing or the text, and no test can detect them. Mark each one in the code with `// Stryker disable once <mutator> : <reason>`.
+`stryker-config.json` ignores three groups of mutants:
+- Argument guards and exception constructors.
+- `ConfigureAwait`. The test host has no synchronization context.
+- The audit detail of `OAuthError`. The client sees only the error code (D5).
+
 ## Run locally
 
 You need Docker for PostgreSQL.

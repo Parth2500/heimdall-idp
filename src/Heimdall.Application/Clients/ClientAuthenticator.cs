@@ -48,6 +48,7 @@ public sealed class ClientAuthenticator
 
         if (found is null)
         {
+            // Stryker disable once Block : timing only; a unit test cannot observe the extra comparisons.
             if (presented is { } unknownSecret)
             {
                 _ = MatchesAny(unknownSecret, []);
@@ -100,9 +101,11 @@ public sealed class ClientAuthenticator
         var match = false;
         var slots = Math.Max(MaxValidSecrets, valid.Count);
 
+        // Stryker disable once Equality : one more comparison with DummyHash changes the time, not the result.
         for (var i = 0; i < slots; i++)
         {
             var candidate = i < valid.Count ? valid[i] : DummyHash;
+            // Stryker disable once Assignment : the valid hashes are distinct, so at most one slot matches.
             match |= presented.Equals(candidate);
         }
 
