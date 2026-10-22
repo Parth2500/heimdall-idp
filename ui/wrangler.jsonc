@@ -1,0 +1,13 @@
+// Cloudflare deployment of the demo SPA only (ui/projects/demo), as static assets.
+// Heimdall itself is an ASP.NET Core server and cannot run as a Worker. It runs on a container host behind Cloudflare.
+// Workers Builds settings: root directory "ui", build command "npm ci --ignore-scripts && npx ng build demo",
+// deploy command "npx wrangler deploy".
+{
+  "name": "heimdall-demo",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist/demo/browser",
+    // The sign-in redirect lands on /callback, and a reload can land on /tokens. Each path gets index.html.
+    "not_found_handling": "single-page-application"
+  }
+}
