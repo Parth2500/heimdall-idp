@@ -9,7 +9,7 @@
 # Outside Development the server refuses to start until a production key store exists (#34).
 
 # ---- Account pages (Angular) ----
-FROM docker.io/library/node:24.22.0-bookworm-slim@sha256:91acba91b842bec0bf7ea6f5e09c644c7ccad72c4996ed9616d861d1c7cd60d4 AS ui
+FROM docker.io/library/node:26.11.1-bookworm-slim@sha256:86f07bc9c5dce4578cf37e5a418b7bfc7f817cda25cde66e2b66e95ed86c4567 AS ui
 WORKDIR /repo/ui
 COPY ui/package.json ui/package-lock.json ./
 # U8: no install scripts from dependencies.
