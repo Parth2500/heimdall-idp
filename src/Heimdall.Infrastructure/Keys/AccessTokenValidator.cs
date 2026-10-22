@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Text.Unicode;
 using Heimdall.Application.Keys;
 using Heimdall.Application.UserInfo;
 using Heimdall.Domain.Keys;
@@ -49,7 +48,7 @@ internal sealed class AccessTokenValidator : IAccessTokenValidator
         }
 
         string? kid;
-        using (var header = DecodeJson(parts[0]))
+        using (var header = Jws.DecodeJson(parts[0]))
         {
             kid = header is null ? null : ReadKid(header.RootElement);
         }
@@ -66,7 +65,7 @@ internal sealed class AccessTokenValidator : IAccessTokenValidator
             return null;
         }
 
-        var signature = Decode(parts[2]);
+        var signature = Jws.Decode(parts[2]);
         if (signature is null)
         {
             return null;
@@ -80,7 +79,7 @@ internal sealed class AccessTokenValidator : IAccessTokenValidator
         }
 
         // The payload is read only after the signature check, so every value below comes from Heimdall.
-        using var payload = DecodeJson(parts[1]);
+        using var payload = Jws.DecodeJson(parts[1]);
         return payload is null ? null : ReadPayload(payload.RootElement);
     }
 
@@ -89,23 +88,23 @@ internal sealed class AccessTokenValidator : IAccessTokenValidator
     {
         if (header.ValueKind != JsonValueKind.Object
             || header.TryGetProperty("crit", out _)
-            || !IsString(header, "alg", out var alg) || alg != SigningKey.Algorithm
-            || !IsString(header, "typ", out var typ)
+            || !Jws.IsString(header, "alg", out var alg) || alg != SigningKey.Algorithm
+            || !Jws.IsString(header, "typ", out var typ)
             || !(typ.Equals("at+jwt", StringComparison.OrdinalIgnoreCase) || typ.Equals("application/at+jwt", StringComparison.OrdinalIgnoreCase)))
         {
             return null;
         }
 
-        return IsString(header, "kid", out var kid) ? kid : null;
+        return Jws.IsString(header, "kid", out var kid) ? kid : null;
     }
 
     private static VerifiedAccessToken? ReadPayload(JsonElement payload)
     {
         if (payload.ValueKind != JsonValueKind.Object
-            || !IsString(payload, "iss", out var iss)
-            || !IsString(payload, "sub", out var sub)
-            || !IsString(payload, "aud", out var aud)
-            || !IsString(payload, "client_id", out var clientId)
+            || !Jws.IsString(payload, "iss", out var iss)
+            || !Jws.IsString(payload, "sub", out var sub)
+            || !Jws.IsString(payload, "aud", out var aud)
+            || !Jws.IsString(payload, "client_id", out var clientId)
             || !payload.TryGetProperty("exp", out var exp)
             || exp.ValueKind != JsonValueKind.Number // TryGetInt64 throws on any other kind.
             || !exp.TryGetInt64(out var expSeconds))
@@ -113,7 +112,7 @@ internal sealed class AccessTokenValidator : IAccessTokenValidator
             return null;
         }
 
-        var scopes = IsString(payload, "scope", out var scope)
+        var scopes = Jws.IsString(payload, "scope", out var scope)
             ? scope.Split(' ', StringSplitOptions.RemoveEmptyEntries)
             : [];
         try
@@ -121,60 +120,6 @@ internal sealed class AccessTokenValidator : IAccessTokenValidator
             return new VerifiedAccessToken(iss, sub, aud, clientId, scopes, DateTimeOffset.FromUnixTimeSeconds(expSeconds));
         }
         catch (ArgumentOutOfRangeException)
-        {
-            return null;
-        }
-    }
-
-    private static bool IsString(JsonElement element, string name, out string value)
-    {
-        // Stryker disable once String : the caller reads value only when this method returns true.
-        value = string.Empty;
-        if (!element.TryGetProperty(name, out var property) || property.ValueKind != JsonValueKind.String)
-        {
-            return false;
-        }
-
-        value = property.GetString()!;
-        return value.Length > 0;
-    }
-
-    private static JsonDocument? DecodeJson(string segment)
-    {
-        // JSON text is UTF-8 (RFC 8259, section 8.1). The parser checks the bytes of a string only when the string is
-        // read, and then it throws. This check refuses the token instead, before any value is read.
-        var bytes = Decode(segment);
-        if (bytes is null || !Utf8.IsValid(bytes))
-        {
-            return null;
-        }
-
-        try
-        {
-            return JsonDocument.Parse(bytes, new JsonDocumentOptions { MaxDepth = 8 });
-        }
-        // Stryker disable once Block : an empty catch also ends the method with null.
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
-
-    // Base64url with no padding (RFC 7515, section 2), or null. Any other character fails.
-    private static byte[]? Decode(string segment)
-    {
-        // The decoder skips white space, so each character is checked here instead.
-        if (segment.Length == 0 || !segment.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_'))
-        {
-            return null;
-        }
-
-        try
-        {
-            return Base64Url.DecodeFromChars(segment);
-        }
-        // Stryker disable once Block : an empty catch also ends the method with null.
-        catch (FormatException)
         {
             return null;
         }

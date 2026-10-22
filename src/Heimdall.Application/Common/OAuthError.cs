@@ -16,6 +16,9 @@ public sealed record OAuthError(string Code, string AuditDetail)
     /// <summary>RFC 8707: the requested resource is not valid for this client.</summary>
     public const string InvalidTargetCode = "invalid_target";
 
+    /// <summary>RFC 9449, section 7.1: the DPoP proof is missing a rule (D25, D26).</summary>
+    public const string InvalidDpopProofCode = "invalid_dpop_proof";
+
     public static OAuthError InvalidRequest(string auditDetail) => new(InvalidRequestCode, auditDetail);
 
     public static OAuthError InvalidClient(string auditDetail) => new(InvalidClientCode, auditDetail);
@@ -29,4 +32,6 @@ public sealed record OAuthError(string Code, string AuditDetail)
     public static OAuthError InvalidScope(string auditDetail) => new(InvalidScopeCode, auditDetail);
 
     public static OAuthError InvalidTarget(string auditDetail) => new(InvalidTargetCode, auditDetail);
+
+    public static OAuthError InvalidDpopProof(string auditDetail) => new(InvalidDpopProofCode, auditDetail);
 }

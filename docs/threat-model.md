@@ -28,6 +28,10 @@ Each term has one meaning in this document. Do not use a synonym.
 | Reuse | A second use of a code or refresh token that is already used. |
 | Revoke | To make a token or family permanently invalid. |
 | Bearer | A token that gives access to anyone who holds it. |
+| DPoP | Demonstrating Proof of Possession (RFC 9449). The client holds a private key and signs a DPoP proof for each request. |
+| DPoP proof | A short JWT that the client signs for one request. It names the HTTP method and URL, and it carries the client's public key. |
+| Key thumbprint | The RFC 7638 SHA-256 thumbprint of the client's public key, in base64url. A bound token carries it as `cnf.jkt`. |
+| Bound token | A token that works only with a DPoP proof from one key. It is the opposite of a bearer token. |
 | PKCE | Proof Key for Code Exchange. It binds a code to the client that asked for it. |
 | Verifier, challenge | The `code_verifier` is a secret from the client. The `code_challenge` is its SHA-256 hash. |
 | JWKS | The public key set that Heimdall publishes. Resource servers use it to check signatures. |
@@ -72,6 +76,24 @@ These decisions apply to every endpoint. The tables below refer to them by ID.
 | D10 | In version 1, confidential clients use `client_secret_basic`. Public clients use no authentication and PKCE. Add `private_key_jwt` in Phase 2. | Start with the smallest correct surface. |
 | D22 | Each client has a list of allowed audiences. A token has exactly one audience. The client names it with the `resource` parameter (RFC 8707). If the client has only one audience, that audience is the default. An unknown resource returns `invalid_target`. A token from a user's grant can also name the tenant's userinfo endpoint. That endpoint is the default for a client with no audience. A `client_credentials` token never names it. | A token for one API cannot be replayed at another API. A resource server cannot use its token to read user claims at `/userinfo`. |
 | D23 | CORS allows a cross-origin read of `/token`, `/revoke`, and `/userinfo` only from a client origin of the tenant. Heimdall echoes that one origin and never sends `*` or `Access-Control-Allow-Credentials`. Discovery and JWKS allow any origin. Every other path, the session API included, sends no CORS header. | A public SPA must read token responses. A wider list would let any page read responses for a stolen code or token. |
+| D24 | DPoP is optional for each request. A client registered with `dpop_bound_access_tokens` must send a DPoP proof at `/token`. A valid proof binds the access token (`cnf.jkt`, `token_type` `DPoP`). For a public client, the proof also binds the family: each refresh needs a proof from the same key. Refresh tokens of a confidential client are not bound. | Existing clients keep working, and a client that asks for DPoP cannot be downgraded. A stolen refresh token of a public client is useless without the private key. A confidential client already authenticates (RFC 9449, section 5). |
+| D25 | A DPoP proof has `typ` `dpop+jwt` and `alg` `ES256` or `RS256`. The `jwk` header is a public key only: EC P-256, or RSA with at least 2048 bits. The signature must verify with that key. `htm` equals the request method. `htu` equals the endpoint URL without query and fragment. `iat` is at most 60 seconds from the server time. At a resource, `ath` is the hash of the access token. | These are the checks of RFC 9449, section 4.3. A fixed list of algorithms stops `none` and HMAC confusion, as D8 does for Heimdall's own tokens. |
+| D26 | Heimdall stores the hash of each proof's `jti` with one atomic `INSERT`, under a unique index on tenant and hash. A second use fails with `invalid_dpop_proof`. The purge job deletes a row after its window ends. Version 1 has no server nonce (`DPoP-Nonce`). | A replayed proof fails on every server. A nonce adds a round trip, and it mainly helps clients with a wrong clock. It can come later. |
+| D27 | `/authorize` accepts `dpop_jkt` (RFC 9449, section 10). Heimdall stores it with the request and the code. The code then needs a proof from that key. | The whole flow, from the first redirect to the refresh token, is bound to one key. |
+| D28 | `/userinfo` accepts a bound token only with `Authorization: DPoP` and a valid proof. A bound token sent as `Bearer` fails with `invalid_token`. | A thief cannot use a bound token as a bearer token. Without this rule, the binding does nothing. |
+
+## DPoP proofs (RFC 9449)
+
+The rules are D24 to D28. The table covers the proof itself. The sections for `/token`, the refresh flow, and `/userinfo` refer to it.
+
+| STRIDE | Threat | Mitigation |
+|---|---|---|
+| Spoofing | An attacker steals a bound access token or refresh token and uses it. | The token works only with a proof signed by the client's private key. A browser client keeps that key non-extractable (WebCrypto). |
+| Spoofing | An attacker signs a proof with `alg` `none` or `HS256`, with the public key as the HMAC secret. | Heimdall accepts `ES256` and `RS256` only (D25). It takes the algorithm from its own list, never from the token. |
+| Tampering | An attacker captures a proof and replays it, at the same or another server. | Each `jti` works once on every server (D26). `iat` must be recent. `htm` and `htu` bind the proof to one endpoint. |
+| Tampering | An attacker puts a private key, or a key with other parameters, in the `jwk` header. | Heimdall refuses a `jwk` with private members, and keys of other types, curves, or sizes (D25). |
+| Elevation of privilege | An attacker uses a proof for one access token with another token. | At a resource, `ath` must equal the hash of the presented token (D25). |
+| Denial of service | Large or slow proofs cost CPU. | The proof has a size limit. Heimdall checks the format, the header, and the claims before the signature, and the signature before the database. |
 
 ## `GET /oauth/v1/authorize` (worked example)
 | STRIDE | Threat | Mitigation |
