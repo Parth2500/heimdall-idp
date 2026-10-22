@@ -8,7 +8,7 @@ Sign-out has three parts. Heimdall supports two of them today.
 |---|---|---|
 | Your app's session | The user's session in your app. | Yes. Your app does it. |
 | The refresh token family | Every refresh token from this sign-in. | Yes. Revoke it at `/revoke`. |
-| The Heimdall session | The user's session at Heimdall, for every app. | Not yet. RP-initiated logout is planned. |
+| The Heimdall session | The user's session at Heimdall, for every app. | Not yet. RP-initiated logout is planned (issue #40). |
 
 ## Step 1: Revoke the refresh token
 

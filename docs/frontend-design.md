@@ -251,7 +251,8 @@ The tokens and the frame component are in `ui/projects/ui-kit`. Tenant branding 
 
 These items are not part of the first build. They are listed so that no page claims them:
 
-- RP-initiated logout (OpenID Connect `end_session_endpoint`). Until then, "Sign out" in a client ends only the client's tokens.
+- RP-initiated logout (OpenID Connect `end_session_endpoint`, issue #40). Until then, "Sign out" in a client ends only the client's tokens.
+- An account picker for `prompt=select_account` (issue #41). It needs a session model with several accounts first.
 - A tenant display name. The pages show the host only, because no API returns a display name yet.
 - Registration, email verification, and password reset (threat model, out of scope). The login page has no "Forgot password" link until they exist. A link to a missing feature would break principle N8.
 

@@ -135,8 +135,8 @@ To create a migration, use the pinned tool: `dotnet dotnet-ef migrations add <Na
 
 1. **Phase 0:** threat model and design documents. Done.
 2. **Phase 1:** core engine. Authorization code with PKCE, RS256 signing with key rotation, refresh token rotation with family revocation, Argon2id, `/userinfo`, `/revoke`, the consent API, the purge job, and row-level security. Done.
-3. **Phase 2:** hardening. DPoP, PAR, rate limiting, introspection, OpenID conformance suite.
-4. **Phase 3:** breadth. Tenant administration, WebAuthn, admin portal, audit log, consent management.
+3. **Phase 2:** hardening. DPoP, PAR, rate limiting, introspection, RP-initiated logout, OpenID conformance suite.
+4. **Phase 3:** breadth. Tenant administration, WebAuthn, admin portal, audit log, consent management. Client libraries like Microsoft's: an account picker, a browser library with redirect and popup sign-in, and a .NET package for APIs.
 5. **Phase 4:** operations. CI, infrastructure as code, load tests.
 
 ## Security

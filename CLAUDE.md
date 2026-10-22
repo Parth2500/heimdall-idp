@@ -59,10 +59,10 @@ STRIDE per trust boundary for every endpoint, login and sessions, and tenants. D
 Auth Code + PKCE (S256 mandatory for ALL clients, per OAuth 2.1), RS256 signing with key rotation and an overlap window (old `kid` stays in JWKS until outstanding tokens expire), refresh rotation with family-based theft detection, Argon2id, structured logging with correlation IDs from day one.
 
 **Phase 2, Hardening.**
-DPoP (RFC 9449), PAR (RFC 9126), rate limiting on `/authorize`, `/token` and login, introspection (RFC 7662), run the OpenID Foundation conformance suite and fix failures.
+DPoP (RFC 9449), PAR (RFC 9126), rate limiting on `/authorize`, `/token` and login, introspection (RFC 7662), RP-initiated logout and back-channel logout (#40), run the OpenID Foundation conformance suite and fix failures.
 
 **Phase 3, Breadth.**
-Multi-tenancy features (portal, onboarding; the `Tenant` table and `TenantId` columns exist from the first migration, see D15-D21 in the threat model), WebAuthn/passkeys, admin portal with RBAC and an immutable audit log, persisted and revocable per-client/per-scope consent.
+Multi-tenancy features (portal, onboarding; the `Tenant` table and `TenantId` columns exist from the first migration, see D15-D21 in the threat model), WebAuthn/passkeys, admin portal with RBAC and an immutable audit log, persisted and revocable per-client/per-scope consent. Client experience modeled on Microsoft Entra ID (added 2026-10-22): account picker with `prompt=select_account` and several accounts in one browser (#41, changes the session model, design note first), an MSAL-like browser library over `oidc-client-ts` with redirect and popup sign-in (#42), a .NET package like `Microsoft.Identity.Web` (#43).
 
 **Phase 4, Ops.**
 Docker Compose for local dev (Postgres done), GitHub Actions CI (build and test done; conformance to add), Terraform/Bicep, k6 load tests on the token endpoint.
@@ -76,7 +76,7 @@ Docker Compose for local dev (Postgres done), GitHub Actions CI (build and test 
 The current design is in `docs/schema-design.md` and `docs/domain-model.md`. Changes from the first draft: `SecurityKey` became `SigningKey` (one set for each tenant), `ReplacedByTokenHash` became the foreign key `replaced_by_id`, and the family is its own table (`token_families`). The unique index on the code hash is in the schema (with `tenant_id`).
 
 ## Endpoints in scope
-`/.well-known/openid-configuration`, `/.well-known/jwks.json`, `GET /oauth/v1/authorize`, `POST /oauth/v1/token`, `GET /oauth/v1/userinfo`, `POST /oauth/v1/revoke`.
+`/.well-known/openid-configuration`, `/.well-known/jwks.json`, `GET /oauth/v1/authorize`, `POST /oauth/v1/token`, `GET /oauth/v1/userinfo`, `POST /oauth/v1/revoke`. Planned: the `end_session_endpoint` (#40).
 Grants: Authorization Code + PKCE, Client Credentials, Refresh Token.
 
 ## STRIDE worked example: `/oauth/v1/authorize`
