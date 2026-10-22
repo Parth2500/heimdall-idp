@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Heimdall.IntegrationTests" />
+    <InternalsVisibleTo Include="Heimdall.UnitTests" />
   </ItemGroup>
 
   <PropertyGroup>

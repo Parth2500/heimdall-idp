@@ -47,17 +47,26 @@ internal sealed class AccessTokenValidator : IAccessTokenValidator
             return null;
         }
 
-        var header = DecodeJson(parts[0]);
-        if (header is null || !TryReadHeader(header.RootElement, out var kid))
+        string? kid;
+        using (var header = DecodeJson(parts[0]))
         {
-            header?.Dispose();
+            kid = header is null ? null : ReadKid(header.RootElement);
+        }
+
+        if (kid is null)
+        {
             return null;
         }
 
-        header.Dispose();
         var published = await _keys.GetPublishedKeysAsync(tenantId, cancellationToken).ConfigureAwait(false);
         var jwk = published.FirstOrDefault(k => string.Equals(k.Kid, kid, StringComparison.Ordinal));
-        if (jwk is null || !TryDecode(parts[2], out var signature))
+        if (jwk is null)
+        {
+            return null;
+        }
+
+        var signature = Decode(parts[2]);
+        if (signature is null)
         {
             return null;
         }
@@ -74,21 +83,19 @@ internal sealed class AccessTokenValidator : IAccessTokenValidator
         return payload is null ? null : ReadPayload(payload.RootElement);
     }
 
-    private static bool TryReadHeader(JsonElement header, out string kid)
+    /// <summary>The <c>kid</c> when the header meets every rule, or null.</summary>
+    private static string? ReadKid(JsonElement header)
     {
-        kid = string.Empty;
         if (header.ValueKind != JsonValueKind.Object
             || header.TryGetProperty("crit", out _)
             || !IsString(header, "alg", out var alg) || alg != SigningKey.Algorithm
             || !IsString(header, "typ", out var typ)
-            || !(typ.Equals("at+jwt", StringComparison.OrdinalIgnoreCase) || typ.Equals("application/at+jwt", StringComparison.OrdinalIgnoreCase))
-            || !IsString(header, "kid", out var value))
+            || !(typ.Equals("at+jwt", StringComparison.OrdinalIgnoreCase) || typ.Equals("application/at+jwt", StringComparison.OrdinalIgnoreCase)))
         {
-            return false;
+            return null;
         }
 
-        kid = value;
-        return true;
+        return IsString(header, "kid", out var kid) ? kid : null;
     }
 
     private static VerifiedAccessToken? ReadPayload(JsonElement payload)
@@ -98,7 +105,9 @@ internal sealed class AccessTokenValidator : IAccessTokenValidator
             || !IsString(payload, "sub", out var sub)
             || !IsString(payload, "aud", out var aud)
             || !IsString(payload, "client_id", out var clientId)
-            || !payload.TryGetProperty("exp", out var exp) || !exp.TryGetInt64(out var expSeconds))
+            || !payload.TryGetProperty("exp", out var exp)
+            || exp.ValueKind != JsonValueKind.Number // TryGetInt64 throws on any other kind.
+            || !exp.TryGetInt64(out var expSeconds))
         {
             return null;
         }
@@ -118,6 +127,7 @@ internal sealed class AccessTokenValidator : IAccessTokenValidator
 
     private static bool IsString(JsonElement element, string name, out string value)
     {
+        // Stryker disable once String : the caller reads value only when this method returns true.
         value = string.Empty;
         if (!element.TryGetProperty(name, out var property) || property.ValueKind != JsonValueKind.String)
         {
@@ -128,9 +138,11 @@ internal sealed class AccessTokenValidator : IAccessTokenValidator
         return value.Length > 0;
     }
 
+    // Stryker disable Block : an undecodable segment leaves no bytes, and no bytes also fail to parse. Both paths give null.
     private static JsonDocument? DecodeJson(string segment)
     {
-        if (!TryDecode(segment, out var bytes))
+        var bytes = Decode(segment);
+        if (bytes is null)
         {
             return null;
         }
@@ -145,24 +157,25 @@ internal sealed class AccessTokenValidator : IAccessTokenValidator
         }
     }
 
-    // Base64url with no padding (RFC 7515, section 2). Any other character fails.
-    private static bool TryDecode(string segment, out byte[] bytes)
+    // Stryker restore Block
+
+    // Base64url with no padding (RFC 7515, section 2), or null. Any other character fails.
+    private static byte[]? Decode(string segment)
     {
-        bytes = [];
-        // Base64Url.IsValid ignores white space, so each character is checked here instead.
+        // The decoder skips white space, so each character is checked here instead.
         if (segment.Length == 0 || !segment.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_'))
         {
-            return false;
+            return null;
         }
 
         try
         {
-            bytes = Base64Url.DecodeFromChars(segment);
-            return true;
+            return Base64Url.DecodeFromChars(segment);
         }
+        // Stryker disable once Block : an empty catch also ends the method with null.
         catch (FormatException)
         {
-            return false;
+            return null;
         }
     }
 

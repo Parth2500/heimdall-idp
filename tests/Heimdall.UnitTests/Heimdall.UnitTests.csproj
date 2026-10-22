@@ -20,8 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Heimdall.Api\Heimdall.Api.csproj" />
     <ProjectReference Include="..\..\src\Heimdall.Application\Heimdall.Application.csproj" />
     <ProjectReference Include="..\..\src\Heimdall.Domain\Heimdall.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Heimdall.Infrastructure\Heimdall.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
