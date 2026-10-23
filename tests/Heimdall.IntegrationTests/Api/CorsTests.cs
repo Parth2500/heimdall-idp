@@ -66,19 +66,19 @@ public sealed class CorsTests
     }
 
     [DockerFact]
-    public async Task Userinfo_preflight_allows_the_authorization_header()
+    public async Task Userinfo_preflight_allows_the_authorization_and_DPoP_headers()
     {
         await using var api = new HeimdallApiFactory(_postgres);
         var tenant = await api.AddTenantAsync();
         await api.AddWebClientAsync(tenant);
         using var http = api.ClientFor(tenant.Host);
 
-        using var response = await PreflightAsync(http, UserInfoEndpoint.Path, SpaOrigin, "GET", "authorization");
+        using var response = await PreflightAsync(http, UserInfoEndpoint.Path, SpaOrigin, "GET", "authorization, dpop");
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         Assert.Equal(SpaOrigin, Single(response, "Access-Control-Allow-Origin"));
         Assert.Equal("GET, POST", Single(response, "Access-Control-Allow-Methods"));
-        Assert.Equal("Authorization", Single(response, "Access-Control-Allow-Headers"));
+        Assert.Equal("Authorization, DPoP", Single(response, "Access-Control-Allow-Headers"));
         Assert.Equal("600", Single(response, "Access-Control-Max-Age"));
         Assert.False(response.Headers.Contains("Access-Control-Allow-Credentials"));
     }

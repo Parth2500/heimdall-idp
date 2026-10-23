@@ -162,7 +162,7 @@ Returns the user's claims (OpenID Connect Core, section 5.3).
 
 Heimdall reads the user on each call. A disabled user gets `401` `invalid_token`, even with an unexpired token.
 
-CORS: client origins of public clients only.
+CORS: client origins of public clients only. The `Authorization` and `DPoP` request headers are allowed, and the page can read `WWW-Authenticate`.
 
 ## `POST /oauth/v1/revoke`
 

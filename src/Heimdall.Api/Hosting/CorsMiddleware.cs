@@ -31,9 +31,12 @@ internal sealed class CorsMiddleware
         [TokenEndpoint.Path] = new([HttpMethods.Post], [TokenEndpoint.DpopHeader], []),
         [RevokeEndpoint.Path] = new([HttpMethods.Post], [], []),
 
-        // The bearer token goes in the Authorization header, so the browser sends a preflight. The client may read
-        // WWW-Authenticate, which names the error (RFC 6750, section 3).
-        [UserInfoEndpoint.Path] = new([HttpMethods.Get, HttpMethods.Post], [HeaderNames.Authorization], [HeaderNames.WWWAuthenticate]),
+        // The access token goes in the Authorization header, and a bound token's proof in the DPoP header (D28), so the
+        // browser sends a preflight. The client may read WWW-Authenticate, which names the error (RFC 6750, section 3).
+        [UserInfoEndpoint.Path] = new(
+            [HttpMethods.Get, HttpMethods.Post],
+            [HeaderNames.Authorization, TokenEndpoint.DpopHeader],
+            [HeaderNames.WWWAuthenticate]),
     }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     private readonly RequestDelegate _next;
