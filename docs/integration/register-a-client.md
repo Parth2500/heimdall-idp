@@ -15,6 +15,7 @@ Heimdall has no self-service registration yet. The Heimdall operator registers e
 | Redirect URIs | `https://orders.example.com/callback` | Each URI that your app uses. See the rules below. |
 | Scopes | `openid email offline_access orders.read` | Each scope that your app can ask for. |
 | Audiences | `https://api.orders.example.com` | Each resource server that your access tokens are for. Leave it empty if you only call `/userinfo`. |
+| DPoP | Optional or required | With `dpop_bound_access_tokens`, `/token` refuses a request without a DPoP proof. See [DPoP](dpop.md). |
 | Consent | On or off | With consent on, the user approves each sign-in request on a Heimdall page. First-party apps usually turn it off. |
 
 ## What you get back

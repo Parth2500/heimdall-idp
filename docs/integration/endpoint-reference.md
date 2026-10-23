@@ -85,6 +85,7 @@ Issues tokens. Rules for every request:
 - Body at most 16 KiB.
 - A confidential client authenticates with HTTP Basic (`client_secret_basic`). A public client sends `client_id` in the body (`none`).
 - `client_secret` in the body is refused.
+- An optional `DPoP` header carries a DPoP proof. At most one. A client registered with `dpop_bound_access_tokens` must send it. See [DPoP](dpop.md).
 
 ### `grant_type=authorization_code`
 
@@ -127,14 +128,14 @@ Issues tokens. Rules for every request:
 
 | Member | Present when |
 |---|---|
-| `access_token`, `token_type`, `expires_in` | Always. |
+| `access_token`, `token_type`, `expires_in` | Always. `token_type` is `DPoP` when the request had a valid proof, else `Bearer`. |
 | `scope` | The granted scope is not empty. |
 | `refresh_token` | `authorization_code` with `offline_access` and the `refresh_token` grant, or any `refresh_token` request. |
 | `id_token` | `authorization_code` with `openid`. Never on refresh. |
 
 Headers: `Cache-Control: no-store` and `Pragma: no-cache`.
 
-CORS: client origins of public clients only.
+CORS: client origins of public clients only. The `DPoP` request header is allowed.
 
 ## `GET` or `POST /oauth/v1/userinfo`
 

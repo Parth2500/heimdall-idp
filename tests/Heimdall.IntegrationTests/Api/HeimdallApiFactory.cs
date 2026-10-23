@@ -96,6 +96,7 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
         string clientId = "web-app",
         bool requireConsent = false,
         string[]? audiences = null,
+        bool requireDpop = false,
         params string[] redirectUris)
     {
         var client = Client.Create(
@@ -110,7 +111,8 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
             requireConsent,
             overrides: null,
             Time.GetUtcNow(),
-            audiences ?? ["https://api.example.com"]);
+            audiences ?? ["https://api.example.com"],
+            requireDpop);
         client.Approve();
 
         await using var scope = Services.CreateAsyncScope();

@@ -72,6 +72,8 @@ A client bug can look like theft. These rules prevent it:
 
 A browser app that keeps tokens in memory loses them on a page reload. After a reload, send the user to `/authorize` again. If the Heimdall session is still valid, the user comes back with no login page. (If your client has consent turned on, the user sees the consent page again. Heimdall does not remember consent yet.) The [Angular recipe](recipes/angular-spa.md) shows this setup.
 
+A browser app can also bind its refresh tokens to a key with DPoP. A stolen refresh token is then useless without the private key. See [DPoP](dpop.md).
+
 For the strongest protection in a browser app, use a backend-for-frontend (BFF). The BFF is a confidential client. It keeps the tokens on the server, and the browser gets only a session cookie.
 
 ## When a refresh fails

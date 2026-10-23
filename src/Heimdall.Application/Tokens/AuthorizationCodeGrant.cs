@@ -307,7 +307,7 @@ public sealed class AuthorizationCodeGrant
         }
 
         // The last branch is a fallback. When every binding matches, the redemption above succeeds.
-        // Stryker disable once Conditional : the fallback is unreachable, so no test can tell the two branches apart.
+        // Stryker disable once Conditional,String : the fallback is unreachable, so no test can tell the two branches apart.
         var reason = code.ClientPk != client.Id
             ? "code issued to another client"
             : !string.Equals(code.RedirectUri, redirectUri, StringComparison.Ordinal)
@@ -353,7 +353,6 @@ public sealed class AuthorizationCodeGrant
         _alerts.Raise(AuditEventTypes.CodeReuseDetected, context.Tenant.Id, data);
     }
 
-    // Stryker disable once Equality : at that exact length, value[..maxLength] equals value.
     private static Dictionary<string, string> RedeemedData(AuthorizationCode code, string audience, TokenResponse response, string? keyThumbprint)
     {
         var data = new Dictionary<string, string>
@@ -371,6 +370,7 @@ public sealed class AuthorizationCodeGrant
         return data;
     }
 
+    // Stryker disable once Equality : at that exact length, value[..maxLength] equals value.
     private static string Truncate(string? value, int maxLength) =>
         value is null ? string.Empty : value.Length <= maxLength ? value : value[..maxLength];
 

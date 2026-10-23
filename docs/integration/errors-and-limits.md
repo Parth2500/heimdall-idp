@@ -44,6 +44,7 @@ If `client_id` or `redirect_uri` is wrong, Heimdall shows its own error page and
 | `400` | `unauthorized_client` | Your client does not have this grant. | Ask the operator. |
 | `400` | `unsupported_grant_type` | `grant_type` is not one of the three supported values. | Fix `grant_type`. |
 | `400` | `invalid_scope` | A scope is not registered for your client, or it is wider than the original grant, or it is a user scope in `client_credentials`. | Fix `scope`. |
+| `400` | `invalid_dpop_proof` | The DPoP proof is missing where it is required, malformed, too old, for another URL, or already used. Or the request has two `DPoP` headers. | Make a new proof and retry once. See [DPoP](dpop.md#errors). |
 | `400` | `invalid_target` | The `resource` is not registered for your client. Or you left it out and your client has more than one audience. | Send a registered `resource`. |
 | `429` | `temporarily_unavailable` | Rate limit. | Wait for `Retry-After` seconds. |
 
