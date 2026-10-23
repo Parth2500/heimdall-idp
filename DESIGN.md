@@ -363,12 +363,14 @@ An SVG arc of four frost bands (from outside: `bridge-1` to `bridge-4`), an embe
 
 | State | Bridge |
 |---|---|
-| `idle` | Stars twinkle (4.1s to 8.8s cycles). A soft light drifts up each band (11s to 19s). |
-| `busy` | A stream of lights runs up every band (0.8s cycle, each band 0.1s later). |
-| `refused` | The guard band turns fire red and widens. A fire glow burns under the bands (2.4s flicker). The frost dims to 55% brightness. The ember thread turns red. No light moves. |
+| `idle` | Stars twinkle (4.1s to 8.8s cycles). A soft light drifts up each band (11s to 19s). Embers (3 on, 2 off, in a path length of 100) crawl up the ember thread (6s). The banked guard band flickers in steps (3.2s). |
+| `busy` | A stream of lights runs up every band (0.8s cycle, each band 0.1s later). The embers crawl faster (1.5s). The busy button carries a 3px running line (1.1s). |
+| `refused` | The guard band turns fire red and flares (16, 64, then 44px in 450ms). A refused attempt with a problem box shakes the panel once (420ms). A fire glow burns under the bands (2.4s flicker). The frost dims to 55% brightness. The ember thread turns red. No light moves. |
 | `crossing` | Every band lights from the gate to the sky, once (700ms, each band 60ms later). |
 
-With motion off, the scene holds still. The state stays visible: crossing keeps every band lit, and refused keeps the fire.
+On load, the bands draw in from the ground, inner band first, 120ms apart (900ms each). The fire lines light at 620ms. The statement rises 0.35em (600ms), and its fire mark ignites with an overshoot (`ease-back`, at 500ms). On the error page, the statement drops in letter by letter, 40ms apart. The form and the panel never animate in.
+
+With motion off, the scene holds still and the ember thread is solid. The state stays visible: crossing keeps every band lit, and refused keeps the fire.
 
 ### Forced colors
 In forced-colors mode (Windows High Contrast), the bridge is hidden. Buttons, inputs, the panel, the problem box, and the fact box get a 2px system-color border (`CanvasText`; buttons `ButtonText`). The problem title uses `CanvasText`. Focus uses `Highlight`. The "on" track of the motion switch fills with `Highlight`.

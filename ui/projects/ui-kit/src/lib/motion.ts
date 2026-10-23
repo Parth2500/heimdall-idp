@@ -16,6 +16,8 @@ export class HdMotion {
   readonly on = signal(this.initial());
 
   constructor() {
+    // Set before the first render too, so no entrance plays when motion is off.
+    this.document.documentElement.dataset['motion'] = this.on() ? 'on' : 'off';
     effect(() => {
       this.document.documentElement.dataset['motion'] = this.on() ? 'on' : 'off';
     });

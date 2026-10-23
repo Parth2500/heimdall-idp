@@ -1,4 +1,4 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, inject, input, signal } from '@angular/core';
 import { HdMotion } from './motion';
 
 /**
@@ -63,7 +63,12 @@ function sky(count: number): Star[] {
  */
 @Component({
   selector: 'hd-bridge',
-  host: { 'aria-hidden': 'true', '[attr.data-state]': 'state()', '[class.still]': '!motion.on()' },
+  host: {
+    'aria-hidden': 'true',
+    '[attr.data-state]': 'state()',
+    '[class.still]': '!motion.on()',
+    '[class.entering]': 'entering()',
+  },
   template: `
     <svg class="sky" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMin slice" focusable="false">
       @for (star of stars; track $index) {
@@ -100,6 +105,8 @@ function sky(count: number): Star[] {
           [attr.d]="band.d"
           [attr.stroke]="band.tone"
           [attr.stroke-width]="band.width"
+          [style.animation-delay.ms]="(frost.length - 1 - $index) * 120"
+          pathLength="100"
         />
       }
       <g class="lights" mask="url(#hd-bridge-bands)">
@@ -114,7 +121,7 @@ function sky(count: number): Star[] {
           }
         </g>
       </g>
-      <path class="ember" [attr.d]="ember" stroke-width="3" />
+      <path class="ember" [attr.d]="ember" stroke-width="3" pathLength="100" />
       <path class="guard" [attr.d]="guard" />
     </svg>
   `,
@@ -185,21 +192,86 @@ function sky(count: number): Star[] {
       fill: none;
     }
 
+    /* Entrance: the bands draw from the ground up, the inner band first, 120ms apart. The fire
+       lines light last. */
     .band {
+      stroke-dasharray: 100 100;
       transition: filter 600ms var(--hd-ease-out);
     }
-
-    .ember {
-      stroke: var(--hd-ember-bright);
-      transition: stroke 400ms var(--hd-ease-out);
+    :host(.entering) .band {
+      animation: draw 900ms var(--hd-ease-out) both;
     }
 
+    @keyframes draw {
+      from {
+        stroke-dashoffset: 100;
+      }
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    @keyframes light-up {
+      from {
+        opacity: 0;
+      }
+    }
+
+    /* At rest, embers crawl up the thin line. */
+    .ember {
+      stroke: var(--hd-ember-bright);
+      stroke-dasharray: 3 2;
+      animation: crawl 6s linear infinite;
+      transition: stroke 400ms var(--hd-ease-out);
+    }
+    :host(.entering) .ember {
+      animation:
+        light-up 700ms var(--hd-ease-out) 620ms both,
+        crawl 6s linear infinite;
+    }
+
+    @keyframes crawl {
+      from {
+        stroke-dashoffset: 0;
+      }
+      to {
+        stroke-dashoffset: -100;
+      }
+    }
+
+    /* At rest, the banked guard fire flickers in steps. */
     .guard {
       stroke: var(--hd-ember-banked);
       stroke-width: 16px;
-      transition:
-        stroke 400ms var(--hd-ease-out),
-        stroke-width 700ms var(--hd-ease-out);
+      animation: flicker 3.2s steps(1, end) infinite;
+      transition: stroke 400ms var(--hd-ease-out);
+    }
+    :host(.entering) .guard {
+      animation:
+        light-up 700ms var(--hd-ease-out) 620ms both,
+        flicker 3.2s steps(1, end) 1.4s infinite;
+    }
+
+    @keyframes flicker {
+      0%,
+      100% {
+        opacity: 1;
+      }
+      20% {
+        opacity: 0.82;
+      }
+      35% {
+        opacity: 0.96;
+      }
+      55% {
+        opacity: 0.78;
+      }
+      70% {
+        opacity: 1;
+      }
+      85% {
+        opacity: 0.9;
+      }
     }
 
     .glow {
@@ -261,6 +333,10 @@ function sky(count: number): Star[] {
     :host([data-state='busy']) .light:nth-child(4) {
       animation-delay: -0.3s;
     }
+    :host([data-state='busy']) .ember,
+    :host(.entering[data-state='busy']) .ember {
+      animation: crawl 1.5s linear infinite;
+    }
 
     @keyframes flow {
       from {
@@ -296,13 +372,35 @@ function sky(count: number): Star[] {
       }
     }
 
+    /* Crossing and refused: the thin line burns solid. */
+    :host([data-state='crossing']) .ember,
+    :host([data-state='refused']) .ember,
+    :host(.entering[data-state='refused']) .ember {
+      stroke-dasharray: none;
+      animation: none;
+    }
+
     /* Refused: the guard fire flares, the frost dims, and no light crosses. */
-    :host([data-state='refused']) .guard {
+    :host([data-state='refused']) .guard,
+    :host(.entering[data-state='refused']) .guard {
       stroke: var(--hd-fire);
       stroke-width: 44px;
+      animation: flare 450ms var(--hd-ease-out);
     }
     :host([data-state='refused']) .ember {
       stroke: var(--hd-fire);
+    }
+
+    @keyframes flare {
+      0% {
+        stroke-width: 16px;
+      }
+      45% {
+        stroke-width: 64px;
+      }
+      100% {
+        stroke-width: 44px;
+      }
     }
     :host([data-state='refused']) .glow {
       opacity: 0.5;
@@ -342,6 +440,9 @@ function sky(count: number): Star[] {
     :host(.still) .light {
       opacity: 0;
     }
+    :host(.still) .ember {
+      stroke-dasharray: none;
+    }
     :host(.still[data-state='crossing']) .light {
       opacity: 0.55;
       stroke-dashoffset: 0;
@@ -356,6 +457,12 @@ function sky(count: number): Star[] {
 })
 export class HdBridge {
   protected readonly motion = inject(HdMotion);
+  /** True for the first moments after load, while the bridge draws itself in. Only once. */
+  protected readonly entering = signal(true);
+
+  constructor() {
+    setTimeout(() => this.entering.set(false), 1600);
+  }
   readonly state = input<BridgeState>('idle');
 
   protected readonly box = BOX;

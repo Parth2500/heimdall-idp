@@ -1,6 +1,6 @@
-import { Component, input } from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import { BridgeState, HdBridge } from './bridge';
-import { HdMotionSwitch } from './motion';
+import { HdMotion, HdMotionSwitch } from './motion';
 
 /**
  * The frame of every Heimdall account page: the gate at the foot of the bridge (U15).
@@ -13,7 +13,7 @@ import { HdMotionSwitch } from './motion';
 @Component({
   selector: 'hd-gate',
   imports: [HdBridge, HdMotionSwitch],
-  host: { '[attr.data-bridge]': 'bridge()' },
+  host: { '[attr.data-bridge]': 'bridge()', '[class.still]': '!motion.on()' },
   template: `
     <hd-bridge class="bridge" [state]="bridge()" />
 
@@ -231,6 +231,27 @@ import { HdMotionSwitch } from './motion';
       border-color: var(--hd-fire);
     }
 
+    /* A refused attempt shakes the panel once. Only an attempt shows a problem box, so the error
+       page and a Deny do not shake. */
+    :host([data-bridge='refused']:not(.still)) .panel:has(.hd-problem) {
+      animation: shake 420ms var(--hd-ease-out);
+    }
+
+    @keyframes shake {
+      20% {
+        transform: translateX(-10px);
+      }
+      40% {
+        transform: translateX(8px);
+      }
+      60% {
+        transform: translateX(-6px);
+      }
+      80% {
+        transform: translateX(3px);
+      }
+    }
+
     @media (forced-colors: active) {
       .panel {
         border: 2px solid CanvasText;
@@ -239,6 +260,7 @@ import { HdMotionSwitch } from './motion';
   `,
 })
 export class HdGate {
+  protected readonly motion = inject(HdMotion);
   readonly plateLabel = input('You are at the gate of');
   readonly host = input.required<string>();
   readonly bridge = input<BridgeState>('idle');

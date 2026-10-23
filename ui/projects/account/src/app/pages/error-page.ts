@@ -55,7 +55,21 @@ const GENERAL: ErrorText = {
     <acct-page [bridge]="bridge">
       <div hdStatement>
         <p class="hd-display" aria-hidden="true">
-          {{ text.statement }}<span class="hd-display__fire">.</span>
+          @for (word of words; track $index; let last = $last) {
+            <span class="word">
+              @for (letter of word.letters; track $index) {
+                <span class="hd-drop" [style.animation-delay.ms]="letter.delay">{{
+                  letter.char
+                }}</span>
+              }
+              @if (last) {
+                <span class="hd-display__fire">.</span>
+              }
+            </span>
+            @if (!last) {
+              {{ ' ' }}
+            }
+          }
         </p>
         <h1 class="hd-subline">{{ text.title }}</h1>
       </div>
@@ -75,6 +89,10 @@ const GENERAL: ErrorText = {
     </acct-page>
   `,
   styles: `
+    .word {
+      white-space: nowrap;
+    }
+
     .code {
       display: flex;
       align-items: baseline;
@@ -94,8 +112,17 @@ export class ErrorPage {
   protected readonly code = knownCode(inject(ActivatedRoute).snapshot.queryParamMap.get('error'));
   protected readonly text = this.code ? ERROR_TEXT[this.code] : GENERAL;
   protected readonly bridge: BridgeState = this.text.refused ? 'refused' : 'idle';
+  /** The statement split for the letter drop: 40ms between letters, words kept whole. */
+  protected readonly words = dropLetters(this.text.statement);
 }
 
 export function knownCode(value: string | null): string | null {
   return value !== null && Object.hasOwn(ERROR_TEXT, value) ? value : null;
+}
+
+export function dropLetters(statement: string): { letters: { char: string; delay: number }[] }[] {
+  let n = 0;
+  return statement.split(' ').map((word) => ({
+    letters: [...word].map((char) => ({ char, delay: n++ * 40 })),
+  }));
 }
