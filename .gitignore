@@ -499,6 +499,7 @@ src/Heimdall.Api/wwwroot/account/
 # Impeccable working files. The surface briefs in .impeccable/surfaces are kept.
 .impeccable/review/
 .impeccable/questions/
+.impeccable/mocks/
 .impeccable/hook.cache.json
 
 # Stryker.NET mutation reports

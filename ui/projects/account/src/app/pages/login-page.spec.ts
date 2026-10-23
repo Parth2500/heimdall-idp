@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { SessionApi, SessionApiError } from '../session/session-api';
 import { BrowserNavigation } from '../session/flow';
 import { REQUEST_ID, fakeNavigation, routeWith, text } from '../testing';
-import { LoginPage, messageFor } from './login-page';
+import { LoginPage, isRefusal, messageFor } from './login-page';
 
 async function render(query: Record<string, string>, login = vi.fn()) {
   const navigation = fakeNavigation();
@@ -37,12 +37,20 @@ describe('LoginPage', () => {
     expect(text(root)).toContain('No sign-in in progress');
   });
 
-  it('shows the origin plate with the host', async () => {
+  it('shows the gate plaque with the host and the address bar check', async () => {
     const { root } = await render({ request_id: REQUEST_ID });
 
-    const plate = root.querySelector('.plate')!;
-    expect(plate.textContent).toContain('Signing in to');
-    expect(plate.textContent).toContain('acme.localhost:7200');
+    const plaque = root.querySelector('.plaque')!;
+    expect(plaque.textContent).toContain('You are at the gate of');
+    expect(plaque.querySelector('.plaque__host')?.textContent).toBe('acme.localhost:7200');
+    expect(plaque.textContent).toContain('Check that your address bar shows the same host.');
+  });
+
+  it('names the action Sign in, in the heading and on the button', async () => {
+    const { root } = await render({ request_id: REQUEST_ID });
+
+    expect(root.querySelector('h1')?.textContent?.trim()).toBe('Sign in.');
+    expect(root.querySelector('button[type=submit]')?.textContent?.trim()).toBe('Sign in');
   });
 
   it('asks for the email first when the form is empty', async () => {
@@ -54,6 +62,8 @@ describe('LoginPage', () => {
     expect(login).not.toHaveBeenCalled();
     expect(root.querySelector('[role=alert]')?.textContent).toContain('Enter your email address.');
     expect(root.querySelector('#email')?.getAttribute('aria-invalid')).toBe('true');
+    // A missing field is not a refusal: Heimdall did not answer anything yet.
+    expect(root.querySelector('hd-gate')?.getAttribute('data-bridge')).toBe('idle');
   });
 
   it('sends the browser only to the resume path after sign-in', async () => {
@@ -70,6 +80,7 @@ describe('LoginPage', () => {
     expect(navigation.assign).toHaveBeenCalledWith(
       `/oauth/v1/authorize/resume?request_id=${REQUEST_ID}`,
     );
+    expect(root.querySelector('hd-gate')?.getAttribute('data-bridge')).toBe('crossing');
   });
 
   it('shows one generic text for wrong credentials and clears the password', async () => {
@@ -86,6 +97,31 @@ describe('LoginPage', () => {
       'The email or the password is not correct.',
     );
     expect(root.querySelector<HTMLInputElement>('#password')!.value).toBe('');
+    expect(root.querySelector('hd-gate')?.getAttribute('data-bridge')).toBe('refused');
+  });
+
+  it('shows no guard fire when Heimdall did not answer', async () => {
+    const { fixture, root } = await render(
+      { request_id: REQUEST_ID },
+      vi.fn().mockRejectedValue(new SessionApiError(0, null, null)),
+    );
+    await fill(root, 'alice@acme.localhost', 'secret');
+
+    root.querySelector('form')!.dispatchEvent(new Event('submit'));
+    await fixture.whenStable();
+
+    expect(root.querySelector('[role=alert]')).not.toBeNull();
+    expect(root.querySelector('hd-gate')?.getAttribute('data-bridge')).toBe('idle');
+  });
+});
+
+describe('isRefusal', () => {
+  it('is true only for wrong credentials and the throttle', () => {
+    expect(isRefusal(new SessionApiError(401, null, null))).toBe(true);
+    expect(isRefusal(new SessionApiError(429, null, 30))).toBe(true);
+    expect(isRefusal(new SessionApiError(503, null, null))).toBe(false);
+    expect(isRefusal(new SessionApiError(0, null, null))).toBe(false);
+    expect(isRefusal(new Error('network'))).toBe(false);
   });
 });
 

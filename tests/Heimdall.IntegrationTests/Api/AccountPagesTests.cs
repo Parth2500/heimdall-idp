@@ -77,6 +77,20 @@ public sealed partial class AccountPagesTests
         Assert.Equal("public, max-age=31536000, immutable", response.Headers.CacheControl?.ToString());
     }
 
+    [DockerFact]
+    public async Task Hashed_font_is_served_as_woff2_and_cached_for_a_year()
+    {
+        await using var api = new HeimdallApiFactory(_postgres);
+        var tenant = await api.AddTenantAsync();
+        using var http = api.ClientFor(tenant.Host);
+
+        using var response = await http.GetAsync($"account/{AccountFixture.Font}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("font/woff2", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("public, max-age=31536000, immutable", response.Headers.CacheControl?.ToString());
+    }
+
     [DockerTheory]
     [InlineData("account/index.html")]
     [InlineData("account/")]

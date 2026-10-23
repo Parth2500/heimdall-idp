@@ -1,20 +1,22 @@
 import { Component, inject, input } from '@angular/core';
-import { HdFrame } from 'ui-kit';
+import { BridgeState, HdGate } from 'ui-kit';
 import { BrowserNavigation } from '../session/flow';
 
-/** The frame that every account page shares: one band, one plate, one column (U13). */
+/** The frame that every account page shares: the gate, its plaque, and the bridge (U15). */
 @Component({
   selector: 'acct-page',
-  imports: [HdFrame],
+  imports: [HdGate],
   template: `
-    <hd-frame [plateLabel]="plateLabel()" [host]="host" [busy]="busy()">
+    <hd-gate [plateLabel]="plateLabel()" [host]="host" [bridge]="bridge()">
+      <ng-container ngProjectAs="[hdStatement]">
+        <ng-content select="[hdStatement]" />
+      </ng-container>
       <ng-content />
-      <p hdFooter>Heimdall identity provider. Development build, not for production use.</p>
-    </hd-frame>
+    </hd-gate>
   `,
 })
 export class PageFrame {
-  readonly plateLabel = input('Signing in to');
-  readonly busy = input(false);
+  readonly plateLabel = input('You are at the gate of');
+  readonly bridge = input<BridgeState>('idle');
   protected readonly host = inject(BrowserNavigation).host();
 }

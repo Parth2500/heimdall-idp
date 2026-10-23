@@ -108,10 +108,13 @@ internal static partial class AccountPages
         return provider;
     }
 
-    /// <summary>Angular names hashed files <c>name-HASH.ext</c>, with an 8-character upper-case hash.</summary>
+    /// <summary>
+    /// Angular names hashed files <c>name-HASH.ext</c>, with an 8-character upper-case hash. Fonts go to
+    /// <c>media/</c> with the same pattern.
+    /// </summary>
     private static bool IsHashed(string fileName) => HashedName().IsMatch(fileName);
 
-    [System.Text.RegularExpressions.GeneratedRegex(@"-[A-Z0-9]{8}\.(js|css)$")]
+    [System.Text.RegularExpressions.GeneratedRegex(@"-[A-Z0-9]{8}\.(js|css|woff2)$")]
     private static partial System.Text.RegularExpressions.Regex HashedName();
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The account pages are not built at {Directory}. Run the ui build. The pages answer 404.")]

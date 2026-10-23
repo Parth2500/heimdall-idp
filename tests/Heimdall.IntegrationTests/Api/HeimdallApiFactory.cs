@@ -187,6 +187,7 @@ internal sealed record TestTenant(Tenant Tenant, string ClientId, string ClientS
 internal static class AccountFixture
 {
     public const string Bundle = "main-ABCD1234.js";
+    public const string Font = "media/archivo-latin-wdth-ABCD1234.woff2";
 
     private static readonly Lazy<string> Root = new(() =>
     {
@@ -197,6 +198,8 @@ internal static class AccountFixture
             $"<!doctype html><html><head><script src=\"{Bundle}\" nonce=\"__HEIMDALL_CSP_NONCE__\"></script></head>" +
             "<body><acct-root ngCspNonce=\"__HEIMDALL_CSP_NONCE__\"></acct-root></body></html>");
         File.WriteAllText(Path.Combine(directory, Bundle), "console.log('account');");
+        System.IO.Directory.CreateDirectory(Path.Combine(directory, "media"));
+        File.WriteAllBytes(Path.Combine(directory, Font), [0x77, 0x4F, 0x46, 0x32]);
         return directory;
     });
 

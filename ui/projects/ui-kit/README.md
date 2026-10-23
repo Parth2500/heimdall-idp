@@ -1,64 +1,16 @@
-# UiKit
+# ui-kit
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.0.
+Heimdall's own look for the account pages: Burning Bridge (decision U15 in `docs/frontend-design.md`). Only Heimdall's pages use it. A client, such as the demo SPA, must not use it.
 
-## Code scaffolding
+| Part                         | What it is                                                                                                |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `styles/heimdall.css`        | Tokens (night and day), fonts, base styles, controls, messages.                                           |
+| `fonts/`                     | Archivo and JetBrains Mono, `woff2`, Latin subset. SIL Open Font License 1.1 (the `OFL-*.txt` files).     |
+| `HdGate`                     | The page frame: brand, statement slot (`[hdStatement]`), gate plaque with the host, panel, motion switch. |
+| `HdBridge`                   | The bridge scene. It shows the state `idle`, `busy`, `refused`, or `crossing`.                            |
+| `HdMotionSwitch`, `HdMotion` | The switch that stops all movement. The default follows `prefers-reduced-motion`.                         |
+| `HdIcon`                     | Authored icons on a 24px grid.                                                                            |
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Tenant branding (Phase 3) changes token values, never a component.
 
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the library, run:
-
-```bash
-ng build ui-kit
-```
-
-This command will compile your project, and the build artifacts will be placed in the `dist/` directory.
-
-### Publishing the Library
-
-Once the project is built, you can publish your library by following these steps:
-
-1. Navigate to the `dist` directory:
-
-   ```bash
-   cd dist/ui-kit
-   ```
-
-2. Run the `npm publish` command to publish your library to the npm registry:
-   ```bash
-   npm publish
-   ```
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Tests: `npm test` in `ui/` runs `ng test ui-kit` first.

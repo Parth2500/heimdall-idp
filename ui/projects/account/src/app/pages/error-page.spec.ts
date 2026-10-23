@@ -17,7 +17,17 @@ describe('ErrorPage', () => {
     const root = await render('invalid_client');
 
     expect(text(root)).toContain('Heimdall does not know this app');
-    expect(text(root)).toContain('Error code: invalid_client');
+    expect(root.querySelector('dt')?.textContent).toBe('Error code');
+    expect(root.querySelector('dd code')?.textContent).toBe('invalid_client');
+    expect(root.querySelector('h1')?.textContent).toBe('Heimdall does not know this app');
+    expect(root.querySelector('hd-gate')?.getAttribute('data-bridge')).toBe('refused');
+  });
+
+  it('shows no guard fire when Heimdall is only busy', async () => {
+    const root = await render('temporarily_unavailable');
+
+    expect(root.querySelector('h1')?.textContent).toBe('Heimdall is busy');
+    expect(root.querySelector('hd-gate')?.getAttribute('data-bridge')).toBe('idle');
   });
 
   it('never prints a value outside the fixed list', async () => {

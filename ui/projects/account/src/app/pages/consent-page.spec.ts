@@ -41,8 +41,11 @@ describe('ConsentPage', () => {
     expect(root.querySelector('b')).toBeNull();
     expect(text(root)).toContain('Allow <b>Demo</b> app to use your account?');
     expect(text(root)).toContain('Read your email address.');
-    expect(root.querySelector('li code')?.textContent).toBe('x.custom');
+    expect(root.querySelector('li span code')?.textContent).toBe('x.custom');
     expect(text(root)).toContain('demo.localhost:4300');
+    // The label is the scope name the app asked for, never a claim name such as sub.
+    const names = Array.from(root.querySelectorAll('.scope-name')).map((e) => e.textContent);
+    expect(names).toEqual(['openid', 'email', 'x.custom']);
   });
 
   it('sends only the decision, then goes to the resume path', async () => {
@@ -59,6 +62,7 @@ describe('ConsentPage', () => {
     await fixture.whenStable();
 
     expect(decide).toHaveBeenCalledWith(REQUEST_ID, false);
+    expect(root.querySelector('hd-gate')?.getAttribute('data-bridge')).toBe('refused');
     expect(navigation.assign).toHaveBeenCalledWith(
       `/oauth/v1/authorize/resume?request_id=${REQUEST_ID}`,
     );
