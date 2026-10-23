@@ -63,6 +63,7 @@ Starts the authorization code flow. The browser calls it, not your server.
 | `code_challenge_method` | Yes | `S256` only. |
 | `state` | No (recommended) | At most 512 characters. |
 | `nonce` | No (recommended) | At most 512 characters. Copied into the ID token. |
+| `dpop_jkt` | No | The RFC 7638 thumbprint of your DPoP key. The code then needs a DPoP proof from that key at `/token`. See [DPoP](dpop.md). |
 | `prompt` | No | `none` or `login`. One value only. |
 | `max_age` | No | Seconds, as a non-negative integer. |
 | `response_mode` | No | `query` only. |

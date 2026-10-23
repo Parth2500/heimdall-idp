@@ -81,7 +81,8 @@ public class AuthorizationCodeGrantTests
         string scope = "openid offline_access",
         string redirectUri = Callback,
         string code = Code,
-        string? nonce = "n-0S6_WzA2Mj")
+        string? nonce = "n-0S6_WzA2Mj",
+        string? dpopKey = null)
     {
         var issued = AuthorizationCode.Create(
             Guid.CreateVersion7(),
@@ -94,7 +95,8 @@ public class AuthorizationCodeGrantTests
             ChallengeOf(Verifier),
             nonce,
             AuthTime,
-            _time.GetUtcNow());
+            _time.GetUtcNow(),
+            dpopKey);
         _tokens.Codes.Add(issued);
         return issued;
     }
@@ -592,5 +594,51 @@ public class AuthorizationCodeGrantTests
 
         Rejected(await Redeem(clientId: "dpop-only"), OAuthError.InvalidDpopProofCode, "client requires DPoP");
         Assert.Null(code.RedeemedAt);
+    }
+
+    private const string OtherDpopKey = "NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs";
+
+    [Fact]
+    public async Task Code_bound_by_dpop_jkt_redeems_with_a_proof_from_that_key()
+    {
+        IssueCode(dpopKey: DpopKey);
+
+        var result = await Redeem(dpop: FakeDpopProofValidator.Proof(DpopKey));
+
+        Assert.Equal("DPoP", result.Value.TokenType);
+        Assert.Equal(DpopKey, Assert.Single(_tokens.Families).DpopKeyThumbprint);
+    }
+
+    [Fact]
+    public async Task Code_bound_by_dpop_jkt_needs_a_proof_and_a_request_without_one_does_not_use_it_up()
+    {
+        var code = IssueCode(dpopKey: DpopKey);
+
+        Rejected(await Redeem(), OAuthError.InvalidDpopProofCode, "proof required for a code bound by dpop_jkt");
+
+        Assert.Null(code.RedeemedAt);
+        Assert.True((await Redeem(dpop: FakeDpopProofValidator.Proof(DpopKey))).IsSuccess);
+    }
+
+    [Fact]
+    public async Task Code_bound_by_dpop_jkt_refuses_another_key_and_stays_usable()
+    {
+        var code = IssueCode(dpopKey: DpopKey);
+
+        Rejected(await Redeem(dpop: FakeDpopProofValidator.Proof(OtherDpopKey)), OAuthError.InvalidGrantCode, "DPoP key differs from dpop_jkt");
+
+        Assert.Null(code.RedeemedAt);
+        Assert.Null(code.FamilyId);
+        Assert.True((await Redeem(dpop: FakeDpopProofValidator.Proof(DpopKey, jti: "jti-2"))).IsSuccess);
+    }
+
+    [Fact]
+    public async Task Code_of_another_client_reports_the_client_and_not_the_key()
+    {
+        // The client check comes first, so another client learns nothing about the code's key.
+        var other = AddPublicClient("other");
+        IssueCode(other, dpopKey: DpopKey);
+
+        Rejected(await Redeem(), OAuthError.InvalidGrantCode, "code issued to another client");
     }
 }

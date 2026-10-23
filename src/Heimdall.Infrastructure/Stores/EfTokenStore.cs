@@ -25,7 +25,7 @@ internal sealed class EfTokenStore : ITokenStore
         var hash = redemption.CodeHash.ToArray();
 
         // docs/schema-design.md, "Redeem a code". One statement. Every binding is in the WHERE clause, so a code is
-        // consumed only by the right client, with the right redirect URI and PKCE verifier. A concurrent request
+        // consumed only by the right client, with the right redirect URI, PKCE verifier and DPoP key. A concurrent request
         // waits on the row lock, then sees redeemed_at set and matches no row. The values are parameters (FromSql).
         var rows = await _db.AuthorizationCodes
             .FromSql($"""
@@ -35,6 +35,7 @@ internal sealed class EfTokenStore : ITokenStore
                   AND  client_pk = {redemption.ClientPk}
                   AND  redirect_uri = {redemption.RedirectUri}
                   AND  code_challenge = {redemption.CodeChallenge}
+                  AND  (dpop_key_thumbprint IS NULL OR dpop_key_thumbprint = {redemption.DpopKeyThumbprint})
                   AND  redeemed_at IS NULL AND expires_at > {redemption.Now}
                 RETURNING *
                 """)

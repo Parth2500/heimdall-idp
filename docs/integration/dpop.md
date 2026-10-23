@@ -2,7 +2,7 @@
 
 DPoP (RFC 9449) binds a token to a key pair that your client holds. A thief who steals the token cannot use it without the private key. Use DPoP for a public client, such as a browser app, because a public client has no secret to protect its refresh token.
 
-Status: Heimdall supports DPoP at `/token`. Support at `/authorize` (`dpop_jkt`), at `/userinfo`, and in discovery is still in progress (issue #17). The [limits](#limits-today) section tells you what that means for you now.
+Status: Heimdall supports DPoP at `/authorize` (`dpop_jkt`) and at `/token`. Support at `/userinfo` and in discovery is still in progress (issue #17). The [limits](#limits-today) section tells you what that means for you now.
 
 ## How it works
 
@@ -12,6 +12,17 @@ Status: Heimdall supports DPoP at `/token`. Support at `/authorize` (`dpop_jkt`)
    - The access token gets the claim `cnf.jkt`, the thumbprint of your public key (RFC 7638). The response has `"token_type": "DPoP"`.
    - For a public client, the refresh token family is bound too. Each refresh needs a proof from the same key.
 4. A request without a proof gets a normal bearer token, unless your client is registered to require DPoP.
+
+## Bind the code too (`dpop_jkt`)
+
+Send the thumbprint of your public key (RFC 7638, base64url, 43 characters) as `dpop_jkt` in the `/authorize` request. Heimdall then binds the authorization code to your key, so the whole flow uses one key, from the first redirect to the last refresh.
+
+- Only a token request with a proof from that key redeems the code.
+- A token request without a proof gets `invalid_dpop_proof`. A proof from another key gets `invalid_grant`.
+- Neither failure uses the code. A thief who intercepts the code cannot redeem it, and cannot use it up before your client does.
+- A malformed `dpop_jkt` gets `error=invalid_request` at your redirect URI.
+
+Most DPoP libraries compute the thumbprint for you. Use the same key pair for `/authorize` and `/token`.
 
 ## The proof
 
@@ -58,8 +69,8 @@ Ask the operator to register your client with `dpop_bound_access_tokens` (RFC 94
 
 | Status | `error` | Cause | Action |
 |---|---|---|---|
-| `400` | `invalid_dpop_proof` | The proof is missing (for a client that requires DPoP, or for a bound refresh token), malformed, signed with an unsupported algorithm, for another method or URL, too old, or already used. Or the request has two `DPoP` headers. | Make a new proof with a new `jti` and the current time, then retry once. |
-| `400` | `invalid_grant` | The proof is from another key than the one that the refresh token family is bound to. | Sign the user in again. |
+| `400` | `invalid_dpop_proof` | The proof is missing (for a client that requires DPoP, for a code bound by `dpop_jkt`, or for a bound refresh token), malformed, signed with an unsupported algorithm, for another method or URL, too old, or already used. Or the request has two `DPoP` headers. | Make a new proof with a new `jti` and the current time, then retry once. |
+| `400` | `invalid_grant` | The proof is from another key than the one that the code (`dpop_jkt`) or the refresh token family is bound to. | Sign the user in again. |
 
 Heimdall does not send a `DPoP-Nonce` yet. If your clock is wrong by more than 60 seconds, proofs fail.
 
@@ -67,7 +78,6 @@ Heimdall does not send a `DPoP-Nonce` yet. If your clock is wrong by more than 6
 
 These parts of RFC 9449 are not in Heimdall yet. They come in the next steps of issue #17.
 
-- **`/authorize` does not accept `dpop_jkt`.** The code itself is not bound to your key. The binding starts at the token request.
 - **`/userinfo` does not check the binding yet.** It accepts a bound access token as a bearer token (`Authorization: Bearer`). A thief who steals a bound access token can use it there until it expires. Keep access tokens short-lived and in memory.
 - **Discovery does not list `dpop_signing_alg_values_supported` yet.** Configure `ES256` in your library.
 - **Your own API must check the binding.** If your resource server accepts Heimdall access tokens, check that `cnf.jkt` matches the key of a valid proof in the `DPoP` header, and check `ath`. See RFC 9449, section 7.

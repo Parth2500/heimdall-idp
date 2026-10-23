@@ -96,7 +96,7 @@ public sealed class DpopFlowTests
     }
 
     /// <summary>Signs in and gets a code with offline_access for a public client.</summary>
-    private async Task<Flow> SetUpAsync(bool requireDpop = false)
+    private async Task<Flow> SetUpAsync(bool requireDpop = false, string? dpopJkt = null)
     {
         var api = new HeimdallApiFactory(_postgres);
         var tenant = await api.AddTenantAsync();
@@ -117,6 +117,7 @@ public sealed class DpopFlowTests
             ["scope"] = "openid offline_access",
             ["code_challenge"] = Challenge,
             ["code_challenge_method"] = "S256",
+            ["dpop_jkt"] = dpopJkt,
         }));
         var location = authorize.Headers.Location!.OriginalString;
         var code = QueryHelpers.ParseQuery(location[location.IndexOf('?', StringComparison.Ordinal)..])["code"].ToString();
@@ -289,5 +290,49 @@ public sealed class DpopFlowTests
         using var response = await flow.Http.SendAsync(request);
 
         await AssertErrorAsync(response, "invalid_dpop_proof");
+    }
+
+    [DockerFact]
+    public async Task A_code_bound_by_dpop_jkt_redeems_only_with_that_key_and_a_thief_cannot_burn_it()
+    {
+        using var key = new ClientKey();
+        using var thiefKey = new ClientKey();
+        await using var flow = await SetUpAsync(dpopJkt: key.Thumbprint);
+
+        // The thief holds the code, but not the private key.
+        using var noProof = await RedeemAsync(flow, proof: null);
+        using var otherKey = await RedeemAsync(flow, thiefKey.Proof(flow.TokenUrl, flow.Now));
+        await AssertErrorAsync(noProof, "invalid_dpop_proof");
+        await AssertErrorAsync(otherKey, "invalid_grant");
+
+        // The failed attempts did not use the code, so the real client still redeems it.
+        using var legit = await RedeemAsync(flow, key.Proof(flow.TokenUrl, flow.Now));
+        var body = await OkBodyAsync(legit);
+        Assert.Equal(key.Thumbprint, AccessTokenClaims(body).GetProperty("cnf").GetProperty("jkt").GetString());
+    }
+
+    [DockerFact]
+    public async Task A_malformed_dpop_jkt_goes_back_to_the_client_as_invalid_request()
+    {
+        await using var api = new HeimdallApiFactory(_postgres);
+        var tenant = await api.AddTenantAsync();
+        await api.AddWebClientAsync(tenant);
+        using var http = api.ClientFor(tenant.Host);
+
+        using var response = await http.GetAsync(QueryHelpers.AddQueryString("oauth/v1/authorize", new Dictionary<string, string?>
+        {
+            ["response_type"] = "code",
+            ["client_id"] = "web-app",
+            ["redirect_uri"] = Callback,
+            ["scope"] = "openid",
+            ["code_challenge"] = Challenge,
+            ["code_challenge_method"] = "S256",
+            ["dpop_jkt"] = "not-a-thumbprint",
+        }));
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        var location = response.Headers.Location!.OriginalString;
+        Assert.StartsWith(Callback + "?", location, StringComparison.Ordinal);
+        Assert.Equal("invalid_request", QueryHelpers.ParseQuery(location[location.IndexOf('?', StringComparison.Ordinal)..])["error"].ToString());
     }
 }

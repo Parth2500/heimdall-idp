@@ -185,6 +185,13 @@ public sealed class AuthorizationService
             return Fail(OAuthError.InvalidRequestCode, "nonce too long");
         }
 
+        // D27, RFC 9449 section 10: the thumbprint of the key that must redeem the code.
+        var dpopKeyThumbprint = Get("dpop_jkt");
+        if (dpopKeyThumbprint is not null && !KeyThumbprint.IsValid(dpopKeyThumbprint))
+        {
+            return Fail(OAuthError.InvalidRequestCode, "dpop_jkt malformed");
+        }
+
         var now = _time.GetUtcNow();
         var request = AuthorizationRequest.Create(
             Guid.CreateVersion7(),
@@ -197,7 +204,8 @@ public sealed class AuthorizationService
             codeChallenge!,
             forceLogin: prompts.Contains("login"),
             maxAge,
-            now);
+            now,
+            dpopKeyThumbprint);
 
         // The request is stored only when Heimdall must show a page (sign-in or consent). A signed-in user gets the code
         // at once, and prompt=none never shows a page, so both need no stored request.
@@ -302,7 +310,8 @@ public sealed class AuthorizationService
             request.CodeChallenge,
             request.Nonce,
             session.Session.AuthTime,
-            now);
+            now,
+            request.DpopKeyThumbprint);
 
         _store.AddCode(authorizationCode);
         if (stored)

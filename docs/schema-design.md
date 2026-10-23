@@ -112,6 +112,7 @@ Heimdall stores the pending `/authorize` request here while the user signs in an
 | `max_age_seconds` | integer, null | The OpenID Connect `max_age`. Check: not negative. |
 | `created_at`, `expires_at` | timestamptz | `expires_at` is `created_at` plus 10 minutes. |
 | `consent_user_id`, `consent_approved` | uuid null, boolean null | The consent decision for this request and the user who made it. Check: both null or both set. |
+| `dpop_key_thumbprint` | text, null | The request's `dpop_jkt` (D27). Check: null or 43 characters. Heimdall copies it to the code. |
 
 Heimdall deletes the row in the same transaction that inserts the code. If two requests resume the same row, the second `DELETE` matches no row, and that transaction rolls back. One stored request gives one code.
 
@@ -128,6 +129,7 @@ Heimdall deletes the row in the same transaction that inserts the code. If two r
 | `family_id` | uuid, null | Set at redemption. This is the link from a code to its family. Foreign key with `ON DELETE SET NULL`, added with the `token_families` table. |
 | `created_at`, `expires_at` | timestamptz | `expires_at` is `created_at` plus 5 minutes. |
 | `redeemed_at` | timestamptz, null | |
+| `dpop_key_thumbprint` | text, null | From the request's `dpop_jkt` (D27). When set, only a DPoP proof from this key redeems the code. Check: null or 43 characters. |
 
 ### `token_families`
 The family is its own table. Reasons:
@@ -146,6 +148,7 @@ The family is its own table. Reasons:
 | `idle_expires_at` | timestamptz | Moves forward at each rotation. It never passes `absolute_expires_at`. |
 | `revoked_at` | timestamptz, null | |
 | `revoked_reason` | text, null | `reuse_detected`, `user_logout`, `admin`, `user_disabled`, `consent_removed`. |
+| `dpop_key_thumbprint` | text, null | The DPoP key of a public client's family (D24). When set, each rotation needs a proof from this key. Check: null or 43 characters. |
 
 ### `refresh_tokens`
 | Column | Type | Note |
@@ -229,10 +232,11 @@ SET    redeemed_at = @now, family_id = @family_id
 WHERE  tenant_id = @tenant AND code_hash = @hash
   AND  client_pk = @client AND redirect_uri = @redirect_uri
   AND  code_challenge = @challenge          -- BASE64URL(SHA256(code_verifier))
+  AND  (dpop_key_thumbprint IS NULL OR dpop_key_thumbprint = @dpop_key)   -- D27
   AND  redeemed_at IS NULL AND expires_at > @now
 RETURNING *;
 ```
-Every binding is in the `WHERE` clause. A code is consumed only by the right client, with the right redirect URI and PKCE verifier. A request with a stolen code and no verifier matches no row, so it cannot burn the code for the real client. `@now` comes from the application clock, so every time rule uses one clock. The foreign key from `family_id` to `token_families` is `DEFERRABLE INITIALLY DEFERRED`, because this statement sets `family_id` before the family row exists. PostgreSQL checks it at commit.
+Every binding is in the `WHERE` clause. A code is consumed only by the right client, with the right redirect URI, PKCE verifier, and DPoP key. A request with a stolen code and no verifier, or without the key that `dpop_jkt` named, matches no row, so it cannot burn the code for the real client. `@dpop_key` is the key of the request's proof, or null. `@now` comes from the application clock, so every time rule uses one clock. The foreign key from `family_id` to `token_families` is `DEFERRABLE INITIALLY DEFERRED`, because this statement sets `family_id` before the family row exists. PostgreSQL checks it at commit.
 
 The transaction also signs the tokens. If no key can sign, the transaction rolls back and the code stays usable.
 
@@ -247,9 +251,10 @@ WHERE  t.tenant_id = @tenant AND t.token_hash = @hash AND t.used_at IS NULL
   AND  f.tenant_id = t.tenant_id AND f.id = t.family_id
   AND  f.client_pk = @client AND f.revoked_at IS NULL
   AND  f.idle_expires_at > @now AND f.absolute_expires_at > @now
+  AND  (f.dpop_key_thumbprint IS NULL OR f.dpop_key_thumbprint = @dpop_key)   -- D24
 RETURNING t.*;
 ```
-The family conditions are in the statement, like the bindings of the code redemption. A token sent by another client matches no row and cannot burn the real client's token. A refused request (wider scope, disabled user) rolls back, so the token stays unused.
+The family conditions are in the statement, like the bindings of the code redemption. A token sent by another client, or without the DPoP key of a bound family, matches no row and cannot burn the real client's token. A refused request (wider scope, disabled user) rolls back, so the token stays unused.
 Zero rows and a row that exists with `used_at` set is a reuse. Heimdall then runs:
 ```sql
 UPDATE token_families

@@ -442,6 +442,11 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("DpopKeyThumbprint")
+                        .HasMaxLength(43)
+                        .HasColumnType("character varying(43)")
+                        .HasColumnName("dpop_key_thumbprint");
+
                     b.Property<DateTimeOffset>("ExpiresAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
@@ -499,7 +504,10 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_authorization_codes_tenant_id_code_hash");
 
-                    b.ToTable("authorization_codes", (string)null);
+                    b.ToTable("authorization_codes", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_authorization_codes_dpop_key", "dpop_key_thumbprint IS NULL OR length(dpop_key_thumbprint) = 43");
+                        });
                 });
 
             modelBuilder.Entity("Heimdall.Domain.Tokens.AuthorizationRequest", b =>
@@ -530,6 +538,11 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<string>("DpopKeyThumbprint")
+                        .HasMaxLength(43)
+                        .HasColumnType("character varying(43)")
+                        .HasColumnName("dpop_key_thumbprint");
 
                     b.Property<DateTimeOffset>("ExpiresAt")
                         .HasColumnType("timestamp with time zone")
@@ -584,6 +597,8 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                     b.ToTable("authorization_requests", null, t =>
                         {
                             t.HasCheckConstraint("ck_authorization_requests_consent", "(consent_user_id IS NULL) = (consent_approved IS NULL)");
+
+                            t.HasCheckConstraint("ck_authorization_requests_dpop_key", "dpop_key_thumbprint IS NULL OR length(dpop_key_thumbprint) = 43");
 
                             t.HasCheckConstraint("ck_authorization_requests_max_age", "max_age_seconds IS NULL OR max_age_seconds >= 0");
                         });

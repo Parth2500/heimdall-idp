@@ -10,7 +10,12 @@ public class AuthorizationRequestTests
     private static readonly DateTimeOffset Now = new(2026, 10, 18, 12, 0, 0, TimeSpan.Zero);
     private static readonly Guid TenantId = Guid.CreateVersion7();
 
-    private static AuthorizationRequest Request(bool forceLogin = false, TimeSpan? maxAge = null, string? state = "s", string challenge = Challenge) =>
+    private static AuthorizationRequest Request(
+        bool forceLogin = false,
+        TimeSpan? maxAge = null,
+        string? state = "s",
+        string challenge = Challenge,
+        string? dpopKeyThumbprint = null) =>
         AuthorizationRequest.Create(
             Guid.CreateVersion7(),
             TenantId,
@@ -22,7 +27,8 @@ public class AuthorizationRequestTests
             challenge,
             forceLogin,
             maxAge,
-            Now);
+            Now,
+            dpopKeyThumbprint);
 
     private static Session SignedInAt(DateTimeOffset authTime) =>
         Session.Start(TokenHash.Compute("session-id-for-tests"), TenantId, Guid.CreateVersion7(), TimeSpan.FromHours(12), authTime);
@@ -40,6 +46,16 @@ public class AuthorizationRequestTests
     public void Plain_or_malformed_challenge_is_refused()
     {
         Assert.Throws<DomainException>(() => Request(challenge: "plain-text-verifier-is-not-a-challenge"));
+    }
+
+    [Fact]
+    public void Dpop_key_thumbprint_must_be_a_thumbprint()
+    {
+        Assert.Throws<DomainException>(() => Request(dpopKeyThumbprint: "not-a-thumbprint"));
+        Assert.Equal(
+            "0ZcOCORZNYy-DWpqq30jZyJGHTN0d2HglBV3uiguA4I",
+            Request(dpopKeyThumbprint: "0ZcOCORZNYy-DWpqq30jZyJGHTN0d2HglBV3uiguA4I").DpopKeyThumbprint);
+        Assert.Null(Request().DpopKeyThumbprint);
     }
 
     [Fact]

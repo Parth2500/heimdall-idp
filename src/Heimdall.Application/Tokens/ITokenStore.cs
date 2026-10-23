@@ -8,6 +8,10 @@ namespace Heimdall.Application.Tokens;
 /// <param name="RedirectUri">Must equal the stored redirect URI exactly.</param>
 /// <param name="CodeChallenge">BASE64URL(SHA256(code_verifier)). Must equal the stored challenge (PKCE S256).</param>
 /// <param name="FamilyId">The new family that this redemption starts.</param>
+/// <param name="DpopKeyThumbprint">
+/// The key of the request's DPoP proof, or null. A code from a request with <c>dpop_jkt</c> matches only this key, so a
+/// thief without the key cannot redeem the code, and cannot use it up either (D27).
+/// </param>
 public sealed record CodeRedemption(
     Guid TenantId,
     TokenHash CodeHash,
@@ -15,7 +19,8 @@ public sealed record CodeRedemption(
     string RedirectUri,
     string CodeChallenge,
     Guid FamilyId,
-    DateTimeOffset Now);
+    DateTimeOffset Now,
+    string? DpopKeyThumbprint = null);
 
 /// <summary>The inputs of the atomic refresh token rotation. Every binding is part of the one conditional statement.</summary>
 /// <param name="ClientPk">The authenticated client. A token of another client's family never matches.</param>

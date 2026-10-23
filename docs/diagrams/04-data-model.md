@@ -59,6 +59,7 @@ erDiagram
         uuid id PK
         uuid client_pk FK
         text code_challenge
+        text dpop_key_thumbprint
         timestamptz expires_at
     }
     authorization_codes {
@@ -66,6 +67,7 @@ erDiagram
         uuid tenant_id FK
         bytea code_hash UK
         uuid family_id FK
+        text dpop_key_thumbprint
         timestamptz expires_at
         timestamptz redeemed_at
     }
@@ -76,6 +78,7 @@ erDiagram
         timestamptz absolute_expires_at
         timestamptz idle_expires_at
         timestamptz revoked_at
+        text dpop_key_thumbprint
     }
     refresh_tokens {
         uuid id PK

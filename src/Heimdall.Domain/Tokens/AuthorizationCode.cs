@@ -36,7 +36,8 @@ public sealed class AuthorizationCode
         string codeChallenge,
         string? nonce,
         DateTimeOffset authTime,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt,
+        string? dpopKeyThumbprint)
     {
         Id = id;
         TenantId = tenantId;
@@ -50,6 +51,7 @@ public sealed class AuthorizationCode
         AuthTime = authTime;
         CreatedAt = createdAt;
         ExpiresAt = createdAt + Lifetime;
+        DpopKeyThumbprint = dpopKeyThumbprint;
     }
 
     public Guid Id { get; }
@@ -77,6 +79,12 @@ public sealed class AuthorizationCode
 
     public DateTimeOffset ExpiresAt { get; }
 
+    /// <summary>
+    /// The key from the request's <c>dpop_jkt</c>, or null. When set, only a DPoP proof from this key redeems the code
+    /// (D27). The check is in the redemption statement, so a request without the key does not use up the code.
+    /// </summary>
+    public string? DpopKeyThumbprint { get; }
+
     public DateTimeOffset? RedeemedAt { get; private set; }
 
     /// <summary>The family that this code started. It is set when the code is redeemed.</summary>
@@ -93,7 +101,8 @@ public sealed class AuthorizationCode
         string codeChallenge,
         string? nonce,
         DateTimeOffset authTime,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        string? dpopKeyThumbprint = null)
     {
         Guard.NotEmpty(id, nameof(id));
         Guard.NotEmpty(tenantId, nameof(tenantId));
@@ -116,7 +125,8 @@ public sealed class AuthorizationCode
             codeChallenge,
             nonce,
             authTime,
-            now);
+            now,
+            dpopKeyThumbprint is null ? null : KeyThumbprint.Require(dpopKeyThumbprint, nameof(dpopKeyThumbprint)));
     }
 
     /// <summary>Marks the code as used. A used code is reported before an expired one, because reuse is an attack signal.</summary>

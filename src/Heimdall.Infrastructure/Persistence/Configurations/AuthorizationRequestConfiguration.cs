@@ -16,6 +16,9 @@ internal sealed class AuthorizationRequestConfiguration : IEntityTypeConfigurati
             t.HasCheckConstraint(
                 "ck_authorization_requests_consent",
                 "(consent_user_id IS NULL) = (consent_approved IS NULL)");
+            t.HasCheckConstraint(
+                "ck_authorization_requests_dpop_key",
+                "dpop_key_thumbprint IS NULL OR length(dpop_key_thumbprint) = 43");
         });
 
         builder.HasKey(r => r.Id);
@@ -36,6 +39,7 @@ internal sealed class AuthorizationRequestConfiguration : IEntityTypeConfigurati
         builder.Property(r => r.ExpiresAt);
         builder.Property(r => r.ConsentUserId);
         builder.Property(r => r.ConsentApproved);
+        builder.Property(r => r.DpopKeyThumbprint).HasMaxLength(43);
 
         // The purge job deletes expired requests.
         builder.HasIndex(r => r.ExpiresAt);

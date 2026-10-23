@@ -33,7 +33,8 @@ public sealed class AuthorizationRequest
         string codeChallenge,
         bool forceLogin,
         TimeSpan? maxAge,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt,
+        string? dpopKeyThumbprint)
     {
         Id = id;
         TenantId = tenantId;
@@ -47,6 +48,7 @@ public sealed class AuthorizationRequest
         MaxAge = maxAge;
         CreatedAt = createdAt;
         ExpiresAt = createdAt + Lifetime;
+        DpopKeyThumbprint = dpopKeyThumbprint;
     }
 
     public Guid Id { get; }
@@ -77,6 +79,12 @@ public sealed class AuthorizationRequest
 
     public DateTimeOffset ExpiresAt { get; }
 
+    /// <summary>
+    /// The <c>dpop_jkt</c> of the request (RFC 9449, section 10), or null. The code that this request gives can then be
+    /// redeemed only with a DPoP proof from this key (D27).
+    /// </summary>
+    public string? DpopKeyThumbprint { get; }
+
     /// <summary>The user who decided on the consent page, or null. A decision counts only for this user.</summary>
     public Guid? ConsentUserId { get; private set; }
 
@@ -94,7 +102,8 @@ public sealed class AuthorizationRequest
         string codeChallenge,
         bool forceLogin,
         TimeSpan? maxAge,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        string? dpopKeyThumbprint = null)
     {
         Guard.NotEmpty(id, nameof(id));
         Guard.NotEmpty(tenantId, nameof(tenantId));
@@ -126,7 +135,8 @@ public sealed class AuthorizationRequest
             codeChallenge,
             forceLogin,
             maxAge,
-            now);
+            now,
+            dpopKeyThumbprint is null ? null : KeyThumbprint.Require(dpopKeyThumbprint, nameof(dpopKeyThumbprint)));
     }
 
     public bool IsExpired(DateTimeOffset now) => now >= ExpiresAt;

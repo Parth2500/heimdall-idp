@@ -11,7 +11,7 @@ public class TokenTests
     private static readonly TokenLifetimes Lifetimes =
         new(TimeSpan.FromMinutes(5), TimeSpan.FromDays(7), TimeSpan.FromDays(30));
 
-    private static AuthorizationCode NewCode(string challenge = Challenge) =>
+    private static AuthorizationCode NewCode(string challenge = Challenge, string? dpopKeyThumbprint = null) =>
         AuthorizationCode.Create(
             Guid.CreateVersion7(),
             Guid.CreateVersion7(),
@@ -23,7 +23,8 @@ public class TokenTests
             challenge,
             nonce: "n-0S6_WzA2Mj",
             authTime: Now,
-            now: Now);
+            now: Now,
+            dpopKeyThumbprint);
 
     private static TokenFamily NewFamily(string scope = "openid profile offline_access") =>
         TokenFamily.Start(
@@ -37,6 +38,14 @@ public class TokenTests
             Now);
 
     // Authorization code
+
+    [Fact]
+    public void Code_dpop_key_thumbprint_must_be_a_thumbprint()
+    {
+        Assert.Throws<DomainException>(() => NewCode(dpopKeyThumbprint: new string('a', 42)));
+        Assert.Equal(new string('a', 43), NewCode(dpopKeyThumbprint: new string('a', 43)).DpopKeyThumbprint);
+        Assert.Null(NewCode().DpopKeyThumbprint);
+    }
 
     [Fact]
     public void Code_expires_after_five_minutes()

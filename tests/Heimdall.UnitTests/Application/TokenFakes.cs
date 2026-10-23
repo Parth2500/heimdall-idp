@@ -45,6 +45,7 @@ internal sealed class InMemoryTokenStore : ITokenStore
             && c.ClientPk == redemption.ClientPk
             && c.RedirectUri == redemption.RedirectUri
             && c.CodeChallenge == redemption.CodeChallenge
+            && (c.DpopKeyThumbprint is null || c.DpopKeyThumbprint == redemption.DpopKeyThumbprint)
             && c.RedeemedAt is null
             && c.ExpiresAt > redemption.Now);
         if (code is not null)

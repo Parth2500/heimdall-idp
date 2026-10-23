@@ -379,6 +379,15 @@ public class AuthorizationServiceTests
             "nonce too long");
     }
 
+    [Theory]
+    [InlineData("too-short")]
+    [InlineData("0ZcOCORZNYy-DWpqq30jZyJGHTN0d2HglBV3uiguA4=")]
+    [InlineData("0ZcOCORZNYy+DWpqq30jZyJGHTN0d2HglBV3uiguA4I")]
+    public async Task Malformed_dpop_jkt_is_refused(string dpopJkt)
+    {
+        AssertErrorRedirect(await Authorize(Valid(("dpop_jkt", dpopJkt))), OAuthError.InvalidRequestCode, "dpop_jkt malformed");
+    }
+
     // 3. A valid request: sign-in, consent, and the code.
 
     [Fact]
@@ -439,6 +448,36 @@ public class AuthorizationServiceTests
         Assert.Equal(Now, issued.OccurredAt);
         Assert.Equal("spa", issued.Data["client_id"]);
         Assert.Equal("openid profile", issued.Data["scope"]);
+    }
+
+    private const string DpopJkt = "0ZcOCORZNYy-DWpqq30jZyJGHTN0d2HglBV3uiguA4I";
+
+    [Fact]
+    public async Task Dpop_jkt_goes_with_the_code_when_the_user_is_signed_in()
+    {
+        CodeOf(await Authorize(Valid(("dpop_jkt", DpopJkt)), SignedIn()));
+
+        Assert.Equal(DpopJkt, Assert.Single(_store.Codes).DpopKeyThumbprint);
+    }
+
+    [Fact]
+    public async Task Dpop_jkt_is_stored_with_the_request_and_reaches_the_code_after_sign_in()
+    {
+        Assert.IsType<AuthorizeLogin>(await Authorize(Valid(("dpop_jkt", DpopJkt))));
+        var request = Assert.Single(_store.Requests);
+        Assert.Equal(DpopJkt, request.DpopKeyThumbprint);
+
+        CodeOf(await Resume(request.Id.ToString(), SignedIn()));
+
+        Assert.Equal(DpopJkt, Assert.Single(_store.Codes).DpopKeyThumbprint);
+    }
+
+    [Fact]
+    public async Task Without_dpop_jkt_the_code_is_not_bound()
+    {
+        CodeOf(await Authorize(Valid(), SignedIn()));
+
+        Assert.Null(Assert.Single(_store.Codes).DpopKeyThumbprint);
     }
 
     [Fact]

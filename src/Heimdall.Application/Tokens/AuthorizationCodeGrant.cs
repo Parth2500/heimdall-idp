@@ -163,7 +163,7 @@ public sealed class AuthorizationCodeGrant
         await using (transaction.ConfigureAwait(false))
         {
             code = await _tokens.RedeemCodeAsync(
-                new CodeRedemption(context.Tenant.Id, codeHash, client.Id, redirectUri, challenge, familyId, now),
+                new CodeRedemption(context.Tenant.Id, codeHash, client.Id, redirectUri, challenge, familyId, now, dpop.Value),
                 cancellationToken).ConfigureAwait(false);
 
             if (code is not null)
@@ -178,7 +178,8 @@ public sealed class AuthorizationCodeGrant
         {
             // Outside the transaction: a reuse revokes a family and writes audit events, and a rollback must not undo
             // them. The failed redemption changed nothing, so there is nothing to roll back.
-            return await ExplainFailureAsync(context, client, codeHash, redirectUri, challenge, now, cancellationToken).ConfigureAwait(false);
+            return await ExplainFailureAsync(context, client, codeHash, redirectUri, challenge, dpop.Value, now, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         await WriteAuditAsync(
@@ -286,6 +287,7 @@ public sealed class AuthorizationCodeGrant
         TokenHash codeHash,
         string redirectUri,
         string challenge,
+        string? keyThumbprint,
         DateTimeOffset now,
         CancellationToken cancellationToken)
     {
@@ -304,6 +306,17 @@ public sealed class AuthorizationCodeGrant
         if (now >= code.ExpiresAt)
         {
             return Result.Failure<TokenResponse>(OAuthError.InvalidGrant("code expired"));
+        }
+
+        // D27: a code from a request with dpop_jkt needs a proof from that key. Like a refresh token of a bound family,
+        // a missing proof is a client error, and a proof from another key means that the code belongs to someone else.
+        if (code.ClientPk == client.Id
+            && code.DpopKeyThumbprint is { } boundKey
+            && !string.Equals(boundKey, keyThumbprint, StringComparison.Ordinal))
+        {
+            return Result.Failure<TokenResponse>(keyThumbprint is null
+                ? OAuthError.InvalidDpopProof("proof required for a code bound by dpop_jkt")
+                : OAuthError.InvalidGrant("DPoP key differs from dpop_jkt"));
         }
 
         // The last branch is a fallback. When every binding matches, the redemption above succeeds.
