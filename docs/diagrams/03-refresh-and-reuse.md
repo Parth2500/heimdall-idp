@@ -46,6 +46,29 @@ sequenceDiagram
 
 There is no grace window. A client must save T2 before it uses it. See the refresh table in `docs/threat-model.md`.
 
+## Theft of the current token from a DPoP-bound family (D24)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Real client (holds the private key)
+    participant A as Attacker (has T2, no key)
+    participant H as Heimdall
+    participant DB as PostgreSQL
+
+    A->>H: refresh_token T2, no DPoP proof
+    H->>DB: UPDATE ... WHERE hash = T2 AND used_at IS NULL AND (family key IS NULL OR family key = request key)
+    DB-->>H: 0 rows: the family is bound, the request has no key
+    H->>DB: Read T2 (exists, unused, family bound)
+    H->>A: invalid_dpop_proof
+    Note over H,DB: T2 is not used up. Nothing is revoked.
+    C->>H: refresh_token T2 with a proof from the family key
+    H->>DB: Rotate T2 to T3 (1 row)
+    H->>C: T3 and a DPoP-bound access token
+```
+
+A proof from another key gets `invalid_grant`, and T2 stays unused too. An old, used token (T1) is reuse with or without a key, so Heimdall revokes the family as above. The thief gets no tokens either way.
+
 ## Two requests with the same code at the same time
 
 ```mermaid

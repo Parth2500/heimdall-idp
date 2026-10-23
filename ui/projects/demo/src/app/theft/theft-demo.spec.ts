@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { HeimdallDiscovery } from '../auth/discovery';
-import { RefreshAttempt, TheftDemo, verdictOf } from './theft-demo';
+import { RefreshAttempt, TheftDemo, stealVerdictOf, verdictOf } from './theft-demo';
 
 const TOKEN_ENDPOINT = 'https://acme.localhost:7200/oauth/v1/token';
 
@@ -28,6 +28,24 @@ describe('verdictOf', () => {
       'inconclusive',
     );
     expect(verdictOf(attempt('invalid_grant'), attempt('no_error_code', 0))).toBe('inconclusive');
+  });
+});
+
+describe('stealVerdictOf', () => {
+  it('reports that DPoP stopped the thief when the thief needs a proof and the client refreshes', () => {
+    expect(stealVerdictOf(attempt('invalid_dpop_proof'), true)).toBe('thief-needs-key');
+  });
+
+  it('reports an unbound family when the thief gets tokens', () => {
+    expect(stealVerdictOf(attempt(null), true)).toBe('thief-accepted');
+  });
+
+  it('reports a defect when the refused attempt still locks the client out', () => {
+    expect(stealVerdictOf(attempt('invalid_dpop_proof'), false)).toBe('client-locked-out');
+  });
+
+  it('does not guess on another answer', () => {
+    expect(stealVerdictOf(attempt('invalid_grant'), true)).toBe('inconclusive');
   });
 });
 
@@ -94,5 +112,19 @@ describe('TheftDemo', () => {
     const result = await run;
     expect(result.verdict).toBe('replay-accepted');
     expect(JSON.stringify(result)).not.toContain('stolen');
+  });
+
+  it('lets the thief steal the current token without a proof, then lets the client refresh', async () => {
+    const clientRefresh = vi.fn().mockResolvedValue(undefined);
+    const run = demo.stealCurrent('RT2', clientRefresh);
+
+    const thief = await vi.waitFor(() => http.expectOne(TOKEN_ENDPOINT));
+    expect(new URLSearchParams(thief.request.body as string).get('refresh_token')).toBe('RT2');
+    thief.flush({ error: 'invalid_dpop_proof' }, { status: 400, statusText: 'Bad Request' });
+
+    const result = await run;
+    expect(clientRefresh).toHaveBeenCalledTimes(1);
+    expect(result.verdict).toBe('thief-needs-key');
+    expect(JSON.stringify(result)).not.toContain('RT2');
   });
 });

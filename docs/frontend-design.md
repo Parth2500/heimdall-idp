@@ -210,6 +210,8 @@ Status: **Approved** by the owner on 2026-10-19.
 
 **Why the verifier may sit in `sessionStorage`.** The `code_verifier` is useful only with the one code that comes back to the redirect URI. Script that can read `sessionStorage` on this origin can also read that code from the URL, so memory would not protect it. A refresh token is different: it lives for hours and works without the browser.
 
+**The DPoP key (added on 2026-10-23, issue #17).** The demo binds its tokens to an ECDSA P-256 key pair (RFC 9449). The pair lives in IndexedDB, because the key must survive the redirect to `/authorize` to redeem a code bound by `dpop_jkt`. The private key is non-extractable: script on the page can sign with it, but no script can read it, so an XSS bug cannot copy it to another machine. The key is not a token, and the tokens stay in memory. When IndexedDB fails, the key lives in memory, and the demo sends no `dpop_jkt`.
+
 **Alternative.** A backend-for-frontend (BFF), which keeps tokens on a server and gives the browser only a cookie. This is the most secure pattern for browser apps (IETF draft "OAuth 2.0 for Browser-Based Applications"). It is a candidate for a second demo. The first demo stays a pure SPA, because it exercises the public-client features of Heimdall: PKCE, rotation, and reuse detection.
 
 ### U11. Demo SPA screens
@@ -223,6 +225,7 @@ Status: **Approved** by the owner on 2026-10-19.
 | User info | The response of `/userinfo`, with the scopes that released each claim. |
 | Refresh | A "Refresh now" button. The page shows that the refresh token changed (the first 6 characters of a SHA-256 of each token, never the token). |
 | Theft demo | A "Replay the old refresh token" button. It sends the previous refresh token to `/token`. The page shows `invalid_grant`, then shows that the current refresh token also fails: Heimdall revoked the whole family. |
+| DPoP demo | Added on 2026-10-23 (#17). The key thumbprint, and a "Steal the current refresh token" button. It sends the current refresh token without a proof, as a thief without the key would. The page shows `invalid_dpop_proof`, then shows that the client still refreshes with its key: the stolen token is useless, and nothing is revoked. |
 | Sign out | Revokes the refresh token (`/revoke`), then clears memory. The page says that the Heimdall session stays until RP-initiated logout exists (U14). |
 
 The theft demo is the strongest portfolio screen. It shows refresh token reuse detection at work, in a real browser, with no grace window.

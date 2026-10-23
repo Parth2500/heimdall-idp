@@ -201,7 +201,18 @@ The demo SPA keeps a flag in `sessionStorage` that means "the user was signed in
 
 Ask for a token for your API with the `resource` parameter. If your client has one registered audience, Heimdall uses it by default. See [Choose the audience](../sign-in-users.md#choose-the-audience).
 
-Send the access token in the `Authorization: Bearer` header. The library's interceptor can do this for the URLs that you list in `secureRoutes`.
+Send the access token in the `Authorization: Bearer` header. The library's interceptor can do this for the URLs that you list in `secureRoutes`. If your tokens are DPoP-bound (`token_type` `DPoP`), see the next section instead.
+
+## Bind the tokens with DPoP
+
+`angular-auth-oidc-client` has no DPoP support. The demo SPA adds it in about 150 lines, in `ui/projects/demo/src/app/auth/dpop.ts`:
+
+1. Create an ECDSA P-256 key pair with Web Crypto, with `extractable: false`. Keep it in IndexedDB, so it survives the redirect to `/authorize`. Script can sign with a non-extractable key, but cannot read it.
+2. Before `authorize()`, compute the key's RFC 7638 thumbprint and pass it: `authorize(undefined, { customParams: { dpop_jkt } })`.
+3. Add an `HttpInterceptorFn` that adds a `DPoP` proof header to each `POST` to the token endpoint. The library sends its token requests through Angular's `HttpClient`, so the interceptor sees them.
+4. Call your API (and `/userinfo`) with `Authorization: DPoP <token>` and a new proof that has `ath`. Do not use the library's `secureRoutes` interceptor for bound tokens: it sends `Bearer`, and Heimdall refuses a bound token with `Bearer`.
+
+See [DPoP](../dpop.md) for the proof rules.
 
 ## Known gaps
 

@@ -1,8 +1,9 @@
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { DEMO_CLIENT_ID } from '../auth/auth.config';
 import { HeimdallDiscovery } from '../auth/discovery';
+import { NO_DPOP } from '../auth/dpop';
 import { fingerprint } from '../auth/fingerprint';
 
 /** What Heimdall answered to one refresh request. */
@@ -29,6 +30,23 @@ export interface TheftDemoResult {
   readonly verdict: TheftVerdict;
 }
 
+export type StealVerdict =
+  /** The thief got invalid_dpop_proof and the client still refreshed: DPoP stopped the theft. */
+  | 'thief-needs-key'
+  /** Heimdall gave the thief tokens. With a bound family, this is a defect. */
+  | 'thief-accepted'
+  /** The thief was refused, but the client's refresh failed too: the token was used up. */
+  | 'client-locked-out'
+  /** Another answer, for example a network error or an unbound family. */
+  | 'inconclusive';
+
+export interface StealDemoResult {
+  readonly thief: RefreshAttempt;
+  /** True when the client's own refresh, with its key, worked after the attempt. */
+  readonly clientRefreshed: boolean;
+  readonly verdict: StealVerdict;
+}
+
 /**
  * Plays an attacker who stole a refresh token before the client rotated it. The demo sends
  * the old token, then the current one, straight to the token endpoint.
@@ -43,14 +61,40 @@ export class TheftDemo {
 
   async run(previousToken: string, currentToken: string): Promise<TheftDemoResult> {
     const { token_endpoint } = await this.discovery.endpoints();
-    const replay = await this.refresh(token_endpoint, previousToken);
+    // The attacker has no private key, so its request carries no DPoP proof.
+    const replay = await this.refresh(token_endpoint, previousToken, true);
     // Order matters: the current token is sent only after the replay, so a revoked family
-    // shows up as invalid_grant on a token that was valid a moment before.
-    const current = await this.refresh(token_endpoint, currentToken);
+    // shows up as invalid_grant on a token that was valid a moment before. The client's
+    // request carries a proof, as the real client's would.
+    const current = await this.refresh(token_endpoint, currentToken, false);
     return { replay, current, verdict: verdictOf(replay, current) };
   }
 
-  private async refresh(tokenEndpoint: string, refreshToken: string): Promise<RefreshAttempt> {
+  /**
+   * Plays an attacker who stole the current refresh token, before the client used it. The
+   * attacker has no private key, so it sends no DPoP proof. Then the client refreshes as usual,
+   * with its key, through the library.
+   */
+  async stealCurrent(
+    currentToken: string,
+    clientRefresh: () => Promise<void>,
+  ): Promise<StealDemoResult> {
+    const { token_endpoint } = await this.discovery.endpoints();
+    const thief = await this.refresh(token_endpoint, currentToken, true);
+    let clientRefreshed = true;
+    try {
+      await clientRefresh();
+    } catch {
+      clientRefreshed = false;
+    }
+    return { thief, clientRefreshed, verdict: stealVerdictOf(thief, clientRefreshed) };
+  }
+
+  private async refresh(
+    tokenEndpoint: string,
+    refreshToken: string,
+    attacker: boolean,
+  ): Promise<RefreshAttempt> {
     // A public client sends client_id in the body and no secret (RFC 6749, section 3.2.1).
     const body = new HttpParams()
       .set('grant_type', 'refresh_token')
@@ -63,6 +107,7 @@ export class TheftDemo {
         this.http.post(tokenEndpoint, body.toString(), {
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           observe: 'response',
+          context: new HttpContext().set(NO_DPOP, attacker),
         }),
       );
       // The response body holds new tokens. The demo drops them: the attacker's tokens
@@ -88,6 +133,16 @@ export function verdictOf(replay: RefreshAttempt, current: RefreshAttempt): Thef
     return 'family-revoked';
   }
   return current.error === null ? 'replay-refused-only' : 'inconclusive';
+}
+
+export function stealVerdictOf(thief: RefreshAttempt, clientRefreshed: boolean): StealVerdict {
+  if (thief.error === null) {
+    return 'thief-accepted';
+  }
+  if (thief.error !== 'invalid_dpop_proof') {
+    return 'inconclusive';
+  }
+  return clientRefreshed ? 'thief-needs-key' : 'client-locked-out';
 }
 
 function errorCodeOf(body: unknown): string {

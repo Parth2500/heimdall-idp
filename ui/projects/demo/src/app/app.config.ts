@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import {
   ApplicationConfig,
   inject,
@@ -10,12 +10,14 @@ import { AbstractSecurityStorage, provideAuth } from 'angular-auth-oidc-client';
 import { routes } from './app.routes';
 import { demoAuthConfig } from './auth/auth.config';
 import { DemoSession } from './auth/demo-session';
+import { dpopInterceptor } from './auth/dpop';
 import { SplitSecurityStorage } from './auth/split-storage';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideHttpClient(),
+    // Every token request carries a DPoP proof, so the tokens are bound to the demo's key (RFC 9449).
+    provideHttpClient(withInterceptors([dpopInterceptor])),
     provideAuth({ config: demoAuthConfig(window.location.origin) }),
     // Tokens in memory, the sign-in request values in sessionStorage (U10).
     {

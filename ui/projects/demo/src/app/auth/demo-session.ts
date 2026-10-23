@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { EventTypes, OidcSecurityService, PublicEventsService } from 'angular-auth-oidc-client';
 import { filter, firstValueFrom } from 'rxjs';
 import { HeimdallDiscovery } from './discovery';
+import { DpopKeys } from './dpop';
 import { RefreshTokenHistory } from './refresh-token-history';
 
 /**
@@ -40,6 +41,7 @@ export class DemoSession {
   private readonly events = inject(PublicEventsService);
   private readonly history = inject(RefreshTokenHistory);
   private readonly discovery = inject(HeimdallDiscovery);
+  private readonly dpop = inject(DpopKeys);
   private readonly stateSignal = signal<SessionState>('starting');
   private readonly errorSignal = signal<string | null>(null);
 
@@ -98,7 +100,10 @@ export class DemoSession {
       this.stateSignal.set('signed-out');
       return;
     }
-    this.oidc.authorize();
+    // dpop_jkt binds the code to the key (RFC 9449, section 10). Only a key that survives the
+    // redirect can redeem it, so a key in memory only sends no dpop_jkt.
+    const { jkt, persisted } = await this.dpop.thumbprint();
+    this.oidc.authorize(undefined, persisted ? { customParams: { dpop_jkt: jkt } } : undefined);
   }
 
   /** Asks the library for new tokens now. The library sends the refresh token. */

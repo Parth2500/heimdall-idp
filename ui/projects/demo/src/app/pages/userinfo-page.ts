@@ -4,6 +4,7 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
 import { firstValueFrom } from 'rxjs';
 import { HeimdallDiscovery } from '../auth/discovery';
 import { DemoSession } from '../auth/demo-session';
+import { DpopKeys } from '../auth/dpop';
 import { ClaimsTable } from './claims-table';
 
 /**
@@ -31,8 +32,9 @@ export const RELEASING_SCOPE: Readonly<Record<string, string>> = {
   template: `
     <h1 class="hd-title">User info</h1>
     <p>
-      The client sent its access token to the <code>userinfo_endpoint</code> as a bearer token.
-      Heimdall releases a claim only when a granted scope allows it.
+      The client sent its access token to the <code>userinfo_endpoint</code>. A DPoP-bound token
+      goes with the <code>DPoP</code> scheme and a new proof from the client's key, so a copy of the
+      token alone is useless. Heimdall releases a claim only when a granted scope allows it.
     </p>
     @if (userInfo.isLoading()) {
       <p role="status">Asking Heimdall.</p>
@@ -57,6 +59,7 @@ export class UserInfoPage {
   private readonly oidc = inject(OidcSecurityService);
   private readonly discovery = inject(HeimdallDiscovery);
   private readonly session = inject(DemoSession);
+  private readonly dpop = inject(DpopKeys);
   protected readonly scopes = RELEASING_SCOPE;
 
   protected readonly userInfo = resource({
@@ -64,11 +67,16 @@ export class UserInfoPage {
     loader: async () => {
       const { userinfo_endpoint } = await this.discovery.endpoints();
       const accessToken = await firstValueFrom(this.oidc.getAccessToken());
-      return firstValueFrom(
-        this.http.get<Record<string, unknown>>(userinfo_endpoint, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }),
-      );
+      const result = await firstValueFrom(this.oidc.getAuthenticationResult());
+      // RFC 9449, section 7.1: a bound token needs the DPoP scheme and a proof with its hash.
+      const headers: Record<string, string> =
+        result?.token_type === 'DPoP'
+          ? {
+              Authorization: `DPoP ${accessToken}`,
+              DPoP: await this.dpop.proof('GET', userinfo_endpoint, accessToken),
+            }
+          : { Authorization: `Bearer ${accessToken}` };
+      return firstValueFrom(this.http.get<Record<string, unknown>>(userinfo_endpoint, { headers }));
     },
   });
 

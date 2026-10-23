@@ -13,8 +13,11 @@ sequenceDiagram
     participant R as Resource server
 
     C->>C: Create code_verifier, compute code_challenge (S256)
+    opt DPoP (D24 to D28)
+        C->>C: Load or create a non-extractable key pair, compute its thumbprint (jkt)
+    end
     C->>B: Redirect to /authorize
-    B->>H: GET /authorize (client_id, redirect_uri, scope, state, code_challenge)
+    B->>H: GET /authorize (client_id, redirect_uri, scope, state, code_challenge, optional dpop_jkt)
     H->>DB: Load client, check redirect_uri (exact match), check scope
     alt No valid session
         H->>DB: Store the checked request (10 minutes)
@@ -35,17 +38,18 @@ sequenceDiagram
         B->>H: GET /oauth/v1/authorize/resume?request_id=...
         Note over H: A denial deletes the request and redirects with error=access_denied
     end
-    H->>DB: Insert code hash (expires in 5 minutes) and delete the stored request if there is one, in one transaction
+    H->>DB: Insert code hash (expires in 5 minutes, with dpop_jkt if sent) and delete the stored request if there is one, in one transaction
     Note over H,DB: A signed-in user with no consent step gets the code at once. That request is never stored.
     H->>B: Redirect to redirect_uri (code, state, iss)
     B->>C: GET callback
-    C->>H: POST /token (grant_type, code, code_verifier, redirect_uri, client auth)
-    H->>DB: Atomic UPDATE: redeem code
-    H->>H: Check PKCE, client, redirect_uri
-    H->>DB: Insert family and first refresh token hash
-    H->>C: access_token, id_token, refresh_token (no-store)
-    C->>R: Request with access token
-    R->>R: Verify signature with cached JWKS
+    C->>H: POST /token (grant_type, code, code_verifier, redirect_uri, client auth, optional DPoP proof)
+    H->>H: Check the DPoP proof (typ, alg, jwk, htm, htu, iat), no database
+    H->>DB: Insert the proof's jti hash once (replay check)
+    H->>DB: Atomic UPDATE: redeem code (client, redirect_uri, PKCE, and the dpop_jkt key in the WHERE clause)
+    H->>DB: Insert family (with the key for a public client) and first refresh token hash
+    H->>C: access_token (cnf.jkt when bound), token_type DPoP or Bearer, id_token, refresh_token (no-store)
+    C->>R: Request with access token (Authorization: DPoP and a new proof with ath, when bound)
+    R->>R: Verify signature with cached JWKS, and the proof against cnf.jkt when bound
     R->>C: Response
 ```
 

@@ -2,7 +2,8 @@ import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { DemoSession } from '../auth/demo-session';
 import { RefreshTokenHistory } from '../auth/refresh-token-history';
-import { TheftDemo, TheftDemoResult } from '../theft/theft-demo';
+import { StealDemoResult, TheftDemo, TheftDemoResult } from '../theft/theft-demo';
+import { DpopKeys } from '../auth/dpop';
 
 /** The refresh screen and the theft demo screen of U11. */
 @Component({
@@ -129,15 +130,120 @@ import { TheftDemo, TheftDemoResult } from '../theft/theft-demo';
         <button class="hd-button" type="button" (click)="session.signIn()">Sign in again</button>
       }
     </section>
+
+    <section aria-labelledby="steal-heading">
+      <h2 class="hd-heading" id="steal-heading">DPoP demo</h2>
+      <p>
+        The client's tokens are bound to a key pair that lives in this browser (RFC 9449). The
+        private key cannot leave it, not even through script on this page.
+        @if (keyThumbprint(); as jkt) {
+          Key thumbprint: <code>{{ jkt }}</code
+          >.
+        }
+      </p>
+      <p>
+        An attacker steals the current refresh token, before the client uses it, and sends it to the
+        token endpoint without a proof. Then the client refreshes as usual, with its key.
+      </p>
+      @if (session.state() === 'signed-in') {
+        <button class="hd-button" type="button" (click)="steal()" [disabled]="busy()">
+          Steal the current refresh token
+        </button>
+      }
+
+      @if (stealResult(); as s) {
+        <table class="hd-table" aria-live="polite">
+          <caption>
+            What Heimdall answered, in order
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Sent by</th>
+              <th scope="col">Answer</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Attacker, with the current token and no key</th>
+              <td>
+                <span [class]="s.thief.error === null ? 'mark mark--issued' : 'mark mark--refused'">
+                  {{ s.thief.error === null ? 'Issued' : 'Refused' }}
+                </span>
+                HTTP {{ s.thief.status }} <code>{{ s.thief.error ?? '' }}</code>
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Client, with its key</th>
+              <td>
+                <span [class]="s.clientRefreshed ? 'mark mark--issued' : 'mark mark--refused'">
+                  {{ s.clientRefreshed ? 'Issued' : 'Refused' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        @switch (s.verdict) {
+          @case ('thief-needs-key') {
+            <div class="hd-confirm">
+              <p class="hd-confirm__title">The stolen token is useless without the key.</p>
+              <p>
+                Heimdall refused the attacker and did not use up the token, so the client refreshed
+                as usual. Compare the replay demo above: without DPoP, the only defense is to revoke
+                the whole family, and the user must sign in again.
+              </p>
+            </div>
+          }
+          @case ('thief-accepted') {
+            <div class="hd-problem">
+              <p class="hd-problem__title">Not bound</p>
+              <p>
+                Heimdall gave the attacker tokens. The family is not bound to a key: sign in again,
+                so the first token request carries a proof.
+              </p>
+            </div>
+          }
+          @case ('client-locked-out') {
+            <div class="hd-problem">
+              <p class="hd-problem__title">Defect</p>
+              <p>The attacker was refused, but the client could not refresh afterwards.</p>
+            </div>
+          }
+          @default {
+            <p class="hd-note">The answers do not show a result. Check that Heimdall is running.</p>
+          }
+        }
+      }
+    </section>
   `,
 })
 export class TokensPage {
   protected readonly history = inject(RefreshTokenHistory);
   protected readonly session = inject(DemoSession);
   private readonly theft = inject(TheftDemo);
+  private readonly dpop = inject(DpopKeys);
   protected readonly busy = signal(false);
   protected readonly refreshError = signal(false);
   protected readonly result = signal<TheftDemoResult | null>(null);
+  protected readonly stealResult = signal<StealDemoResult | null>(null);
+  protected readonly keyThumbprint = signal<string | null>(null);
+
+  constructor() {
+    void this.dpop.thumbprint().then(({ jkt }) => this.keyThumbprint.set(jkt));
+  }
+
+  protected async steal(): Promise<void> {
+    const current = this.history.currentToken();
+    if (current === null) {
+      return;
+    }
+
+    this.busy.set(true);
+    try {
+      this.stealResult.set(await this.theft.stealCurrent(current, () => this.session.refreshNow()));
+    } finally {
+      this.busy.set(false);
+    }
+  }
 
   protected async refresh(): Promise<void> {
     this.busy.set(true);
