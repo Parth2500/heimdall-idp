@@ -1,14 +1,13 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { HdFrame } from 'ui-kit';
+import { ClientFrame } from './client-frame';
 import { DemoSession } from './auth/demo-session';
 
 @Component({
   selector: 'demo-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, HdFrame],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ClientFrame],
   template: `
-    <hd-frame
-      tone="client"
+    <demo-frame
       wordmark="Demo client"
       plateLabel="A Heimdall client app on"
       [host]="host"
@@ -57,7 +56,7 @@ import { DemoSession } from './auth/demo-session';
         Sample client for the Heimdall identity provider. It keeps tokens in memory only.
         Development build, not for production use.
       </p>
-    </hd-frame>
+    </demo-frame>
   `,
   styles: `
     .nav {

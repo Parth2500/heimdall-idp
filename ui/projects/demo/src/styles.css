@@ -1,4 +1,4 @@
-/* The demo uses the Heimdall ui-kit (projects/ui-kit/styles/heimdall.css). Only demo layout is here. */
+/* The demo is a client, not Heimdall. Its kit is client-kit.css, a copy of Heimdall's first look. Only demo layout is here. */
 
 /* Lapis means Heimdall. The demo is a client, so its actions use the client slate (DESIGN.md, One Meaning). */
 :root {

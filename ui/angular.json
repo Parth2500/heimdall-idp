@@ -25,7 +25,7 @@
               }
             ],
             "styles": [
-              "projects/ui-kit/styles/heimdall.css",
+              "projects/demo/src/client-kit.css",
               "projects/demo/src/styles.css"
             ]
           },
