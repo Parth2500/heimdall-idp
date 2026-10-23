@@ -182,7 +182,7 @@ Status: **Approved** by the owner on 2026-10-19.
 - CI runs `npm audit --audit-level=low` and fails on a finding. Dependabot watches `ui/`.
 - Dependency review (already in CI) covers `ui/` pull requests.
 - Few dependencies. The account pages use Angular and the Angular CDK only. No component library and no CSS framework.
-- No third-party origin in the CSP (N5). No web font. The pages use the system font stack.
+- No third-party origin in the CSP (N5). Changed on 2026-10-23 with the owner's approval (U15): the pages may use font files that Heimdall serves from its own origin (`font-src 'self'`). The files are in the repository, not in an npm package. They are never loaded from a font service.
 
 **Reason.** A compromised package in the login page can read every password (threat model, login, supply chain row). Fewer packages mean less to trust. Install scripts are the most common way a malicious package runs code.
 
@@ -235,9 +235,9 @@ Status: **Approved** by the owner on 2026-10-19.
 
 **Reason.** `PRODUCT.md` listed the accessibility standard as an open item. AA is the common legal and industry baseline. A login page that a screen reader cannot use locks real users out.
 
-### U13. Visual direction
+### U13. Visual direction (superseded by U15)
 
-Status: **Decided by Claude** on 2026-10-19. The owner delegated the visual design. The direction contract is in `.impeccable/surfaces/ui-projects-account.md`.
+Status: **Superseded** on 2026-10-23 by U15. Claude decided U13 on 2026-10-19, when the owner delegated the visual design. The text stays here as a record. The demo SPA keeps this look in `ui/projects/demo/src/client-kit.css`.
 
 **Decision.** The pages follow a public-service identity program, like a government design system. A lapis band runs across the top with the word "Heimdall". The origin plate hangs from the band and shows the tenant host, for example "Signing in to acme.localhost:7200". The page is white, with a left-aligned column. Controls are square, with a 2px border and a height of 48px. Keyboard focus is a yellow field. The system font stack is used (U8). Light and dark themes come from `prefers-color-scheme`.
 
@@ -246,6 +246,39 @@ Each state color has one meaning: lapis for Heimdall and its actions, red for a 
 The tokens and the frame component are in `ui/projects/ui-kit`. Tenant branding (Phase 3) changes tokens, not components. The demo SPA uses the same kit with a neutral band labeled "Demo client", so the user can see that it is a different site.
 
 **Reason.** The host is already in the address bar, so the plate reveals nothing new. It helps the user compare the two and see a phishing copy. A plain public-service look loads fast, works without a web font, and states only facts.
+
+### U15. Visual direction: Burning Bridge
+
+Status: **Approved** by the owner on 2026-10-23. The owner drew the direction with Claude in Figma ("Heimdall · Burning Bridge"). The owner asked the build to go further than the Figma frames. The direction contract is in `.impeccable/surfaces/ui-projects-account.md`.
+
+**Decision.**
+
+- In the myths, Heimdall guards Bifröst, the burning bridge to Asgard. Each account page is the gate at the foot of the bridge.
+- The page has three parts. A large statement is on the left, for example "Sign in." The gatehouse panel on the right holds the task. The gate plaque at the bottom left shows the tenant host. On a phone, the parts stack in this order: statement, plaque, panel.
+- The plaque says "Check that your address bar shows the same host." The host is in a monospace font.
+- The bridge is an arc of frost bands behind the panel. The bridge shows the state of the request:
+
+| State | When | What the bridge does |
+|---|---|---|
+| `idle` | Nothing is in progress. | Stars twinkle. Soft lights move slowly along the bands. |
+| `busy` | Heimdall checks the password or loads a request. | Fast lights move up every band, one after the other. |
+| `refused` | Heimdall refuses (wrong credentials, throttle, error page), or the user selects Deny. | The outer band turns red and burns. The frost bands go dim. |
+| `crossing` | Sign-in or Allow succeeded. The browser is about to leave. | Every band lights from the gate to the sky. |
+
+- A "Motion" switch stops all movement. Its default follows `prefers-reduced-motion`. The browser keeps the user's choice in `localStorage`. When storage fails, the page works without it. With motion off, the state colors stay.
+- Each color has one meaning. Frost blue is the bridge and Heimdall's actions. Ember orange is the bridge's fire at rest and keyboard focus. Red is a refusal only.
+- Night and day themes come from `prefers-color-scheme`. In forced-colors mode (Windows High Contrast), the bridge is hidden and every control keeps a system-color border.
+- Fonts: Archivo (display and text) and JetBrains Mono (hosts, codes, scope names). Both are under the SIL Open Font License 1.1. The `woff2` files are in `ui/projects/ui-kit/fonts/`. Heimdall serves them from its own origin, with a one-year cache (U8).
+- Controls are square and 56px tall. The primary button says "Sign in". The consent page labels each scope with the scope name that the app asked for, for example `openid`.
+- The bridge is decoration with a job. It is hidden from assistive technology, because the text on the page says the same state.
+- The demo SPA is a client, not Heimdall. It does not use this look. It keeps the U13 look in its own stylesheet, so a user can see that it is a different site.
+
+**Reason.**
+
+- The plaque does what the U13 origin plate did. The host is already in the address bar, so the plaque reveals nothing new. It helps the user compare the two and see a phishing copy.
+- The bridge makes each state visible at a distance, but no state depends on it. Text, focus, and `aria-live` still carry every state (U12).
+- Red means only "refused", so a user learns that red fire means "Heimdall said no".
+- Self-hosted fonts add no third-party origin to the CSP. The two files are about 130 KB. The browser caches them for a year, because each file name has a content hash.
 
 ### U14. Later work that these pages need
 
@@ -341,7 +374,7 @@ These rows go into `docs/threat-model.md` when the owner approves this design:
 |---|---|---|
 | Tampering | XSS in an account page runs attacker script. | Angular encodes every bound value. The CSP allows only same-origin script with a nonce for each request. Trusted Types block the DOM sinks that Angular does not sanitize (U3). |
 | Tampering | A changed bundle file on the server or a cache. | Subresource integrity on each script (U3). |
-| Spoofing | A phishing copy of the login page on another origin. | It cannot set or send the `__Host-` cookie, and the login API refuses its `Origin`. The page shows the tenant host (U13). |
+| Spoofing | A phishing copy of the login page on another origin. | It cannot set or send the `__Host-` cookie, and the login API refuses its `Origin`. The page shows the tenant host on the gate plaque (U15). |
 | Information disclosure | The error page prints an attacker's value from the URL. | The page shows text for a fixed list of codes only (U6). |
 | Elevation of privilege | A malicious npm package runs in the login page. | Lockfile, `npm ci --ignore-scripts`, audit in CI, few dependencies, no third-party origins (U8). |
 | Information disclosure | XSS in the demo SPA reads stored tokens. | Tokens are in memory only (U10). |
@@ -349,7 +382,7 @@ These rows go into `docs/threat-model.md` when the owner approves this design:
 
 ## 9. Open questions for the owner
 
-1. Approve U14, or change it. U1 to U12 are approved. Claude decided U13 (delegated).
+1. Approve U14, or change it. U1 to U12 and U15 are approved. U15 replaced U13 on 2026-10-23.
 2. Decided on 2026-10-19: the demo SPA uses `angular-auth-oidc-client` (U9).
 3. Build a BFF demo later (U10, alternative)?
 4. Decided on 2026-10-19: the account pages and the demo SPA are built in parallel. The demo SPA cannot finish a sign-in until S1 to S4 exist.

@@ -1,349 +1,239 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-19T00:00:00Z",
+  "generatedAt": "2026-10-23T09:34:06Z",
   "title": "Design System: Heimdall",
   "extensions": {
     "colorMeta": {
-      "lapis": {
-        "role": "primary",
-        "displayName": "Issuer Lapis",
-        "canonical": "#1e2f7a",
-        "oklch": "oklch(34.2% 0.129 269)",
+      "ground": {
+        "role": "neutral",
+        "displayName": "Night Sky (night)",
+        "canonical": "#07080d",
+        "oklch": "oklch(13.6% 0.012 275)",
         "tonalRamp": [
-          "oklch(15% 0.129 269)",
-          "oklch(26% 0.129 269)",
-          "oklch(38% 0.129 269)",
-          "oklch(49% 0.129 269)",
-          "oklch(61% 0.129 269)",
-          "oklch(72% 0.129 269)",
-          "oklch(84% 0.129 269)",
-          "oklch(95% 0.129 269)"
+          "oklch(15% 0.012 275)",
+          "oklch(26% 0.012 275)",
+          "oklch(38% 0.012 275)",
+          "oklch(49% 0.012 275)",
+          "oklch(61% 0.012 275)",
+          "oklch(72% 0.012 275)",
+          "oklch(84% 0.012 275)",
+          "oklch(95% 0.012 275)"
         ],
-        "darkThemeToken": "lapis-dark"
+        "cssVar": "--hd-ground",
+        "theme": "night",
+        "dayToken": "ground-day"
       },
-      "lapis-strong": {
-        "role": "primary",
-        "displayName": "Deep Lapis",
-        "canonical": "#14205a",
-        "oklch": "oklch(27.5% 0.105 269)",
+      "star": {
+        "role": "neutral",
+        "displayName": "Stars (night)",
+        "canonical": "#e8ecff",
+        "oklch": "oklch(94.6% 0.026 276)",
         "tonalRamp": [
-          "oklch(15% 0.105 269)",
-          "oklch(26% 0.105 269)",
-          "oklch(38% 0.105 269)",
-          "oklch(49% 0.105 269)",
-          "oklch(61% 0.105 269)",
-          "oklch(72% 0.105 269)",
-          "oklch(84% 0.105 269)",
-          "oklch(95% 0.105 269)"
+          "oklch(15% 0.026 276)",
+          "oklch(26% 0.026 276)",
+          "oklch(38% 0.026 276)",
+          "oklch(49% 0.026 276)",
+          "oklch(61% 0.026 276)",
+          "oklch(72% 0.026 276)",
+          "oklch(84% 0.026 276)",
+          "oklch(95% 0.026 276)"
         ],
-        "darkThemeToken": "lapis-strong-dark"
+        "cssVar": "--hd-star",
+        "theme": "night"
       },
-      "link": {
-        "role": "primary",
-        "displayName": "Link Lapis",
-        "canonical": "#1e2f7a",
-        "oklch": "oklch(34.2% 0.129 269)",
+      "panel": {
+        "role": "neutral",
+        "displayName": "Gatehouse (night)",
+        "canonical": "#10121c",
+        "oklch": "oklch(18.5% 0.021 275)",
         "tonalRamp": [
-          "oklch(15% 0.129 269)",
-          "oklch(26% 0.129 269)",
-          "oklch(38% 0.129 269)",
-          "oklch(49% 0.129 269)",
-          "oklch(61% 0.129 269)",
-          "oklch(72% 0.129 269)",
-          "oklch(84% 0.129 269)",
-          "oklch(95% 0.129 269)"
+          "oklch(15% 0.021 275)",
+          "oklch(26% 0.021 275)",
+          "oklch(38% 0.021 275)",
+          "oklch(49% 0.021 275)",
+          "oklch(61% 0.021 275)",
+          "oklch(72% 0.021 275)",
+          "oklch(84% 0.021 275)",
+          "oklch(95% 0.021 275)"
         ],
-        "darkThemeToken": "link-dark"
+        "cssVar": "--hd-panel",
+        "theme": "night",
+        "dayToken": "panel-day"
       },
-      "on-lapis": {
-        "role": "primary",
-        "displayName": "On-Lapis White",
-        "canonical": "#ffffff",
-        "oklch": "oklch(100.0% 0.000 90)",
+      "raised": {
+        "role": "neutral",
+        "displayName": "Raised (night)",
+        "canonical": "#181b2a",
+        "oklch": "oklch(22.7% 0.030 275)",
         "tonalRamp": [
-          "oklch(15% 0.000 90)",
-          "oklch(26% 0.000 90)",
-          "oklch(38% 0.000 90)",
-          "oklch(49% 0.000 90)",
-          "oklch(61% 0.000 90)",
-          "oklch(72% 0.000 90)",
-          "oklch(84% 0.000 90)",
-          "oklch(95% 0.000 90)"
-        ]
-      },
-      "on-lapis-muted": {
-        "role": "primary",
-        "displayName": "On-Lapis Mist",
-        "canonical": "#c9d1f0",
-        "oklch": "oklch(86.4% 0.044 274)",
-        "tonalRamp": [
-          "oklch(15% 0.044 274)",
-          "oklch(26% 0.044 274)",
-          "oklch(38% 0.044 274)",
-          "oklch(49% 0.044 274)",
-          "oklch(61% 0.044 274)",
-          "oklch(72% 0.044 274)",
-          "oklch(84% 0.044 274)",
-          "oklch(95% 0.044 274)"
+          "oklch(15% 0.030 275)",
+          "oklch(26% 0.030 275)",
+          "oklch(38% 0.030 275)",
+          "oklch(49% 0.030 275)",
+          "oklch(61% 0.030 275)",
+          "oklch(72% 0.030 275)",
+          "oklch(84% 0.030 275)",
+          "oklch(95% 0.030 275)"
         ],
-        "darkThemeToken": "on-lapis-muted-dark"
+        "cssVar": "--hd-raised",
+        "theme": "night",
+        "dayToken": "raised-day"
       },
-      "client": {
-        "role": "secondary",
-        "displayName": "Client Slate",
-        "canonical": "#2b2e36",
-        "oklch": "oklch(30.2% 0.015 269)",
+      "field": {
+        "role": "neutral",
+        "displayName": "Field (night)",
+        "canonical": "#07080d",
+        "oklch": "oklch(13.6% 0.012 275)",
         "tonalRamp": [
-          "oklch(15% 0.015 269)",
-          "oklch(26% 0.015 269)",
-          "oklch(38% 0.015 269)",
-          "oklch(49% 0.015 269)",
-          "oklch(61% 0.015 269)",
-          "oklch(72% 0.015 269)",
-          "oklch(84% 0.015 269)",
-          "oklch(95% 0.015 269)"
+          "oklch(15% 0.012 275)",
+          "oklch(26% 0.012 275)",
+          "oklch(38% 0.012 275)",
+          "oklch(49% 0.012 275)",
+          "oklch(61% 0.012 275)",
+          "oklch(72% 0.012 275)",
+          "oklch(84% 0.012 275)",
+          "oklch(95% 0.012 275)"
         ],
-        "darkThemeToken": "client-dark"
+        "cssVar": "--hd-field",
+        "theme": "night",
+        "dayToken": "field-day"
       },
-      "client-strong": {
-        "role": "secondary",
-        "displayName": "Client Slate Strong",
-        "canonical": "#1c1e24",
-        "oklch": "oklch(23.6% 0.012 271)",
+      "line": {
+        "role": "neutral",
+        "displayName": "Line (night)",
+        "canonical": "#262a3d",
+        "oklch": "oklch(29.0% 0.035 275)",
         "tonalRamp": [
-          "oklch(15% 0.012 271)",
-          "oklch(26% 0.012 271)",
-          "oklch(38% 0.012 271)",
-          "oklch(49% 0.012 271)",
-          "oklch(61% 0.012 271)",
-          "oklch(72% 0.012 271)",
-          "oklch(84% 0.012 271)",
-          "oklch(95% 0.012 271)"
+          "oklch(15% 0.035 275)",
+          "oklch(26% 0.035 275)",
+          "oklch(38% 0.035 275)",
+          "oklch(49% 0.035 275)",
+          "oklch(61% 0.035 275)",
+          "oklch(72% 0.035 275)",
+          "oklch(84% 0.035 275)",
+          "oklch(95% 0.035 275)"
         ],
-        "darkThemeToken": "client-strong-dark"
+        "cssVar": "--hd-line",
+        "theme": "night",
+        "dayToken": "line-day"
+      },
+      "line-field": {
+        "role": "neutral",
+        "displayName": "Field Line (night)",
+        "canonical": "#6a7396",
+        "oklch": "oklch(56.1% 0.055 273)",
+        "tonalRamp": [
+          "oklch(15% 0.055 273)",
+          "oklch(26% 0.055 273)",
+          "oklch(38% 0.055 273)",
+          "oklch(49% 0.055 273)",
+          "oklch(61% 0.055 273)",
+          "oklch(72% 0.055 273)",
+          "oklch(84% 0.055 273)",
+          "oklch(95% 0.055 273)"
+        ],
+        "cssVar": "--hd-line-field",
+        "theme": "night",
+        "dayToken": "line-field-day"
       },
       "ink": {
         "role": "neutral",
-        "displayName": "Ink",
-        "canonical": "#0b0c14",
-        "oklch": "oklch(15.7% 0.017 279)",
+        "displayName": "Ink (night)",
+        "canonical": "#f2f4fa",
+        "oklch": "oklch(96.7% 0.008 271)",
         "tonalRamp": [
-          "oklch(15% 0.017 279)",
-          "oklch(26% 0.017 279)",
-          "oklch(38% 0.017 279)",
-          "oklch(49% 0.017 279)",
-          "oklch(61% 0.017 279)",
-          "oklch(72% 0.017 279)",
-          "oklch(84% 0.017 279)",
-          "oklch(95% 0.017 279)"
+          "oklch(15% 0.008 271)",
+          "oklch(26% 0.008 271)",
+          "oklch(38% 0.008 271)",
+          "oklch(49% 0.008 271)",
+          "oklch(61% 0.008 271)",
+          "oklch(72% 0.008 271)",
+          "oklch(84% 0.008 271)",
+          "oklch(95% 0.008 271)"
         ],
-        "darkThemeToken": "ink-dark"
+        "cssVar": "--hd-ink",
+        "theme": "night",
+        "dayToken": "ink-day"
       },
       "ink-muted": {
         "role": "neutral",
-        "displayName": "Muted Ink",
-        "canonical": "#474d63",
-        "oklch": "oklch(42.4% 0.037 273)",
+        "displayName": "Muted Ink (night)",
+        "canonical": "#9aa3b8",
+        "oklch": "oklch(71.5% 0.032 267)",
         "tonalRamp": [
-          "oklch(15% 0.037 273)",
-          "oklch(26% 0.037 273)",
-          "oklch(38% 0.037 273)",
-          "oklch(49% 0.037 273)",
-          "oklch(61% 0.037 273)",
-          "oklch(72% 0.037 273)",
-          "oklch(84% 0.037 273)",
-          "oklch(95% 0.037 273)"
+          "oklch(15% 0.032 267)",
+          "oklch(26% 0.032 267)",
+          "oklch(38% 0.032 267)",
+          "oklch(49% 0.032 267)",
+          "oklch(61% 0.032 267)",
+          "oklch(72% 0.032 267)",
+          "oklch(84% 0.032 267)",
+          "oklch(95% 0.032 267)"
         ],
-        "darkThemeToken": "ink-muted-dark"
+        "cssVar": "--hd-ink-muted",
+        "theme": "night",
+        "dayToken": "ink-muted-day"
       },
-      "page": {
-        "role": "neutral",
-        "displayName": "Page White",
-        "canonical": "#ffffff",
-        "oklch": "oklch(100.0% 0.000 90)",
-        "tonalRamp": [
-          "oklch(15% 0.000 90)",
-          "oklch(26% 0.000 90)",
-          "oklch(38% 0.000 90)",
-          "oklch(49% 0.000 90)",
-          "oklch(61% 0.000 90)",
-          "oklch(72% 0.000 90)",
-          "oklch(84% 0.000 90)",
-          "oklch(95% 0.000 90)"
-        ],
-        "darkThemeToken": "page-dark"
-      },
-      "ground": {
-        "role": "neutral",
-        "displayName": "Lapis Ground",
-        "canonical": "#eef1f8",
-        "oklch": "oklch(95.8% 0.010 267)",
-        "tonalRamp": [
-          "oklch(15% 0.010 267)",
-          "oklch(26% 0.010 267)",
-          "oklch(38% 0.010 267)",
-          "oklch(49% 0.010 267)",
-          "oklch(61% 0.010 267)",
-          "oklch(72% 0.010 267)",
-          "oklch(84% 0.010 267)",
-          "oklch(95% 0.010 267)"
-        ],
-        "darkThemeToken": "ground-dark"
-      },
-      "rule": {
-        "role": "neutral",
-        "displayName": "Hairline",
-        "canonical": "#c7cddf",
-        "oklch": "oklch(84.9% 0.026 271)",
-        "tonalRamp": [
-          "oklch(15% 0.026 271)",
-          "oklch(26% 0.026 271)",
-          "oklch(38% 0.026 271)",
-          "oklch(49% 0.026 271)",
-          "oklch(61% 0.026 271)",
-          "oklch(72% 0.026 271)",
-          "oklch(84% 0.026 271)",
-          "oklch(95% 0.026 271)"
-        ],
-        "darkThemeToken": "rule-dark"
-      },
-      "focus": {
-        "role": "tertiary",
-        "displayName": "Signal Yellow",
-        "canonical": "#ffd21f",
-        "oklch": "oklch(87.7% 0.174 93)",
-        "tonalRamp": [
-          "oklch(15% 0.174 93)",
-          "oklch(26% 0.174 93)",
-          "oklch(38% 0.174 93)",
-          "oklch(49% 0.174 93)",
-          "oklch(61% 0.174 93)",
-          "oklch(72% 0.174 93)",
-          "oklch(84% 0.174 93)",
-          "oklch(95% 0.174 93)"
-        ]
-      },
-      "focus-ink": {
-        "role": "tertiary",
-        "displayName": "Focus Ink",
-        "canonical": "#0b0c14",
-        "oklch": "oklch(15.7% 0.017 279)",
-        "tonalRamp": [
-          "oklch(15% 0.017 279)",
-          "oklch(26% 0.017 279)",
-          "oklch(38% 0.017 279)",
-          "oklch(49% 0.017 279)",
-          "oklch(61% 0.017 279)",
-          "oklch(72% 0.017 279)",
-          "oklch(84% 0.017 279)",
-          "oklch(95% 0.017 279)"
-        ]
-      },
-      "red": {
-        "role": "tertiary",
-        "displayName": "Refusal Red",
-        "canonical": "#b3261e",
-        "oklch": "oklch(50.1% 0.178 29)",
-        "tonalRamp": [
-          "oklch(15% 0.178 29)",
-          "oklch(26% 0.178 29)",
-          "oklch(38% 0.178 29)",
-          "oklch(49% 0.178 29)",
-          "oklch(61% 0.178 29)",
-          "oklch(72% 0.178 29)",
-          "oklch(84% 0.178 29)",
-          "oklch(95% 0.178 29)"
-        ],
-        "darkThemeToken": "red-dark"
-      },
-      "red-tint": {
-        "role": "tertiary",
-        "displayName": "Red Tint",
-        "canonical": "#fbeae8",
-        "oklch": "oklch(95.0% 0.019 26)",
-        "tonalRamp": [
-          "oklch(15% 0.019 26)",
-          "oklch(26% 0.019 26)",
-          "oklch(38% 0.019 26)",
-          "oklch(49% 0.019 26)",
-          "oklch(61% 0.019 26)",
-          "oklch(72% 0.019 26)",
-          "oklch(84% 0.019 26)",
-          "oklch(95% 0.019 26)"
-        ],
-        "darkThemeToken": "red-tint-dark"
-      },
-      "green": {
-        "role": "tertiary",
-        "displayName": "Confirmation Green",
-        "canonical": "#0b6b3a",
-        "oklch": "oklch(46.5% 0.114 154)",
-        "tonalRamp": [
-          "oklch(15% 0.114 154)",
-          "oklch(26% 0.114 154)",
-          "oklch(38% 0.114 154)",
-          "oklch(49% 0.114 154)",
-          "oklch(61% 0.114 154)",
-          "oklch(72% 0.114 154)",
-          "oklch(84% 0.114 154)",
-          "oklch(95% 0.114 154)"
-        ],
-        "darkThemeToken": "green-dark"
-      },
-      "green-tint": {
-        "role": "tertiary",
-        "displayName": "Green Tint",
-        "canonical": "#e5f3ea",
-        "oklch": "oklch(95.1% 0.019 158)",
-        "tonalRamp": [
-          "oklch(15% 0.019 158)",
-          "oklch(26% 0.019 158)",
-          "oklch(38% 0.019 158)",
-          "oklch(49% 0.019 158)",
-          "oklch(61% 0.019 158)",
-          "oklch(72% 0.019 158)",
-          "oklch(84% 0.019 158)",
-          "oklch(95% 0.019 158)"
-        ],
-        "darkThemeToken": "green-tint-dark"
-      },
-      "lapis-dark": {
+      "act": {
         "role": "primary",
-        "displayName": "Issuer Lapis (dark theme)",
-        "canonical": "#2b3f99",
-        "oklch": "oklch(40.9% 0.149 269)",
+        "displayName": "Bifrost Frost (night)",
+        "canonical": "#4c6fff",
+        "oklch": "oklch(59.9% 0.217 269)",
         "tonalRamp": [
-          "oklch(15% 0.149 269)",
-          "oklch(26% 0.149 269)",
-          "oklch(38% 0.149 269)",
-          "oklch(49% 0.149 269)",
-          "oklch(61% 0.149 269)",
-          "oklch(72% 0.149 269)",
-          "oklch(84% 0.149 269)",
-          "oklch(95% 0.149 269)"
+          "oklch(15% 0.217 269)",
+          "oklch(26% 0.217 269)",
+          "oklch(38% 0.217 269)",
+          "oklch(49% 0.217 269)",
+          "oklch(61% 0.217 269)",
+          "oklch(72% 0.217 269)",
+          "oklch(84% 0.217 269)",
+          "oklch(95% 0.217 269)"
         ],
-        "lightThemeToken": "lapis"
+        "cssVar": "--hd-act",
+        "theme": "night",
+        "dayToken": "act-day"
       },
-      "lapis-strong-dark": {
+      "act-strong": {
         "role": "primary",
-        "displayName": "Deep Lapis (dark theme)",
-        "canonical": "#3a50b5",
-        "oklch": "oklch(47.3% 0.162 270)",
+        "displayName": "Strong Frost (night)",
+        "canonical": "#7390ff",
+        "oklch": "oklch(68.3% 0.166 270)",
         "tonalRamp": [
-          "oklch(15% 0.162 270)",
-          "oklch(26% 0.162 270)",
-          "oklch(38% 0.162 270)",
-          "oklch(49% 0.162 270)",
-          "oklch(61% 0.162 270)",
-          "oklch(72% 0.162 270)",
-          "oklch(84% 0.162 270)",
-          "oklch(95% 0.162 270)"
+          "oklch(15% 0.166 270)",
+          "oklch(26% 0.166 270)",
+          "oklch(38% 0.166 270)",
+          "oklch(49% 0.166 270)",
+          "oklch(61% 0.166 270)",
+          "oklch(72% 0.166 270)",
+          "oklch(84% 0.166 270)",
+          "oklch(95% 0.166 270)"
         ],
-        "lightThemeToken": "lapis-strong"
+        "cssVar": "--hd-act-strong",
+        "theme": "night",
+        "dayToken": "act-strong-day"
       },
-      "link-dark": {
+      "on-act": {
         "role": "primary",
-        "displayName": "Link Lapis (dark theme)",
+        "displayName": "On Frost (night)",
+        "canonical": "#07080d",
+        "oklch": "oklch(13.6% 0.012 275)",
+        "tonalRamp": [
+          "oklch(15% 0.012 275)",
+          "oklch(26% 0.012 275)",
+          "oklch(38% 0.012 275)",
+          "oklch(49% 0.012 275)",
+          "oklch(61% 0.012 275)",
+          "oklch(72% 0.012 275)",
+          "oklch(84% 0.012 275)",
+          "oklch(95% 0.012 275)"
+        ],
+        "cssVar": "--hd-on-act",
+        "theme": "night",
+        "dayToken": "on-act-day"
+      },
+      "link": {
+        "role": "primary",
+        "displayName": "Frost Link (night)",
         "canonical": "#a9bbff",
         "oklch": "oklch(80.3% 0.099 273)",
         "tonalRamp": [
@@ -356,147 +246,183 @@
           "oklch(84% 0.099 273)",
           "oklch(95% 0.099 273)"
         ],
-        "lightThemeToken": "link"
+        "cssVar": "--hd-link",
+        "theme": "night",
+        "dayToken": "link-day"
       },
-      "on-lapis-muted-dark": {
+      "bridge-1": {
         "role": "primary",
-        "displayName": "On-Lapis Mist (dark theme)",
-        "canonical": "#d3daf5",
-        "oklch": "oklch(89.1% 0.038 274)",
+        "displayName": "Outer Frost Band (night)",
+        "canonical": "#4c6fff",
+        "oklch": "oklch(59.9% 0.217 269)",
         "tonalRamp": [
-          "oklch(15% 0.038 274)",
-          "oklch(26% 0.038 274)",
-          "oklch(38% 0.038 274)",
-          "oklch(49% 0.038 274)",
-          "oklch(61% 0.038 274)",
-          "oklch(72% 0.038 274)",
-          "oklch(84% 0.038 274)",
-          "oklch(95% 0.038 274)"
+          "oklch(15% 0.217 269)",
+          "oklch(26% 0.217 269)",
+          "oklch(38% 0.217 269)",
+          "oklch(49% 0.217 269)",
+          "oklch(61% 0.217 269)",
+          "oklch(72% 0.217 269)",
+          "oklch(84% 0.217 269)",
+          "oklch(95% 0.217 269)"
         ],
-        "lightThemeToken": "on-lapis-muted"
+        "cssVar": "--hd-bridge-1",
+        "theme": "night",
+        "dayToken": "bridge-1-day"
       },
-      "client-dark": {
+      "bridge-2": {
+        "role": "primary",
+        "displayName": "Second Frost Band (night)",
+        "canonical": "#2b3f99",
+        "oklch": "oklch(40.9% 0.149 269)",
+        "tonalRamp": [
+          "oklch(15% 0.149 269)",
+          "oklch(26% 0.149 269)",
+          "oklch(38% 0.149 269)",
+          "oklch(49% 0.149 269)",
+          "oklch(61% 0.149 269)",
+          "oklch(72% 0.149 269)",
+          "oklch(84% 0.149 269)",
+          "oklch(95% 0.149 269)"
+        ],
+        "cssVar": "--hd-bridge-2",
+        "theme": "night",
+        "dayToken": "bridge-2-day"
+      },
+      "bridge-3": {
+        "role": "primary",
+        "displayName": "Third Frost Band (night)",
+        "canonical": "#1e2f7a",
+        "oklch": "oklch(34.2% 0.129 269)",
+        "tonalRamp": [
+          "oklch(15% 0.129 269)",
+          "oklch(26% 0.129 269)",
+          "oklch(38% 0.129 269)",
+          "oklch(49% 0.129 269)",
+          "oklch(61% 0.129 269)",
+          "oklch(72% 0.129 269)",
+          "oklch(84% 0.129 269)",
+          "oklch(95% 0.129 269)"
+        ],
+        "cssVar": "--hd-bridge-3",
+        "theme": "night",
+        "dayToken": "bridge-3-day"
+      },
+      "bridge-4": {
+        "role": "primary",
+        "displayName": "Inner Frost Band (night)",
+        "canonical": "#14205a",
+        "oklch": "oklch(27.5% 0.105 269)",
+        "tonalRamp": [
+          "oklch(15% 0.105 269)",
+          "oklch(26% 0.105 269)",
+          "oklch(38% 0.105 269)",
+          "oklch(49% 0.105 269)",
+          "oklch(61% 0.105 269)",
+          "oklch(72% 0.105 269)",
+          "oklch(84% 0.105 269)",
+          "oklch(95% 0.105 269)"
+        ],
+        "cssVar": "--hd-bridge-4",
+        "theme": "night",
+        "dayToken": "bridge-4-day"
+      },
+      "bridge-light": {
+        "role": "primary",
+        "displayName": "Bridge Light (night)",
+        "canonical": "#dfe6ff",
+        "oklch": "oklch(92.7% 0.035 273)",
+        "tonalRamp": [
+          "oklch(15% 0.035 273)",
+          "oklch(26% 0.035 273)",
+          "oklch(38% 0.035 273)",
+          "oklch(49% 0.035 273)",
+          "oklch(61% 0.035 273)",
+          "oklch(72% 0.035 273)",
+          "oklch(84% 0.035 273)",
+          "oklch(95% 0.035 273)"
+        ],
+        "cssVar": "--hd-bridge-light",
+        "theme": "night",
+        "dayToken": "bridge-light-day"
+      },
+      "ember": {
         "role": "secondary",
-        "displayName": "Client Slate (dark theme)",
-        "canonical": "#3a3e48",
-        "oklch": "oklch(36.4% 0.018 268)",
+        "displayName": "Ember (focus) (night)",
+        "canonical": "#ff7a45",
+        "oklch": "oklch(72.7% 0.176 41)",
         "tonalRamp": [
-          "oklch(15% 0.018 268)",
-          "oklch(26% 0.018 268)",
-          "oklch(38% 0.018 268)",
-          "oklch(49% 0.018 268)",
-          "oklch(61% 0.018 268)",
-          "oklch(72% 0.018 268)",
-          "oklch(84% 0.018 268)",
-          "oklch(95% 0.018 268)"
+          "oklch(15% 0.176 41)",
+          "oklch(26% 0.176 41)",
+          "oklch(38% 0.176 41)",
+          "oklch(49% 0.176 41)",
+          "oklch(61% 0.176 41)",
+          "oklch(72% 0.176 41)",
+          "oklch(84% 0.176 41)",
+          "oklch(95% 0.176 41)"
         ],
-        "lightThemeToken": "client"
+        "cssVar": "--hd-focus",
+        "theme": "night",
+        "dayToken": "ember-day",
+        "note": "Set in CSS as --hd-focus. --hd-ember holds the same value but no rule reads it."
       },
-      "client-strong-dark": {
+      "ember-bright": {
         "role": "secondary",
-        "displayName": "Client Slate Strong (dark theme)",
-        "canonical": "#4a4f5b",
-        "oklch": "oklch(42.8% 0.021 268)",
+        "displayName": "Ember Thread (night)",
+        "canonical": "#ff7a45",
+        "oklch": "oklch(72.7% 0.176 41)",
         "tonalRamp": [
-          "oklch(15% 0.021 268)",
-          "oklch(26% 0.021 268)",
-          "oklch(38% 0.021 268)",
-          "oklch(49% 0.021 268)",
-          "oklch(61% 0.021 268)",
-          "oklch(72% 0.021 268)",
-          "oklch(84% 0.021 268)",
-          "oklch(95% 0.021 268)"
+          "oklch(15% 0.176 41)",
+          "oklch(26% 0.176 41)",
+          "oklch(38% 0.176 41)",
+          "oklch(49% 0.176 41)",
+          "oklch(61% 0.176 41)",
+          "oklch(72% 0.176 41)",
+          "oklch(84% 0.176 41)",
+          "oklch(95% 0.176 41)"
         ],
-        "lightThemeToken": "client-strong"
+        "cssVar": "--hd-ember-bright",
+        "theme": "night"
       },
-      "ink-dark": {
-        "role": "neutral",
-        "displayName": "Ink (dark theme)",
-        "canonical": "#e9ecf7",
-        "oklch": "oklch(94.4% 0.015 274)",
+      "ember-banked": {
+        "role": "secondary",
+        "displayName": "Banked Ember (night)",
+        "canonical": "#5a2414",
+        "oklch": "oklch(33.6% 0.084 37)",
         "tonalRamp": [
-          "oklch(15% 0.015 274)",
-          "oklch(26% 0.015 274)",
-          "oklch(38% 0.015 274)",
-          "oklch(49% 0.015 274)",
-          "oklch(61% 0.015 274)",
-          "oklch(72% 0.015 274)",
-          "oklch(84% 0.015 274)",
-          "oklch(95% 0.015 274)"
+          "oklch(15% 0.084 37)",
+          "oklch(26% 0.084 37)",
+          "oklch(38% 0.084 37)",
+          "oklch(49% 0.084 37)",
+          "oklch(61% 0.084 37)",
+          "oklch(72% 0.084 37)",
+          "oklch(84% 0.084 37)",
+          "oklch(95% 0.084 37)"
         ],
-        "lightThemeToken": "ink"
+        "cssVar": "--hd-ember-banked",
+        "theme": "night",
+        "dayToken": "ember-banked-day"
       },
-      "ink-muted-dark": {
-        "role": "neutral",
-        "displayName": "Muted Ink (dark theme)",
-        "canonical": "#aab2cc",
-        "oklch": "oklch(76.6% 0.038 272)",
-        "tonalRamp": [
-          "oklch(15% 0.038 272)",
-          "oklch(26% 0.038 272)",
-          "oklch(38% 0.038 272)",
-          "oklch(49% 0.038 272)",
-          "oklch(61% 0.038 272)",
-          "oklch(72% 0.038 272)",
-          "oklch(84% 0.038 272)",
-          "oklch(95% 0.038 272)"
-        ],
-        "lightThemeToken": "ink-muted"
-      },
-      "page-dark": {
-        "role": "neutral",
-        "displayName": "Page White (dark theme)",
-        "canonical": "#10142c",
-        "oklch": "oklch(20.2% 0.048 274)",
-        "tonalRamp": [
-          "oklch(15% 0.048 274)",
-          "oklch(26% 0.048 274)",
-          "oklch(38% 0.048 274)",
-          "oklch(49% 0.048 274)",
-          "oklch(61% 0.048 274)",
-          "oklch(72% 0.048 274)",
-          "oklch(84% 0.048 274)",
-          "oklch(95% 0.048 274)"
-        ],
-        "lightThemeToken": "page"
-      },
-      "ground-dark": {
-        "role": "neutral",
-        "displayName": "Lapis Ground (dark theme)",
-        "canonical": "#0a0d20",
-        "oklch": "oklch(16.8% 0.040 275)",
-        "tonalRamp": [
-          "oklch(15% 0.040 275)",
-          "oklch(26% 0.040 275)",
-          "oklch(38% 0.040 275)",
-          "oklch(49% 0.040 275)",
-          "oklch(61% 0.040 275)",
-          "oklch(72% 0.040 275)",
-          "oklch(84% 0.040 275)",
-          "oklch(95% 0.040 275)"
-        ],
-        "lightThemeToken": "ground"
-      },
-      "rule-dark": {
-        "role": "neutral",
-        "displayName": "Hairline (dark theme)",
-        "canonical": "#333a5c",
-        "oklch": "oklch(35.8% 0.060 274)",
-        "tonalRamp": [
-          "oklch(15% 0.060 274)",
-          "oklch(26% 0.060 274)",
-          "oklch(38% 0.060 274)",
-          "oklch(49% 0.060 274)",
-          "oklch(61% 0.060 274)",
-          "oklch(72% 0.060 274)",
-          "oklch(84% 0.060 274)",
-          "oklch(95% 0.060 274)"
-        ],
-        "lightThemeToken": "rule"
-      },
-      "red-dark": {
+      "fire": {
         "role": "tertiary",
-        "displayName": "Refusal Red (dark theme)",
+        "displayName": "Guard Fire (night)",
+        "canonical": "#e5372b",
+        "oklch": "oklch(60.6% 0.212 29)",
+        "tonalRamp": [
+          "oklch(15% 0.212 29)",
+          "oklch(26% 0.212 29)",
+          "oklch(38% 0.212 29)",
+          "oklch(49% 0.212 29)",
+          "oklch(61% 0.212 29)",
+          "oklch(72% 0.212 29)",
+          "oklch(84% 0.212 29)",
+          "oklch(95% 0.212 29)"
+        ],
+        "cssVar": "--hd-fire",
+        "theme": "night"
+      },
+      "fire-text": {
+        "role": "tertiary",
+        "displayName": "Fire Text (night)",
         "canonical": "#ff8a80",
         "oklch": "oklch(75.9% 0.144 26)",
         "tonalRamp": [
@@ -509,271 +435,736 @@
           "oklch(84% 0.144 26)",
           "oklch(95% 0.144 26)"
         ],
-        "lightThemeToken": "red"
+        "cssVar": "--hd-fire-text",
+        "theme": "night",
+        "dayToken": "fire-text-day"
       },
-      "red-tint-dark": {
+      "fire-tint": {
         "role": "tertiary",
-        "displayName": "Red Tint (dark theme)",
-        "canonical": "#3a1618",
-        "oklch": "oklch(25.6% 0.057 19)",
+        "displayName": "Fire Tint (night)",
+        "canonical": "#24100f",
+        "oklch": "oklch(20.2% 0.034 24)",
         "tonalRamp": [
-          "oklch(15% 0.057 19)",
-          "oklch(26% 0.057 19)",
-          "oklch(38% 0.057 19)",
-          "oklch(49% 0.057 19)",
-          "oklch(61% 0.057 19)",
-          "oklch(72% 0.057 19)",
-          "oklch(84% 0.057 19)",
-          "oklch(95% 0.057 19)"
+          "oklch(15% 0.034 24)",
+          "oklch(26% 0.034 24)",
+          "oklch(38% 0.034 24)",
+          "oklch(49% 0.034 24)",
+          "oklch(61% 0.034 24)",
+          "oklch(72% 0.034 24)",
+          "oklch(84% 0.034 24)",
+          "oklch(95% 0.034 24)"
         ],
-        "lightThemeToken": "red-tint"
+        "cssVar": "--hd-fire-tint",
+        "theme": "night",
+        "dayToken": "fire-tint-day"
       },
-      "green-dark": {
-        "role": "tertiary",
-        "displayName": "Confirmation Green (dark theme)",
-        "canonical": "#74d6a0",
-        "oklch": "oklch(80.2% 0.122 158)",
+      "ground-day": {
+        "role": "neutral",
+        "displayName": "Dawn Sky (day)",
+        "canonical": "#e7ebf5",
+        "oklch": "oklch(94.0% 0.014 268)",
         "tonalRamp": [
-          "oklch(15% 0.122 158)",
-          "oklch(26% 0.122 158)",
-          "oklch(38% 0.122 158)",
-          "oklch(49% 0.122 158)",
-          "oklch(61% 0.122 158)",
-          "oklch(72% 0.122 158)",
-          "oklch(84% 0.122 158)",
-          "oklch(95% 0.122 158)"
+          "oklch(15% 0.014 268)",
+          "oklch(26% 0.014 268)",
+          "oklch(38% 0.014 268)",
+          "oklch(49% 0.014 268)",
+          "oklch(61% 0.014 268)",
+          "oklch(72% 0.014 268)",
+          "oklch(84% 0.014 268)",
+          "oklch(95% 0.014 268)"
         ],
-        "lightThemeToken": "green"
+        "cssVar": "--hd-ground",
+        "theme": "day"
       },
-      "green-tint-dark": {
-        "role": "tertiary",
-        "displayName": "Green Tint (dark theme)",
-        "canonical": "#0f2e20",
-        "oklch": "oklch(27.3% 0.046 162)",
+      "panel-day": {
+        "role": "neutral",
+        "displayName": "Gatehouse (day)",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100.0% 0.000 90)",
         "tonalRamp": [
-          "oklch(15% 0.046 162)",
-          "oklch(26% 0.046 162)",
-          "oklch(38% 0.046 162)",
-          "oklch(49% 0.046 162)",
-          "oklch(61% 0.046 162)",
-          "oklch(72% 0.046 162)",
-          "oklch(84% 0.046 162)",
-          "oklch(95% 0.046 162)"
+          "oklch(15% 0.000 90)",
+          "oklch(26% 0.000 90)",
+          "oklch(38% 0.000 90)",
+          "oklch(49% 0.000 90)",
+          "oklch(61% 0.000 90)",
+          "oklch(72% 0.000 90)",
+          "oklch(84% 0.000 90)",
+          "oklch(95% 0.000 90)"
         ],
-        "lightThemeToken": "green-tint"
+        "cssVar": "--hd-panel",
+        "theme": "day"
+      },
+      "raised-day": {
+        "role": "neutral",
+        "displayName": "Raised (day)",
+        "canonical": "#eef1f8",
+        "oklch": "oklch(95.8% 0.010 267)",
+        "tonalRamp": [
+          "oklch(15% 0.010 267)",
+          "oklch(26% 0.010 267)",
+          "oklch(38% 0.010 267)",
+          "oklch(49% 0.010 267)",
+          "oklch(61% 0.010 267)",
+          "oklch(72% 0.010 267)",
+          "oklch(84% 0.010 267)",
+          "oklch(95% 0.010 267)"
+        ],
+        "cssVar": "--hd-raised",
+        "theme": "day"
+      },
+      "field-day": {
+        "role": "neutral",
+        "displayName": "Field (day)",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100.0% 0.000 90)",
+        "tonalRamp": [
+          "oklch(15% 0.000 90)",
+          "oklch(26% 0.000 90)",
+          "oklch(38% 0.000 90)",
+          "oklch(49% 0.000 90)",
+          "oklch(61% 0.000 90)",
+          "oklch(72% 0.000 90)",
+          "oklch(84% 0.000 90)",
+          "oklch(95% 0.000 90)"
+        ],
+        "cssVar": "--hd-field",
+        "theme": "day"
+      },
+      "line-day": {
+        "role": "neutral",
+        "displayName": "Line (day)",
+        "canonical": "#c9d0e2",
+        "oklch": "oklch(85.8% 0.026 269)",
+        "tonalRamp": [
+          "oklch(15% 0.026 269)",
+          "oklch(26% 0.026 269)",
+          "oklch(38% 0.026 269)",
+          "oklch(49% 0.026 269)",
+          "oklch(61% 0.026 269)",
+          "oklch(72% 0.026 269)",
+          "oklch(84% 0.026 269)",
+          "oklch(95% 0.026 269)"
+        ],
+        "cssVar": "--hd-line",
+        "theme": "day"
+      },
+      "line-field-day": {
+        "role": "neutral",
+        "displayName": "Field Line (day)",
+        "canonical": "#5d6686",
+        "oklch": "oklch(51.5% 0.052 272)",
+        "tonalRamp": [
+          "oklch(15% 0.052 272)",
+          "oklch(26% 0.052 272)",
+          "oklch(38% 0.052 272)",
+          "oklch(49% 0.052 272)",
+          "oklch(61% 0.052 272)",
+          "oklch(72% 0.052 272)",
+          "oklch(84% 0.052 272)",
+          "oklch(95% 0.052 272)"
+        ],
+        "cssVar": "--hd-line-field",
+        "theme": "day"
+      },
+      "ink-day": {
+        "role": "neutral",
+        "displayName": "Ink (day)",
+        "canonical": "#0b0d18",
+        "oklch": "oklch(16.3% 0.023 276)",
+        "tonalRamp": [
+          "oklch(15% 0.023 276)",
+          "oklch(26% 0.023 276)",
+          "oklch(38% 0.023 276)",
+          "oklch(49% 0.023 276)",
+          "oklch(61% 0.023 276)",
+          "oklch(72% 0.023 276)",
+          "oklch(84% 0.023 276)",
+          "oklch(95% 0.023 276)"
+        ],
+        "cssVar": "--hd-ink",
+        "theme": "day"
+      },
+      "ink-muted-day": {
+        "role": "neutral",
+        "displayName": "Muted Ink (day)",
+        "canonical": "#4a5168",
+        "oklch": "oklch(43.8% 0.039 272)",
+        "tonalRamp": [
+          "oklch(15% 0.039 272)",
+          "oklch(26% 0.039 272)",
+          "oklch(38% 0.039 272)",
+          "oklch(49% 0.039 272)",
+          "oklch(61% 0.039 272)",
+          "oklch(72% 0.039 272)",
+          "oklch(84% 0.039 272)",
+          "oklch(95% 0.039 272)"
+        ],
+        "cssVar": "--hd-ink-muted",
+        "theme": "day"
+      },
+      "act-day": {
+        "role": "primary",
+        "displayName": "Bifrost Frost (day)",
+        "canonical": "#3352e0",
+        "oklch": "oklch(51.0% 0.218 268)",
+        "tonalRamp": [
+          "oklch(15% 0.218 268)",
+          "oklch(26% 0.218 268)",
+          "oklch(38% 0.218 268)",
+          "oklch(49% 0.218 268)",
+          "oklch(61% 0.218 268)",
+          "oklch(72% 0.218 268)",
+          "oklch(84% 0.218 268)",
+          "oklch(95% 0.218 268)"
+        ],
+        "cssVar": "--hd-act",
+        "theme": "day"
+      },
+      "act-strong-day": {
+        "role": "primary",
+        "displayName": "Strong Frost (day)",
+        "canonical": "#2640b8",
+        "oklch": "oklch(43.6% 0.191 268)",
+        "tonalRamp": [
+          "oklch(15% 0.191 268)",
+          "oklch(26% 0.191 268)",
+          "oklch(38% 0.191 268)",
+          "oklch(49% 0.191 268)",
+          "oklch(61% 0.191 268)",
+          "oklch(72% 0.191 268)",
+          "oklch(84% 0.191 268)",
+          "oklch(95% 0.191 268)"
+        ],
+        "cssVar": "--hd-act-strong",
+        "theme": "day"
+      },
+      "on-act-day": {
+        "role": "primary",
+        "displayName": "On Frost (day)",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100.0% 0.000 90)",
+        "tonalRamp": [
+          "oklch(15% 0.000 90)",
+          "oklch(26% 0.000 90)",
+          "oklch(38% 0.000 90)",
+          "oklch(49% 0.000 90)",
+          "oklch(61% 0.000 90)",
+          "oklch(72% 0.000 90)",
+          "oklch(84% 0.000 90)",
+          "oklch(95% 0.000 90)"
+        ],
+        "cssVar": "--hd-on-act",
+        "theme": "day"
+      },
+      "link-day": {
+        "role": "primary",
+        "displayName": "Frost Link (day)",
+        "canonical": "#2640b8",
+        "oklch": "oklch(43.6% 0.191 268)",
+        "tonalRamp": [
+          "oklch(15% 0.191 268)",
+          "oklch(26% 0.191 268)",
+          "oklch(38% 0.191 268)",
+          "oklch(49% 0.191 268)",
+          "oklch(61% 0.191 268)",
+          "oklch(72% 0.191 268)",
+          "oklch(84% 0.191 268)",
+          "oklch(95% 0.191 268)"
+        ],
+        "cssVar": "--hd-link",
+        "theme": "day"
+      },
+      "bridge-1-day": {
+        "role": "primary",
+        "displayName": "Outer Frost Band (day)",
+        "canonical": "#3352e0",
+        "oklch": "oklch(51.0% 0.218 268)",
+        "tonalRamp": [
+          "oklch(15% 0.218 268)",
+          "oklch(26% 0.218 268)",
+          "oklch(38% 0.218 268)",
+          "oklch(49% 0.218 268)",
+          "oklch(61% 0.218 268)",
+          "oklch(72% 0.218 268)",
+          "oklch(84% 0.218 268)",
+          "oklch(95% 0.218 268)"
+        ],
+        "cssVar": "--hd-bridge-1",
+        "theme": "day"
+      },
+      "bridge-2-day": {
+        "role": "primary",
+        "displayName": "Second Frost Band (day)",
+        "canonical": "#23338a",
+        "oklch": "oklch(36.7% 0.145 270)",
+        "tonalRamp": [
+          "oklch(15% 0.145 270)",
+          "oklch(26% 0.145 270)",
+          "oklch(38% 0.145 270)",
+          "oklch(49% 0.145 270)",
+          "oklch(61% 0.145 270)",
+          "oklch(72% 0.145 270)",
+          "oklch(84% 0.145 270)",
+          "oklch(95% 0.145 270)"
+        ],
+        "cssVar": "--hd-bridge-2",
+        "theme": "day"
+      },
+      "bridge-3-day": {
+        "role": "primary",
+        "displayName": "Third Frost Band (day)",
+        "canonical": "#182566",
+        "oklch": "oklch(29.9% 0.115 269)",
+        "tonalRamp": [
+          "oklch(15% 0.115 269)",
+          "oklch(26% 0.115 269)",
+          "oklch(38% 0.115 269)",
+          "oklch(49% 0.115 269)",
+          "oklch(61% 0.115 269)",
+          "oklch(72% 0.115 269)",
+          "oklch(84% 0.115 269)",
+          "oklch(95% 0.115 269)"
+        ],
+        "cssVar": "--hd-bridge-3",
+        "theme": "day"
+      },
+      "bridge-4-day": {
+        "role": "primary",
+        "displayName": "Inner Frost Band (day)",
+        "canonical": "#0f1846",
+        "oklch": "oklch(23.4% 0.087 270)",
+        "tonalRamp": [
+          "oklch(15% 0.087 270)",
+          "oklch(26% 0.087 270)",
+          "oklch(38% 0.087 270)",
+          "oklch(49% 0.087 270)",
+          "oklch(61% 0.087 270)",
+          "oklch(72% 0.087 270)",
+          "oklch(84% 0.087 270)",
+          "oklch(95% 0.087 270)"
+        ],
+        "cssVar": "--hd-bridge-4",
+        "theme": "day"
+      },
+      "bridge-light-day": {
+        "role": "primary",
+        "displayName": "Bridge Light (day)",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100.0% 0.000 90)",
+        "tonalRamp": [
+          "oklch(15% 0.000 90)",
+          "oklch(26% 0.000 90)",
+          "oklch(38% 0.000 90)",
+          "oklch(49% 0.000 90)",
+          "oklch(61% 0.000 90)",
+          "oklch(72% 0.000 90)",
+          "oklch(84% 0.000 90)",
+          "oklch(95% 0.000 90)"
+        ],
+        "cssVar": "--hd-bridge-light",
+        "theme": "day"
+      },
+      "ember-day": {
+        "role": "secondary",
+        "displayName": "Ember (focus) (day)",
+        "canonical": "#c2410c",
+        "oklch": "oklch(55.3% 0.174 38)",
+        "tonalRamp": [
+          "oklch(15% 0.174 38)",
+          "oklch(26% 0.174 38)",
+          "oklch(38% 0.174 38)",
+          "oklch(49% 0.174 38)",
+          "oklch(61% 0.174 38)",
+          "oklch(72% 0.174 38)",
+          "oklch(84% 0.174 38)",
+          "oklch(95% 0.174 38)"
+        ],
+        "cssVar": "--hd-focus",
+        "theme": "day"
+      },
+      "ember-banked-day": {
+        "role": "secondary",
+        "displayName": "Banked Ember (day)",
+        "canonical": "#f2b49a",
+        "oklch": "oklch(82.1% 0.081 44)",
+        "tonalRamp": [
+          "oklch(15% 0.081 44)",
+          "oklch(26% 0.081 44)",
+          "oklch(38% 0.081 44)",
+          "oklch(49% 0.081 44)",
+          "oklch(61% 0.081 44)",
+          "oklch(72% 0.081 44)",
+          "oklch(84% 0.081 44)",
+          "oklch(95% 0.081 44)"
+        ],
+        "cssVar": "--hd-ember-banked",
+        "theme": "day"
+      },
+      "fire-text-day": {
+        "role": "tertiary",
+        "displayName": "Fire Text (day)",
+        "canonical": "#b3261e",
+        "oklch": "oklch(50.1% 0.178 29)",
+        "tonalRamp": [
+          "oklch(15% 0.178 29)",
+          "oklch(26% 0.178 29)",
+          "oklch(38% 0.178 29)",
+          "oklch(49% 0.178 29)",
+          "oklch(61% 0.178 29)",
+          "oklch(72% 0.178 29)",
+          "oklch(84% 0.178 29)",
+          "oklch(95% 0.178 29)"
+        ],
+        "cssVar": "--hd-fire-text",
+        "theme": "day"
+      },
+      "fire-tint-day": {
+        "role": "tertiary",
+        "displayName": "Fire Tint (day)",
+        "canonical": "#fdecea",
+        "oklch": "oklch(95.6% 0.019 26)",
+        "tonalRamp": [
+          "oklch(15% 0.019 26)",
+          "oklch(26% 0.019 26)",
+          "oklch(38% 0.019 26)",
+          "oklch(49% 0.019 26)",
+          "oklch(61% 0.019 26)",
+          "oklch(72% 0.019 26)",
+          "oklch(84% 0.019 26)",
+          "oklch(95% 0.019 26)"
+        ],
+        "cssVar": "--hd-fire-tint",
+        "theme": "day"
       }
     },
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "The one page title. Balanced wrap."
+        "purpose": "The statement at the gate on desktop. Archivo 900, width 86%, 3em measure, one fire mark."
+      },
+      "display-phone": {
+        "displayName": "Display (phone and tablet)",
+        "purpose": "The statement below 64rem."
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Section headings inside a page."
+        "purpose": "The plain heading (h1) under a figurative statement."
       },
-      "wordmark": {
-        "displayName": "Wordmark",
-        "purpose": "The name in the band. The only 800 weight."
+      "lead": {
+        "displayName": "Lead",
+        "purpose": "The main sentence of a panel with no form."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section headings in the panel."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "All running text, 34em measure for prose, tabular numerals."
-      },
-      "label": {
-        "displayName": "Label",
-        "purpose": "Field labels, message box titles, table captions."
-      },
-      "hint": {
-        "displayName": "Hint",
-        "purpose": "Field hints, field errors (700, red), table text."
+        "purpose": "Running text, tabular numbers."
       },
       "small": {
         "displayName": "Small",
-        "purpose": "Footnotes, fact labels, plate label, footer."
+        "purpose": "Help text under a task, muted."
       },
-      "mono": {
-        "displayName": "Mono",
-        "purpose": "Machine values: hosts, IDs, scopes, error codes. font-size-adjust 0.53. Plate host at 1.125rem, 700."
+      "note": {
+        "displayName": "Note",
+        "purpose": "The development build note and fact labels."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Visible field labels."
+      },
+      "wordmark": {
+        "displayName": "Wordmark",
+        "purpose": "\"Heimdall\" beside the 32px eye."
+      },
+      "mono-host": {
+        "displayName": "Mono host",
+        "purpose": "The host on the gate plaque."
+      },
+      "mono-value": {
+        "displayName": "Mono value",
+        "purpose": "A fact value, for example the redirect host."
+      },
+      "mono-input": {
+        "displayName": "Mono input",
+        "purpose": "Text in an input."
       }
     },
-    "shadows": [
+    "themes": [
       {
-        "name": "focus-field",
-        "value": "0 0 0 3px var(--hd-focus), 0 6px 0 0 var(--hd-focus-ink)",
-        "purpose": "Focus-visible controls, with a 3px yellow outline. The only shadow in the system."
+        "name": "night",
+        "trigger": "prefers-color-scheme: dark",
+        "purpose": "The default scene. Stars, a near-black sky, a dark gatehouse. Frontmatter keys without a suffix."
       },
       {
-        "name": "focus-link",
-        "value": "0 -2px var(--hd-focus), 0 4px var(--hd-focus-ink)",
-        "purpose": "Focus-visible links, on a yellow background with ink text."
+        "name": "day",
+        "trigger": "prefers-color-scheme: light (the :root values)",
+        "purpose": "A dawn sky, deeper lapis bands, a white panel, no stars. Frontmatter keys with the -day suffix."
+      },
+      {
+        "name": "forced-colors",
+        "trigger": "forced-colors: active",
+        "purpose": "The bridge is hidden. Buttons, inputs, the panel, the problem box, and the fact box get a 2px CanvasText border (buttons ButtonText). Focus uses Highlight. The on track of the motion switch fills with Highlight."
       }
     ],
+    "shadows": [
+      {
+        "name": "invalid-field",
+        "value": "inset 0 0 0 1px var(--hd-fire)",
+        "purpose": "Doubles the fire border of an invalid input to 2px. A border, not elevation."
+      }
+    ],
+    "focus": {
+      "value": "outline: 3px solid var(--hd-focus); outline-offset: 2px",
+      "purpose": "The ember ring on every focusable element. Inputs use offset 0 and an ember border."
+    },
     "motion": [
       {
         "name": "ease-out",
         "value": "cubic-bezier(0.16, 1, 0.3, 1)",
-        "purpose": "Button fill change (120ms) and the busy line."
+        "purpose": "The one easing for every transition (--hd-ease-out)."
       },
       {
-        "name": "button-fill",
-        "value": "background-color 120ms cubic-bezier(0.16, 1, 0.3, 1)",
-        "purpose": "Button hover."
+        "name": "control",
+        "value": "160ms",
+        "purpose": "Button fill and input border changes."
       },
       {
-        "name": "busy-line",
-        "value": "hd-busy 1.1s cubic-bezier(0.16, 1, 0.3, 1) infinite",
-        "purpose": "A 3px line across the band bottom while a page waits. The one authored animation. Reduced motion stops it."
+        "name": "switch-knob",
+        "value": "200ms",
+        "purpose": "The motion switch knob."
+      },
+      {
+        "name": "arrow",
+        "value": "240ms",
+        "purpose": "The go arrow moves 4px on hover."
+      },
+      {
+        "name": "fire-color",
+        "value": "400ms",
+        "purpose": "The fire mark, the ember thread, and the guard band change color."
+      },
+      {
+        "name": "guard-flare",
+        "value": "700ms",
+        "purpose": "The guard band widens from 16 to 44 on a refusal."
+      },
+      {
+        "name": "idle-drift",
+        "value": "11s to 19s linear, infinite",
+        "purpose": "Idle: a soft light drifts up each band."
+      },
+      {
+        "name": "twinkle",
+        "value": "4.1s to 8.8s ease-in-out, infinite",
+        "purpose": "Idle: the stars twinkle. Every seventh star holds still."
+      },
+      {
+        "name": "busy-flow",
+        "value": "0.8s linear, infinite, 0.1s stagger",
+        "purpose": "Busy: a stream of lights runs up every band."
+      },
+      {
+        "name": "burn",
+        "value": "2.4s ease-in-out, infinite",
+        "purpose": "Refused: the fire glow flickers under the bands."
+      },
+      {
+        "name": "crossing",
+        "value": "700ms ease-out, once, 60ms stagger",
+        "purpose": "Crossing: every band lights from the gate to the sky."
+      },
+      {
+        "name": "motion-off",
+        "value": "animation: none; transition: none",
+        "purpose": "The motion switch (default from prefers-reduced-motion, choice in localStorage key heimdall.motion) stops the scene. Crossing stays lit; refused keeps the fire. prefers-reduced-motion also sets every transition to 1ms."
       }
     ],
-    "breakpoints": [],
-    "themes": {
-      "mechanism": "prefers-color-scheme",
-      "darkTokenSuffix": "-dark"
-    }
+    "breakpoints": [
+      {
+        "name": "phone",
+        "value": "below 40rem",
+        "purpose": "One column: wordmark, motion switch, statement, plaque, panel. Bridge is a corner arc at the top right."
+      },
+      {
+        "name": "tablet",
+        "value": "40rem",
+        "purpose": "The phone order in a 34rem column. Larger corner arc."
+      },
+      {
+        "name": "desktop",
+        "value": "64rem",
+        "purpose": "Statement left, panel right (27.5rem), plaque bottom left, bridge behind the panel."
+      }
+    ],
+    "bridgeStates": [
+      {
+        "name": "idle",
+        "when": "Nothing is in progress.",
+        "bridge": "Stars twinkle. Soft lights drift up the bands."
+      },
+      {
+        "name": "busy",
+        "when": "Heimdall checks the password or loads a request.",
+        "bridge": "Fast lights run up every band, one after the other."
+      },
+      {
+        "name": "refused",
+        "when": "Heimdall refuses (401, 429, an error page with a refusal), or the user selects Deny.",
+        "bridge": "The guard band turns fire red and widens, a glow burns, the frost dims to 55%, no light moves. The panel border and the fire mark turn red."
+      },
+      {
+        "name": "crossing",
+        "when": "Sign-in or Allow succeeded; the browser is about to leave.",
+        "bridge": "Every band lights from the gate to the sky, once."
+      }
+    ],
+    "scope": "Heimdall's account pages only (ui/projects/account, ui/projects/ui-kit). The demo SPA is a client, not Heimdall, and keeps the old U13 look in ui/projects/demo/src/client-kit.css."
   },
   "components": [
     {
-      "name": "Primary Button",
+      "name": "Primary Button (go)",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Heimdall's action: submit, allow, try again. Fills the column in a form.",
-      "html": "<button class=\"ds-btn-primary\" type=\"button\">Sign in</button>",
-      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;min-height:var(--hd-control,48px);padding:8px 24px;border:2px solid var(--hd-lapis,#1e2f7a);border-radius:0;background:var(--hd-lapis,#1e2f7a);color:var(--hd-on-lapis,#fff);font:inherit;font-size:1.125rem;font-weight:700;cursor:pointer;transition:background-color 120ms cubic-bezier(0.16,1,0.3,1)}.ds-btn-primary:hover{background:var(--hd-lapis-strong,#14205a);border-color:var(--hd-lapis-strong,#14205a)}.ds-btn-primary:focus-visible{outline:3px solid var(--hd-focus,#ffd21f);outline-offset:0;box-shadow:0 0 0 3px var(--hd-focus,#ffd21f),0 6px 0 0 var(--hd-focus-ink,#0b0c14)}"
+      "description": "The one primary action of a page. Words first, arrow last. Full width in the panel.",
+      "html": "<button class=\"ds-btn-go\" type=\"button\">Sign in<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 12h15\"/><path d=\"M13 6l6 6-6 6\"/></svg></button>",
+      "css": ".ds-btn-go { display: inline-flex; align-items: center; justify-content: space-between; gap: 0.75rem; width: 100%; min-height: 3.75rem; padding: 0.5rem 1.5rem; border: 1px solid var(--hd-act, #4c6fff); border-radius: 0; background: var(--hd-act, #4c6fff); color: var(--hd-on-act, #07080d); font: inherit; font-family: var(--hd-font, Archivo, system-ui, sans-serif); font-weight: 800; font-size: 1.0625rem; cursor: pointer; transition: background-color 160ms cubic-bezier(0.16, 1, 0.3, 1), border-color 160ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-go svg { width: 1.25rem; height: 1.25rem; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: square; stroke-linejoin: miter; transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-go:hover { background: var(--hd-act-strong, #7390ff); border-color: var(--hd-act-strong, #7390ff); } .ds-btn-go:hover svg { transform: translateX(0.25rem); } .ds-btn-go:focus-visible { outline: 3px solid var(--hd-focus, #ff7a45); outline-offset: 2px; }"
     },
     {
       "name": "Secondary Button",
       "kind": "button",
       "refersTo": "button-secondary",
-      "description": "The second choice, such as Deny, and the Show toggle in the password row.",
+      "description": "A second choice beside the primary, for example Deny, or Show next to the password.",
       "html": "<button class=\"ds-btn-secondary\" type=\"button\">Deny</button>",
-      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:8px 24px;border:2px solid var(--hd-ink,#0b0c14);border-radius:0;background:var(--hd-page,#fff);color:var(--hd-ink,#0b0c14);font:inherit;font-size:1.125rem;font-weight:700;cursor:pointer;transition:background-color 120ms cubic-bezier(0.16,1,0.3,1)}.ds-btn-secondary:hover{background:var(--hd-ground,#eef1f8)}.ds-btn-secondary:focus-visible{outline:3px solid var(--hd-focus,#ffd21f);outline-offset:0;box-shadow:0 0 0 3px var(--hd-focus,#ffd21f),0 6px 0 0 var(--hd-focus-ink,#0b0c14)}"
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; min-height: 3.75rem; padding: 0.5rem 1.5rem; border: 1px solid var(--hd-ink-muted, #9aa3b8); border-radius: 0; background: transparent; color: var(--hd-ink, #f2f4fa); font-family: var(--hd-font, Archivo, system-ui, sans-serif); font-weight: 800; font-size: 1.0625rem; cursor: pointer; transition: background-color 160ms cubic-bezier(0.16, 1, 0.3, 1), border-color 160ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-secondary:hover { background: var(--hd-raised, #181b2a); border-color: var(--hd-ink, #f2f4fa); } .ds-btn-secondary:focus-visible { outline: 3px solid var(--hd-focus, #ff7a45); outline-offset: 2px; }"
     },
     {
       "name": "Text Field",
       "kind": "input",
       "refersTo": "input",
-      "description": "Bold label above a square 48px input. The invalid state uses a 4px red border and a red message.",
-      "html": "<div class=\"ds-field\"><label class=\"ds-label\" for=\"ds-email\">Email address</label><input class=\"ds-input\" id=\"ds-email\" type=\"email\"></div><div class=\"ds-field\"><label class=\"ds-label\" for=\"ds-pw\">Password</label><p class=\"ds-field-error\">Enter your password.</p><input class=\"ds-input\" id=\"ds-pw\" type=\"password\" aria-invalid=\"true\"></div>",
-      "css": ".ds-field{display:grid;gap:8px;margin-bottom:24px;max-width:30rem}.ds-label{font-weight:700;font-size:1.125rem}.ds-field-error{margin:0;color:var(--hd-red,#b3261e);font-weight:700;font-size:1rem}.ds-input{width:100%;min-height:48px;padding:8px 12px;border:2px solid var(--hd-ink,#0b0c14);border-radius:0;background:var(--hd-page,#fff);color:var(--hd-ink,#0b0c14);font:inherit;font-size:1.125rem}.ds-input[aria-invalid='true']{border-color:var(--hd-red,#b3261e);border-width:4px;padding:6px 10px}.ds-input:focus{outline:none}.ds-input:focus-visible{outline:3px solid var(--hd-focus,#ffd21f);outline-offset:0;box-shadow:0 0 0 3px var(--hd-focus,#ffd21f),0 6px 0 0 var(--hd-focus-ink,#0b0c14)}"
+      "description": "A labeled 56px square field. Input text is in JetBrains Mono. Invalid fields double their border in guard fire.",
+      "html": "<div class=\"ds-field\"><label class=\"ds-label\" for=\"ds-email\">Email address</label><input class=\"ds-input\" id=\"ds-email\" type=\"email\" value=\"ada@acme.example\"></div>",
+      "css": ".ds-field { display: grid; gap: 0.5rem; font-family: var(--hd-font, Archivo, system-ui, sans-serif); color: var(--hd-ink, #f2f4fa); } .ds-label { font-weight: 700; } .ds-input { width: 100%; min-height: 3.5rem; padding: 0.5rem 1rem; border: 1px solid var(--hd-line-field, #6a7396); border-radius: 0; background: var(--hd-field, #07080d); color: var(--hd-ink, #f2f4fa); font-family: var(--hd-mono, 'JetBrains Mono', ui-monospace, monospace); font-size: 1rem; transition: border-color 160ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-input:hover { border-color: var(--hd-ink-muted, #9aa3b8); } .ds-input:focus-visible { outline: 3px solid var(--hd-focus, #ff7a45); outline-offset: 0; border-color: var(--hd-focus, #ff7a45); } .ds-input[aria-invalid='true'] { border-color: var(--hd-fire, #e5372b); box-shadow: inset 0 0 0 1px var(--hd-fire, #e5372b); }"
     },
     {
-      "name": "Band and Origin Plate",
+      "name": "Gate Plaque",
       "kind": "custom",
-      "refersTo": "origin-plate",
-      "description": "The signature frame: the lapis band with the wordmark, and the plate that hangs from it with the current host in monospace.",
-      "html": "<header class=\"ds-band\"><p class=\"ds-wordmark\">Heimdall</p></header><p class=\"ds-plate\"><span class=\"ds-plate-label\">Signing in to</span><span class=\"ds-plate-host\">acme.localhost:7200</span></p>",
-      "css": ".ds-band{display:flex;align-items:center;min-height:64px;padding:0 16px;background:var(--hd-lapis,#1e2f7a);color:var(--hd-on-lapis,#fff)}.ds-wordmark{margin:0;font-size:1.5rem;font-weight:800;letter-spacing:-0.01em;line-height:1}.ds-plate{display:inline-flex;flex-direction:column;gap:4px;margin:0 0 0 16px;padding:12px 16px 16px;background:var(--hd-lapis,#1e2f7a);color:var(--hd-on-lapis,#fff);clip-path:polygon(0 0,100% 0,100% 100%,50% calc(100% - 0.5rem),0 100%)}.ds-plate-label{color:var(--hd-on-lapis-muted,#c9d1f0);font-size:0.875rem;font-weight:600}.ds-plate-host{font-family:ui-monospace,'SF Mono','Cascadia Mono','DejaVu Sans Mono',Menlo,Consolas,monospace;font-size:1.125rem;font-weight:700;overflow-wrap:anywhere}"
+      "description": "The tenant host the user stands at, in mono, with the address bar check line.",
+      "html": "<p class=\"ds-plaque\"><span class=\"ds-plaque-label\">You are at the gate of</span><span class=\"ds-plaque-host\">acme.localhost:7299</span><span class=\"ds-plaque-check\">Check that your address bar shows the same host.</span></p>",
+      "css": ".ds-plaque { display: grid; gap: 0.25rem; margin: 0; font-family: var(--hd-font, Archivo, system-ui, sans-serif); color: var(--hd-ink, #f2f4fa); } .ds-plaque-label { color: var(--hd-ink-muted, #9aa3b8); font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; } .ds-plaque-host { font-family: var(--hd-mono, 'JetBrains Mono', ui-monospace, monospace); font-size: clamp(1.25rem, 0.9rem + 1.2vw, 2rem); font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; } .ds-plaque-check { color: var(--hd-ink-muted, #9aa3b8); font-size: 0.9375rem; }"
     },
     {
-      "name": "Client Band and Plate",
+      "name": "Gate Statement",
       "kind": "custom",
-      "refersTo": "band-client",
-      "description": "The same frame in Client Slate for a site that is not Heimdall, with band navigation.",
-      "html": "<header class=\"ds-cband\"><p class=\"ds-cword\">Demo client</p><nav class=\"ds-cnav\"><a href=\"#\" class=\"ds-active\" aria-current=\"page\">Tokens</a><a href=\"#\">User info</a></nav></header><p class=\"ds-cplate\"><span class=\"ds-cplate-label\">A Heimdall client app on</span><span class=\"ds-cplate-host\">demo.localhost:4300</span></p>",
-      "css": ".ds-cband{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:64px;padding:0 16px;background:var(--hd-client,#2b2e36);color:#fff}.ds-cword{margin:0;font-size:1.5rem;font-weight:800;letter-spacing:-0.01em;line-height:1}.ds-cnav{display:flex;gap:16px}.ds-cnav a{color:#fff;text-decoration:none;font-weight:600;padding:4px 0;border-bottom:3px solid transparent}.ds-cnav a:hover{border-bottom-color:var(--hd-on-lapis-muted,#c9d1f0)}.ds-cnav a.ds-active{border-bottom-color:#fff}.ds-cnav a:focus-visible{outline:none;background:var(--hd-focus,#ffd21f);color:var(--hd-focus-ink,#0b0c14);box-shadow:0 -2px var(--hd-focus,#ffd21f),0 4px var(--hd-focus-ink,#0b0c14)}.ds-cplate{display:inline-flex;flex-direction:column;gap:4px;margin:0 0 0 16px;padding:12px 16px 16px;background:var(--hd-client,#2b2e36);color:#fff;clip-path:polygon(0 0,100% 0,100% 100%,50% calc(100% - 0.5rem),0 100%)}.ds-cplate-label{color:var(--hd-on-lapis-muted,#c9d1f0);font-size:0.875rem;font-weight:600}.ds-cplate-host{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:1.125rem;font-weight:700}"
+      "description": "The display statement with its fire mark. The mark is ember at rest and guard fire on a refusal.",
+      "html": "<h1 class=\"ds-display\">Sign in<span class=\"ds-fire\">.</span></h1>",
+      "css": ".ds-display { margin: 0; color: var(--hd-display, #f2f4fa); font-family: var(--hd-font, Archivo, system-ui, sans-serif); font-size: 6rem; font-weight: 900; font-stretch: 86%; line-height: 0.86; letter-spacing: -0.045em; max-width: 3em; text-wrap: balance; } .ds-fire { color: var(--hd-ember-bright, #ff7a45); transition: color 400ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-display:hover .ds-fire { color: var(--hd-fire, #e5372b); }"
     },
     {
       "name": "Problem Box",
-      "kind": "card",
-      "refersTo": "problem-box",
-      "description": "A refusal or failure. Full 2px red border, red tint, bold red title. It takes focus when it appears.",
-      "html": "<div class=\"ds-problem\" role=\"alert\"><p class=\"ds-problem-title\">There is a problem</p><p>The email or the password is not correct.</p></div>",
-      "css": ".ds-problem{max-width:30rem;padding:16px 24px;border:2px solid var(--hd-red,#b3261e);background:var(--hd-red-tint,#fbeae8);color:var(--hd-ink,#0b0c14);font-size:1.125rem;line-height:1.55}.ds-problem p{margin:0}.ds-problem-title{color:var(--hd-red,#b3261e);font-weight:700}"
-    },
-    {
-      "name": "Confirm Box",
-      "kind": "card",
-      "refersTo": "confirm-box",
-      "description": "A done or confirmed result. Full 2px green border, green tint, bold green title.",
-      "html": "<div class=\"ds-confirm\"><p class=\"ds-confirm-title\">Reuse detected. The family is revoked.</p><p>The client dropped its tokens and must sign in again.</p></div>",
-      "css": ".ds-confirm{max-width:30rem;padding:16px 24px;border:2px solid var(--hd-green,#0b6b3a);background:var(--hd-green-tint,#e5f3ea);color:var(--hd-ink,#0b0c14);font-size:1.125rem;line-height:1.55}.ds-confirm p{margin:0}.ds-confirm-title{color:var(--hd-green,#0b6b3a);font-weight:700}"
-    },
-    {
-      "name": "Status Mark",
-      "kind": "chip",
-      "refersTo": "status-mark",
-      "description": "Demo only. An inline result mark in the state color: red Refused, green Issued.",
-      "html": "<span class=\"ds-mark ds-mark-refused\">Refused</span> <span class=\"ds-mark ds-mark-issued\">Issued</span>",
-      "css": ".ds-mark{display:inline-block;padding:0 8px;border:2px solid currentColor;font-size:0.875rem;font-weight:700}.ds-mark-refused{color:var(--hd-red,#b3261e)}.ds-mark-issued{color:var(--hd-green,#0b6b3a)}"
-    },
-    {
-      "name": "Ruled Table",
       "kind": "custom",
-      "refersTo": "table",
-      "description": "Full-width data table: bold caption, 2px ink header rule, hairlines between rows, mono values.",
-      "html": "<table class=\"ds-table\"><caption>ID token claims</caption><thead><tr><th scope=\"col\">Claim</th><th scope=\"col\">Value</th></tr></thead><tbody><tr><th scope=\"row\">iss</th><td><code>https://acme.localhost:7200</code></td></tr><tr><th scope=\"row\">aud</th><td><code>demo-spa</code></td></tr></tbody></table>",
-      "css": ".ds-table{width:100%;max-width:48rem;border-collapse:collapse;font-size:1rem}.ds-table caption{text-align:start;font-weight:700;padding-bottom:4px}.ds-table th,.ds-table td{text-align:start;vertical-align:top;padding:12px 16px 12px 0;border-bottom:1px solid var(--hd-rule,#c7cddf)}.ds-table thead th{border-bottom:2px solid var(--hd-ink,#0b0c14)}.ds-table code{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}"
+      "refersTo": "problem",
+      "description": "A refusal or failure message. role=alert, takes focus.",
+      "html": "<div class=\"ds-problem\" role=\"alert\"><svg class=\"ds-problem-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 3.5 2.5 20h19z\"/><path d=\"M12 10v4.5\"/><path d=\"M12 17.2v.3\"/></svg><p class=\"ds-problem-title\">There is a problem</p><p>The email or the password is not correct.</p></div>",
+      "css": ".ds-problem { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 0.75rem; padding: 1rem 1.25rem; border: 1px solid var(--hd-fire, #e5372b); background: var(--hd-fire-tint, #24100f); color: var(--hd-ink, #f2f4fa); font-family: var(--hd-font, Archivo, system-ui, sans-serif); } .ds-problem p { margin: 0; } .ds-problem-icon { grid-row: span 2; width: 1.5rem; height: 1.5rem; fill: none; stroke: var(--hd-fire-text, #ff8a80); stroke-width: 1.75; stroke-linecap: square; stroke-linejoin: miter; } .ds-problem-title { color: var(--hd-fire-text, #ff8a80); font-weight: 800; }"
+    },
+    {
+      "name": "Fact Box",
+      "kind": "card",
+      "refersTo": "fact",
+      "description": "A value the user can check, such as the redirect host. Label above, value in mono.",
+      "html": "<dl class=\"ds-fact\"><dt class=\"ds-fact-label\">After your choice, your browser goes to</dt><dd class=\"ds-fact-value\">chat.localhost:4400</dd></dl>",
+      "css": ".ds-fact { margin: 0; padding: 1rem 1.25rem; border: 1px solid var(--hd-line, #262a3d); background: var(--hd-field, #07080d); color: var(--hd-ink, #f2f4fa); font-family: var(--hd-font, Archivo, system-ui, sans-serif); } .ds-fact-label { color: var(--hd-ink-muted, #9aa3b8); font-size: 0.8125rem; } .ds-fact-value { margin: 0; font-family: var(--hd-mono, 'JetBrains Mono', ui-monospace, monospace); font-size: 1.375rem; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }"
+    },
+    {
+      "name": "Motion Switch",
+      "kind": "custom",
+      "refersTo": "motion-switch",
+      "description": "The toggle that starts and stops the bridge scene. aria-pressed carries the state.",
+      "html": "<button class=\"ds-switch\" type=\"button\" aria-pressed=\"true\"><span class=\"ds-track\" aria-hidden=\"true\"><span class=\"ds-knob\"></span></span>Motion</button>",
+      "css": ".ds-switch { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; padding: 0 0.75rem; border: 1px solid transparent; border-radius: 0; background: transparent; color: var(--hd-ink-muted, #9aa3b8); font-family: var(--hd-font, Archivo, system-ui, sans-serif); font-size: 0.9375rem; font-weight: 600; cursor: pointer; } .ds-switch:hover { color: var(--hd-ink, #f2f4fa); border-color: var(--hd-line, #262a3d); } .ds-switch:focus-visible { outline: 3px solid var(--hd-focus, #ff7a45); outline-offset: 2px; } .ds-track { position: relative; width: 2rem; height: 1rem; border: 1px solid currentColor; } .ds-knob { position: absolute; top: 2px; left: 2px; width: 0.625rem; height: 0.625rem; background: currentColor; transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-switch[aria-pressed='true'] .ds-track { border-color: var(--hd-act, #4c6fff); background: var(--hd-act, #4c6fff); } .ds-switch[aria-pressed='true'] .ds-knob { background: var(--hd-on-act, #07080d); transform: translateX(1rem); }"
     }
   ],
   "narrative": {
-    "northStar": "The Public-Service Notice",
-    "overview": "Each page reads as a notice from the issuer. It states who asks, which origin the browser is on, what leaves, and nothing else. The world is a public-service identity program, like a government design system. A committed lapis band runs across the top. A white page carries one left-aligned column. A cool, lapis-tinted ground closes the page below the column.\n\nHierarchy comes from scale and weight only. Body text is large (1.125rem). Headings step up in bold. No card, panel, or shadow ranks content. Boxes appear only to carry a state: a refusal, a confirmation, or a neutral note. Controls are square, with a 2px ink border and a height of 48px.\n\nEvery page uses one frame: the band, the origin plate, the column, and the footer. The login, consent, error, and signed-out pages keep the same frame, column, and heading baseline. So they read as one sequence. The demo client uses the same frame with a neutral band, so the user can see that it is a different site. Every page states that Heimdall is a development build.",
+    "northStar": "The Burning Bridge",
+    "overview": "**Creative North Star: \"The Burning Bridge\"**\n\nIn the myths, Heimdall guards Bifröst, the burning bridge to Asgard. Each account page is the gate at the foot of that bridge. The page shows three things: the host where the user stands, one decision, and a bridge that shows the state of the request. The owner approved this world on 2026-10-23 (decision U15 in `docs/frontend-design.md`). It replaces \"The Public-Service Notice\" (U13).\n\nThe scene is dark and still by default, with a few cold stars. Frost bands make a quarter arc behind the task. An ember thread burns along the arc at rest. The page is flat and square. Size and weight rank the content, not boxes or shadows. One very large statement in Archivo 900 stands at the left, like a sign at the gate. The task sits in one flat gatehouse panel.\n\nThe bridge is decoration with a job. It shows the state of the crossing, but no state depends on it. The text, the focus, and `aria-live` carry every state. The world rejects the centered SaaS card on a gradient.\n\nThe tokens and the frame are in `ui/projects/ui-kit` (`styles/heimdall.css`, `HdGate`, `HdBridge`, `HdMotionSwitch`, `HdIcon`). Tenant branding (Phase 3) changes token values, never a component.\n\n**Scope.** This system covers Heimdall's own pages only: login, consent, error, and signed out (`ui/projects/account`). The demo SPA is a client, not Heimdall. It keeps the old U13 look in `ui/projects/demo/src/client-kit.css`, so a user can see that it is a different site. Huginn and every other client are also out of this system.",
     "keyCharacteristics": [
-      "A lapis issuer band (64px) with the wordmark \"Heimdall\" at the left.",
-      "An origin plate hangs from the band and shows the current host in monospace.",
-      "A white page with a left-aligned column (30rem), and a tinted ground for the footer.",
-      "Square controls: 2px border, 48px tall, no radius anywhere.",
-      "A fixed state vocabulary: lapis speaks and acts, red refuses, green confirms, yellow marks focus.",
-      "The system font stack only. No web font and no third-party origin (U8).",
-      "Light and dark themes from `prefers-color-scheme`."
+      "Three color meanings: frost, ember, and fire. Each color means one thing on every page.",
+      "Night (the default scene) and day themes from `prefers-color-scheme`.",
+      "The bridge is state: idle, busy, refused, crossing.",
+      "A visible \"Motion\" switch stops all movement.",
+      "Archivo 900 statement at 86% width, tight tracking. JetBrains Mono only for machine values.",
+      "Square controls, 56px tall. No radius anywhere.",
+      "The gate plaque names the host and asks the user to compare it with the address bar."
     ],
     "rules": [
       {
         "name": "The One Meaning Rule",
-        "body": "Each state color means one thing on every page. Lapis speaks or acts. Red refuses or fails. Green confirms. Yellow marks keyboard focus and nothing else.",
+        "body": "Frost is the bridge and Heimdall's actions. Ember is the bridge's fire at rest and keyboard focus. Fire red is a refusal. Use no color for a second meaning.",
+        "section": "colors"
+      },
+      {
+        "name": "The Fire Means No Rule",
+        "body": "Red appears only when Heimdall refuses or the user selects Deny: wrong credentials, the throttle, an error page with a refusal. A \"Heimdall is busy\" error is not a refusal, so it stays idle and has no red.",
         "section": "colors"
       },
       {
         "name": "The Tokens Not Components Rule",
-        "body": "Tenant branding (Phase 3) changes token values. It never changes a component.",
+        "body": "A theme or a tenant changes token values only. Components read `var(--hd-*)`.",
         "section": "colors"
       },
       {
-        "name": "The Scale Contrast Rule",
-        "body": "Size and weight rank content. A heading never gets a box, a color, or a rule to look important.",
-        "section": "typography"
-      },
-      {
         "name": "The Machine Value Rule",
-        "body": "Monospace marks only values that a user or a machine compares character by character. Prose never uses mono.",
+        "body": "Use JetBrains Mono only for hosts, codes, client IDs, scope names, and input text. Never use it for prose or headings.",
         "section": "typography"
       },
       {
-        "name": "The One Frame Rule",
-        "body": "Every page uses the same band, plate, column, and footer. A new page changes the content of the column, never the frame.",
+        "name": "The Plain Heading Rule",
+        "body": "A figurative statement (\"Gate shut.\") always has a plain heading under it that says the same thing (\"Heimdall does not know this app\").",
+        "section": "typography"
+      },
+      {
+        "name": "The Fire Mark Rule",
+        "body": "A statement ends with one punctuation mark in the fire span (`.` or `?`). The mark is ember at rest and fire red on a refusal. Use no other colored glyph in the statement.",
+        "section": "typography"
+      },
+      {
+        "name": "The First Screen Rule",
+        "body": "The motion switch and the primary action are in the first screen on every layout.",
         "section": "layout"
       },
       {
-        "name": "The Flat Notice Rule",
-        "body": "Surfaces stay flat in every state. A shadow appears only as part of keyboard focus.",
+        "name": "The Flat Gate Rule",
+        "body": "No drop shadow on any component. Separate surfaces with a 1px line or a fill change.",
         "section": "elevation"
       },
       {
         "name": "The Square Corner Rule",
-        "body": "No element has a border radius. The plate notch is the only shaped edge.",
+        "body": "No radius on any control, box, or tile, including the logo tile.",
         "section": "shapes"
       }
     ],
     "dos": [
-      "Do put every new page inside the one frame: band, origin plate, column, footer.",
-      "Do rank content with size and weight: Display for the page title, Headline for sections, Body at 1.125rem.",
-      "Do keep controls square, with a 2px border and a height of 48px.",
-      "Do use lapis for Heimdall and its actions, red for a refusal, green for a confirmation, and yellow for focus only.",
-      "Do show machine values (hosts, IDs, scopes, error codes) in monospace.",
-      "Do use the client band and plate color for any site that is not Heimdall.",
-      "Do keep text at 4.5:1 contrast or more in both themes.",
-      "Do state on every page that Heimdall is a development build, until the owner decides otherwise."
+      "**Do** use frost for the bridge and Heimdall's actions, ember for the fire at rest and keyboard focus, and fire red for a refusal only (The One Meaning Rule).",
+      "**Do** show the host on the gate plaque in JetBrains Mono, with the line \"Check that your address bar shows the same host.\"",
+      "**Do** put a plain heading under every figurative statement, and make that heading the `h1`.",
+      "**Do** set the display in Archivo 900 at 86% width, line height 0.86, tracking -0.045em, with a 3em measure on desktop.",
+      "**Do** make every control square and 56px tall (60px for buttons).",
+      "**Do** set the bridge state from the page state, and also say that state in text.",
+      "**Do** keep the motion switch in the first screen. Default it from `prefers-reduced-motion`, and keep the state readable with motion off.",
+      "**Do** give every edge and state a system-color border in forced-colors mode, and hide the bridge there.",
+      "**Do** serve fonts and every other asset from Heimdall's own origin."
     ],
     "donts": [
-      "Don't add a web font or load anything from a third-party origin (U8).",
-      "Don't use a card, a panel, or a shadow to rank content. A box carries a state only.",
-      "Don't use yellow for anything except keyboard focus.",
-      "Don't give a state color a second meaning, for example green for a brand accent.",
-      "Don't round a corner. The plate notch is the only shaped edge.",
-      "Don't mark a message with a thick side stripe. A message box has a full border.",
-      "Don't add a small label above a page title. The title stands alone.",
-      "Don't change a component for tenant branding. Change tokens only."
+      "**Don't** use red for anything but a refusal. A busy or unavailable state is not a refusal.",
+      "**Don't** use ember for anything but the bridge's fire, the fire mark, and keyboard focus.",
+      "**Don't** round a corner, add a drop shadow, or add a gradient to a control or a panel.",
+      "**Don't** use JetBrains Mono for prose or headings.",
+      "**Don't** make any state depend on the bridge. Text, focus, and `aria-live` must carry it.",
+      "**Don't** center the task in a card on a gradient.",
+      "**Don't** use this look in a client app. The demo SPA and Huginn are not Heimdall, and the demo SPA keeps its own look in `ui/projects/demo/src/client-kit.css`.",
+      "**Don't** load a font or any other file from a third-party origin."
     ]
   }
 }

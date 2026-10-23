@@ -1,348 +1,397 @@
 ---
 name: Heimdall
-description: The account pages and demo client of the Heimdall identity provider, in a public-service identity program.
+description: The account pages of the Heimdall identity provider. Each page is the gate at the foot of the burning bridge.
 colors:
-  lapis: "#1e2f7a"
-  lapis-strong: "#14205a"
-  link: "#1e2f7a"
-  on-lapis: "#ffffff"
-  on-lapis-muted: "#c9d1f0"
-  client: "#2b2e36"
-  client-strong: "#1c1e24"
-  ink: "#0b0c14"
-  ink-muted: "#474d63"
-  page: "#ffffff"
-  ground: "#eef1f8"
-  rule: "#c7cddf"
-  focus: "#ffd21f"
-  focus-ink: "#0b0c14"
-  red: "#b3261e"
-  red-tint: "#fbeae8"
-  green: "#0b6b3a"
-  green-tint: "#e5f3ea"
-  lapis-dark: "#2b3f99"
-  lapis-strong-dark: "#3a50b5"
-  link-dark: "#a9bbff"
-  on-lapis-muted-dark: "#d3daf5"
-  client-dark: "#3a3e48"
-  client-strong-dark: "#4a4f5b"
-  ink-dark: "#e9ecf7"
-  ink-muted-dark: "#aab2cc"
-  page-dark: "#10142c"
-  ground-dark: "#0a0d20"
-  rule-dark: "#333a5c"
-  red-dark: "#ff8a80"
-  red-tint-dark: "#3a1618"
-  green-dark: "#74d6a0"
-  green-tint-dark: "#0f2e20"
+  ground: "#07080d"
+  star: "#e8ecff"
+  panel: "#10121c"
+  raised: "#181b2a"
+  field: "#07080d"
+  line: "#262a3d"
+  line-field: "#6a7396"
+  ink: "#f2f4fa"
+  ink-muted: "#9aa3b8"
+  act: "#4c6fff"
+  act-strong: "#7390ff"
+  on-act: "#07080d"
+  link: "#a9bbff"
+  bridge-1: "#4c6fff"
+  bridge-2: "#2b3f99"
+  bridge-3: "#1e2f7a"
+  bridge-4: "#14205a"
+  bridge-light: "#dfe6ff"
+  ember: "#ff7a45"
+  ember-bright: "#ff7a45"
+  ember-banked: "#5a2414"
+  fire: "#e5372b"
+  fire-text: "#ff8a80"
+  fire-tint: "#24100f"
+  ground-day: "#e7ebf5"
+  panel-day: "#ffffff"
+  raised-day: "#eef1f8"
+  field-day: "#ffffff"
+  line-day: "#c9d0e2"
+  line-field-day: "#5d6686"
+  ink-day: "#0b0d18"
+  ink-muted-day: "#4a5168"
+  act-day: "#3352e0"
+  act-strong-day: "#2640b8"
+  on-act-day: "#ffffff"
+  link-day: "#2640b8"
+  bridge-1-day: "#3352e0"
+  bridge-2-day: "#23338a"
+  bridge-3-day: "#182566"
+  bridge-4-day: "#0f1846"
+  bridge-light-day: "#ffffff"
+  ember-day: "#c2410c"
+  ember-banked-day: "#f2b49a"
+  fire-text-day: "#b3261e"
+  fire-tint-day: "#fdecea"
 typography:
   display:
-    fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-    fontSize: "clamp(2rem, 1.6rem + 1.6vw, 2.75rem)"
-    fontWeight: 700
-    lineHeight: 1.1
-    letterSpacing: "-0.02em"
+    fontFamily: "Archivo, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
+    fontSize: "clamp(6rem, 1rem + 11vw, 11.5rem)"
+    fontWeight: 900
+    lineHeight: 0.86
+    letterSpacing: "-0.045em"
+    fontVariation: "'wdth' 86"
+  display-phone:
+    fontFamily: "Archivo, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
+    fontSize: "clamp(3.5rem, 1.5rem + 9vw, 10rem)"
+    fontWeight: 900
+    lineHeight: 0.86
+    letterSpacing: "-0.045em"
+    fontVariation: "'wdth' 86"
   headline:
-    fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-    fontSize: "1.5rem"
+    fontFamily: "Archivo, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
+    fontSize: "clamp(1.375rem, 1rem + 1.2vw, 2rem)"
+    fontWeight: 800
+    lineHeight: 1.15
+    letterSpacing: "-0.02em"
+  lead:
+    fontFamily: "Archivo, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
+    fontSize: "1.375rem"
+    fontWeight: 400
+    lineHeight: 1.4
+  title:
+    fontFamily: "Archivo, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
+    fontSize: "1.0625rem"
     fontWeight: 700
-    lineHeight: 1.25
+    lineHeight: 1.3
+  body:
+    fontFamily: "Archivo, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
+    fontSize: "1.0625rem"
+    fontWeight: 400
+    lineHeight: 1.5
+    fontFeature: "'tnum'"
+  small:
+    fontFamily: "Archivo, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
+    fontSize: "0.9375rem"
+    fontWeight: 400
+    lineHeight: 1.45
+  note:
+    fontFamily: "Archivo, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
+    fontSize: "0.8125rem"
+    fontWeight: 400
+    lineHeight: 1.5
+  label:
+    fontFamily: "Archivo, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
+    fontSize: "1.0625rem"
+    fontWeight: 700
+    lineHeight: 1.5
   wordmark:
-    fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-    fontSize: "1.5rem"
+    fontFamily: "Archivo, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
+    fontSize: "1.375rem"
     fontWeight: 800
     lineHeight: 1
-    letterSpacing: "-0.01em"
-  body:
-    fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-    fontSize: "1.125rem"
-    fontWeight: 400
-    lineHeight: 1.55
-    fontFeature: "tnum"
-  label:
-    fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-    fontSize: "1.125rem"
+    letterSpacing: "-0.02em"
+  mono-host:
+    fontFamily: "'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', 'DejaVu Sans Mono', Menlo, Consolas, monospace"
+    fontSize: "clamp(1.25rem, 0.9rem + 1.2vw, 2rem)"
     fontWeight: 700
-    lineHeight: 1.55
-  hint:
-    fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+    lineHeight: 1.2
+  mono-value:
+    fontFamily: "'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', 'DejaVu Sans Mono', Menlo, Consolas, monospace"
+    fontSize: "1.375rem"
+    fontWeight: 700
+    lineHeight: 1.3
+  mono-input:
+    fontFamily: "'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', 'DejaVu Sans Mono', Menlo, Consolas, monospace"
     fontSize: "1rem"
-    fontWeight: 400
-  small:
-    fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-    fontSize: "0.875rem"
-    fontWeight: 400
-  mono:
-    fontFamily: "ui-monospace, 'SF Mono', 'Cascadia Mono', 'DejaVu Sans Mono', 'Liberation Mono', Menlo, Consolas, monospace"
-    fontSize: "1em"
     fontWeight: 400
 rounded:
   none: "0px"
 spacing:
-  "1": "4px"
-  "2": "8px"
-  "3": "12px"
-  "4": "16px"
-  "6": "24px"
-  "8": "32px"
-  "12": "48px"
-  "16": "64px"
-  band-height: "64px"
-  control: "48px"
-  border: "2px"
-  column: "30rem"
-  column-wide: "48rem"
-  frame: "64rem"
+  "1": "0.25rem"
+  "2": "0.5rem"
+  "3": "0.75rem"
+  "4": "1rem"
+  "5": "1.25rem"
+  "6": "1.5rem"
+  "8": "2rem"
+  "10": "2.5rem"
+  "12": "3rem"
+  control: "3.5rem"
+  panel-width: "27.5rem"
 components:
   button-primary:
-    backgroundColor: "{colors.lapis}"
-    textColor: "{colors.on-lapis}"
-    typography: "{typography.label}"
+    backgroundColor: "{colors.act}"
+    textColor: "{colors.on-act}"
     rounded: "{rounded.none}"
-    padding: "8px 24px"
-    height: "48px"
+    padding: "0.5rem 1.5rem"
+    height: "3.75rem"
   button-primary-hover:
-    backgroundColor: "{colors.lapis-strong}"
-    textColor: "{colors.on-lapis}"
+    backgroundColor: "{colors.act-strong}"
+    textColor: "{colors.on-act}"
   button-secondary:
-    backgroundColor: "{colors.page}"
+    backgroundColor: "transparent"
     textColor: "{colors.ink}"
-    typography: "{typography.label}"
     rounded: "{rounded.none}"
-    padding: "8px 24px"
-    height: "48px"
+    padding: "0.5rem 1.5rem"
+    height: "3.75rem"
   button-secondary-hover:
-    backgroundColor: "{colors.ground}"
+    backgroundColor: "{colors.raised}"
     textColor: "{colors.ink}"
   button-quiet:
     backgroundColor: "transparent"
-    textColor: "{colors.on-lapis}"
     rounded: "{rounded.none}"
-    padding: "4px 12px"
+    padding: "0.25rem 0.75rem"
   input:
-    backgroundColor: "{colors.page}"
+    backgroundColor: "{colors.field}"
     textColor: "{colors.ink}"
-    typography: "{typography.body}"
+    typography: "{typography.mono-input}"
     rounded: "{rounded.none}"
-    padding: "8px 12px"
-    height: "48px"
-  problem-box:
-    backgroundColor: "{colors.red-tint}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.none}"
-    padding: "16px 24px"
-  confirm-box:
-    backgroundColor: "{colors.green-tint}"
+    padding: "0.5rem 1rem"
+    height: "3.5rem"
+  gatehouse-panel:
+    backgroundColor: "{colors.panel}"
     textColor: "{colors.ink}"
     rounded: "{rounded.none}"
-    padding: "16px 24px"
-  note-box:
-    backgroundColor: "{colors.ground}"
+    padding: "2rem 2rem 1.5rem"
+    width: "27.5rem"
+  problem:
+    backgroundColor: "{colors.fire-tint}"
     textColor: "{colors.ink}"
     rounded: "{rounded.none}"
-    padding: "16px 24px"
-  band-issuer:
-    backgroundColor: "{colors.lapis}"
-    textColor: "{colors.on-lapis}"
-    typography: "{typography.wordmark}"
-    height: "64px"
-  band-client:
-    backgroundColor: "{colors.client}"
-    textColor: "{colors.on-lapis}"
-    typography: "{typography.wordmark}"
-    height: "64px"
-  origin-plate:
-    backgroundColor: "{colors.lapis}"
-    textColor: "{colors.on-lapis}"
-    padding: "12px 16px 16px"
-  footer:
-    backgroundColor: "{colors.ground}"
+    padding: "1rem 1.25rem"
+  fact:
+    backgroundColor: "{colors.field}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.none}"
+    padding: "1rem 1.25rem"
+  motion-switch:
+    backgroundColor: "transparent"
     textColor: "{colors.ink-muted}"
-    typography: "{typography.small}"
-    padding: "24px 0"
+    rounded: "{rounded.none}"
+    padding: "0 0.75rem"
+    height: "2.75rem"
 ---
 
 # Design System: Heimdall
 
 ## Overview
 
-**Creative North Star: "The Public-Service Notice"**
+**Creative North Star: "The Burning Bridge"**
 
-Each page reads as a notice from the issuer. It states who asks, which origin the browser is on, what leaves, and nothing else. The world is a public-service identity program, like a government design system. A committed lapis band runs across the top. A white page carries one left-aligned column. A cool, lapis-tinted ground closes the page below the column.
+In the myths, Heimdall guards Bifröst, the burning bridge to Asgard. Each account page is the gate at the foot of that bridge. The page shows three things: the host where the user stands, one decision, and a bridge that shows the state of the request. The owner approved this world on 2026-10-23 (decision U15 in `docs/frontend-design.md`). It replaces "The Public-Service Notice" (U13).
 
-Hierarchy comes from scale and weight only. Body text is large (1.125rem). Headings step up in bold. No card, panel, or shadow ranks content. Boxes appear only to carry a state: a refusal, a confirmation, or a neutral note. Controls are square, with a 2px ink border and a height of 48px.
+The scene is dark and still by default, with a few cold stars. Frost bands make a quarter arc behind the task. An ember thread burns along the arc at rest. The page is flat and square. Size and weight rank the content, not boxes or shadows. One very large statement in Archivo 900 stands at the left, like a sign at the gate. The task sits in one flat gatehouse panel.
 
-Every page uses one frame: the band, the origin plate, the column, and the footer. The login, consent, error, and signed-out pages keep the same frame, column, and heading baseline. So they read as one sequence. The demo client uses the same frame with a neutral band, so the user can see that it is a different site. Every page states that Heimdall is a development build.
+The bridge is decoration with a job. It shows the state of the crossing, but no state depends on it. The text, the focus, and `aria-live` carry every state. The world rejects the centered SaaS card on a gradient.
+
+The tokens and the frame are in `ui/projects/ui-kit` (`styles/heimdall.css`, `HdGate`, `HdBridge`, `HdMotionSwitch`, `HdIcon`). Tenant branding (Phase 3) changes token values, never a component.
+
+**Scope.** This system covers Heimdall's own pages only: login, consent, error, and signed out (`ui/projects/account`). The demo SPA is a client, not Heimdall. It keeps the old U13 look in `ui/projects/demo/src/client-kit.css`, so a user can see that it is a different site. Huginn and every other client are also out of this system.
 
 **Key Characteristics:**
-- A lapis issuer band (64px) with the wordmark "Heimdall" at the left.
-- An origin plate hangs from the band and shows the current host in monospace.
-- A white page with a left-aligned column (30rem), and a tinted ground for the footer.
-- Square controls: 2px border, 48px tall, no radius anywhere.
-- A fixed state vocabulary: lapis speaks and acts, red refuses, green confirms, yellow marks focus.
-- The system font stack only. No web font and no third-party origin (U8).
-- Light and dark themes from `prefers-color-scheme`.
+- Three color meanings: frost, ember, and fire. Each color means one thing on every page.
+- Night (the default scene) and day themes from `prefers-color-scheme`.
+- The bridge is state: idle, busy, refused, crossing.
+- A visible "Motion" switch stops all movement.
+- Archivo 900 statement at 86% width, tight tracking. JetBrains Mono only for machine values.
+- Square controls, 56px tall. No radius anywhere.
+- The gate plaque names the host and asks the user to compare it with the address bar.
 
 ## Colors
 
-The palette is one committed blue, cool neutrals, and three state colors. Each color has one meaning everywhere.
+A near-black sky, cold frost blues, and one warm fire that changes meaning only on a refusal. The frontmatter keys without a suffix are the night values. The `-day` keys are the day values of the same token.
 
 ### Primary
-- **Issuer Lapis** (lapis; dark theme lapis-dark): The band, the origin plate, primary buttons, and text selection. Lapis means "Heimdall speaks or acts". Hover moves to **Deep Lapis** (lapis-strong). In the dark theme, the hover color is lighter than the base, so the change stays visible.
-- **Link Lapis** (link; dark theme link-dark): Inline links. In light mode it equals Issuer Lapis. In dark mode it is a pale lapis that keeps AA contrast on the page, the ground, and the red tint.
-- **On-Lapis White** (on-lapis) and **On-Lapis Mist** (on-lapis-muted): Text on the band and the plate. Mist is for the plate label and the hover underline of band navigation.
+- **Bifröst Frost** (`act`, `bridge-1`): The bridge and Heimdall's actions. The primary button, the selection, the "on" track of the motion switch, the caret, and the scope icons use it. Day uses a deeper lapis (`act-day`).
+- **Frost Bands** (`bridge-2`, `bridge-3`, `bridge-4`): The inner bands of the arc, from light to deep. Only the bridge uses them.
+- **Bridge Light** (`bridge-light`): The lights that move along the bands. At night they add to the band color (`mix-blend-mode: plus-lighter`).
+- **Frost Link** (`link`): Text links. Links have a 1px underline, and 2px on hover.
 
 ### Secondary
-- **Client Slate** (client, client-strong): The band and plate of a client application, such as the demo SPA. Slate tells the user "this is not Heimdall". It replaces lapis only in the frame.
+- **Ember** (`ember`): Keyboard focus (the CSS sets it as `--hd-focus`) and the fire mark (the full stop) of the statement. Day uses a darker burnt orange (`ember-day`), so the ring and the mark pass 3:1 on the day ground.
+- **Ember Thread** (`ember-bright`): The thin fire line along the arc at rest.
+- **Banked Ember** (`ember-banked`): The guard band at the outer edge of the arc at rest.
 
 ### Tertiary
-- **Signal Yellow** (focus) with **Focus Ink** (focus-ink): Keyboard focus only. The yellow field reads on lapis, on white, and on the dark page.
-- **Refusal Red** (red) on **Red Tint** (red-tint): Errors, refusals, and invalid fields.
-- **Confirmation Green** (green) on **Green Tint** (green-tint): A done or confirmed result.
+- **Guard Fire** (`fire`): A refusal and nothing else. The outer band flares to it, the panel border and the fire mark turn to it, and the problem box and an invalid field use it as a border.
+- **Fire Text** (`fire-text`) and **Fire Tint** (`fire-tint`): The problem title, a field error, an error code, and the background of the problem box.
 
 ### Neutral
-- **Ink** (ink): Body text, headings, control borders, and the table header rule.
-- **Muted Ink** (ink-muted): Hints, footnotes, fact labels, and footer text. It still passes 4.5:1 on the page and on the ground.
-- **Page White** (page): The sheet behind the column, and the fill of inputs and secondary buttons.
-- **Lapis Ground** (ground): The footer, the note box, the hover fill of secondary buttons, and the body background.
-- **Hairline** (rule): 1px dividers in lists, tables, and the footer top edge.
+- **Night Sky** (`ground`): The page background. Day: **Dawn Sky** (`ground-day`).
+- **Stars** (`star`): The stars of the night sky. Day has no stars (`--hd-star: transparent`).
+- **Gatehouse** (`panel`): The panel that holds the task. Day: white.
+- **Raised** (`raised`): The hover fill of the secondary and quiet buttons.
+- **Field** (`field`): The input fill and the fact box fill.
+- **Line** (`line`): The panel border, the rule between list rows, and the note rule.
+- **Field Line** (`line-field`): The input border and the scrollbar thumb.
+- **Ink** (`ink`) and **Muted Ink** (`ink-muted`): Text. Muted ink is for help text, the plaque label, and the check line. The display color equals ink.
 
 ### Named Rules
-**The One Meaning Rule.** Each state color means one thing on every page. Lapis speaks or acts. Red refuses or fails. Green confirms. Yellow marks keyboard focus and nothing else.
+**The One Meaning Rule.** Frost is the bridge and Heimdall's actions. Ember is the bridge's fire at rest and keyboard focus. Fire red is a refusal. Use no color for a second meaning.
 
-**The Tokens Not Components Rule.** Tenant branding (Phase 3) changes token values. It never changes a component.
+**The Fire Means No Rule.** Red appears only when Heimdall refuses or the user selects Deny: wrong credentials, the throttle, an error page with a refusal. A "Heimdall is busy" error is not a refusal, so it stays idle and has no red.
+
+**The Tokens Not Components Rule.** A theme or a tenant changes token values only. Components read `var(--hd-*)`.
 
 ## Typography
 
-**Display Font:** system-ui (with -apple-system, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif)
-**Body Font:** the same system stack
-**Label/Mono Font:** ui-monospace (with SF Mono, Cascadia Mono, DejaVu Sans Mono, Liberation Mono, Menlo, Consolas, monospace)
+**Display Font:** Archivo (variable, `wdth` 62 to 125, `wght` 100 to 900), with `system-ui` as fallback
+**Body Font:** Archivo
+**Label/Mono Font:** JetBrains Mono (variable, `wght` 100 to 800), with `ui-monospace` as fallback
 
-**Character:** One plain sans family at every level. Weight and size carry the hierarchy. The monospace face marks values that a machine compares, such as hosts, client IDs, scope names, error codes, and token fingerprints.
+**Character:** A heavy, condensed, tightly tracked display that reads like letters cut in a gate. A plain grotesque for the text, and a clear monospace for the values a person compares character by character.
 
-The system stack is a security constraint, not a style preference. Decision U8 forbids web fonts and third-party origins on the login page.
+Both fonts are self-hosted `woff2` files in `ui/projects/ui-kit/fonts/`, under the SIL Open Font License 1.1. Heimdall serves them from its own origin (U8). No font service is used.
 
 ### Hierarchy
-- **Display** (700, clamp(2rem, 1.6rem + 1.6vw, 2.75rem), 1.1, -0.02em): The one page title, such as "Sign in". Balanced wrap.
-- **Headline** (700, 1.5rem, 1.25): Section headings inside a page, such as "Theft demo".
-- **Wordmark** (800, 1.5rem, 1, -0.01em): The name in the band. It is the only 800 weight.
-- **Body** (400, 1.125rem, 1.55): All running text. Tabular numerals are on. Lead text and prose keep a measure of 34em.
-- **Label** (700, 1.125rem): Field labels, message box titles, and table captions.
-- **Hint** (400, 1rem): Field hints, field errors (700, red), and table text.
-- **Small** (400, 0.875rem): Footnotes, fact labels, the plate label, and the footer.
-- **Mono** (inherits size, font-size-adjust 0.53): Machine values. The plate host uses mono at 1.125rem, 700.
+- **Display** (900, width 86%, `clamp(6rem, 1rem + 11vw, 11.5rem)` on desktop, `clamp(3.5rem, 1.5rem + 9vw, 10rem)` below 64rem, line height 0.86, tracking -0.045em): The statement at the gate, for example "Sign in." On desktop the measure is 3em, so the statement stacks about two words to a line. The text is balanced.
+- **Headline** (800, `clamp(1.375rem, 1rem + 1.2vw, 2rem)`, line height 1.15, tracking -0.02em, measure 22em): The plain heading under a figurative statement. When the statement is figurative, the statement is `aria-hidden` and this line is the `h1`.
+- **Lead** (400, 1.375rem, line height 1.4): The main sentence of a panel that has no form.
+- **Title** (700, 1.0625rem, line height 1.3): Section headings in the panel, for example "Huginn asks to".
+- **Body** (400, 1.0625rem, line height 1.5, tabular numbers): All running text.
+- **Small** (400, 0.9375rem, line height 1.45): Help text under a task, in muted ink.
+- **Note** (400, 0.8125rem): The development build note at the foot of the panel, and fact labels.
+- **Label** (700, body size): Field labels. Every field has a visible label.
+- **Mono host** (JetBrains Mono 700, `clamp(1.25rem, 0.9rem + 1.2vw, 2rem)`, line height 1.2): The host on the gate plaque.
+- **Mono value** (JetBrains Mono 700, 1.375rem): A fact value, for example the redirect host.
+- **Mono input** (JetBrains Mono 400, 1rem): Text in an input, so a user can read each character.
 
 ### Named Rules
-**The Scale Contrast Rule.** Size and weight rank content. A heading never gets a box, a color, or a rule to look important.
+**The Machine Value Rule.** Use JetBrains Mono only for hosts, codes, client IDs, scope names, and input text. Never use it for prose or headings.
 
-**The Machine Value Rule.** Monospace marks only values that a user or a machine compares character by character. Prose never uses mono.
+**The Plain Heading Rule.** A figurative statement ("Gate shut.") always has a plain heading under it that says the same thing ("Heimdall does not know this app").
+
+**The Fire Mark Rule.** A statement ends with one punctuation mark in the fire span (`.` or `?`). The mark is ember at rest and fire red on a refusal. Use no other colored glyph in the statement.
 
 ## Layout
 
-The frame centers a 64rem track with 16px gutters. The column inside it is left-aligned and has a maximum width of 30rem. The demo client uses a wide column of 48rem for tables; its prose keeps the 34em measure.
+The system uses a 4px rhythm (`spacing` 1 to 12). Panel content stacks with 1.5rem gaps; tight stacks use 0.75rem.
 
-The band is 64px tall. The origin plate hangs from the band at the left edge of the column. The page content starts 48px below the plate. The sheet ends with 64px of space. The footer sits on the ground, with 24px of padding above and below.
+**Desktop (64rem and wider).** The wordmark is at the top left. The motion switch is at the top right. Below them, a two-column grid: the statement on the left, centered vertically; the gatehouse panel on the right (27.5rem wide), centered vertically; the gate plaque at the bottom left. The columns have a 2.5rem gap. The page padding is 2rem, 3rem, and 2.5rem. The bridge rises from the bottom middle, behind the panel, to the right edge. Its size comes from `min(100vw, 142vh)`, so it keeps its place at each window shape.
 
-Spacing follows a 4px rhythm (4, 8, 12, 16, 24, 32, 48, 64px). A page stack separates blocks by 24px. A tight stack separates a heading from its list by 12px. A field separates its label, error, and input by 8px. In the demo, a new section starts 48px below the last one, and a table starts 32px below its lead text.
+**Tablet (40rem to 64rem).** The phone order, in one column of at most 34rem. The bridge arc is larger.
 
-The layout has one column at every width. No breakpoint changes the structure. The column and the frame shrink with the viewport, and long hosts wrap at any character.
+**Phone (below 40rem).** One column in this order: wordmark, motion switch (under the wordmark, in the clear sky left of the arc), statement, plaque, panel. The panel has no border or fill; its content sits on the sky. The bridge is a corner arc at the top right, seen from below (`scaleY(-1)`). The primary button stays in the first screen of a 390x667 viewport. On the consent page, the statement and the scope rows get tighter so Allow and Deny also stay in the first screen.
 
-### Named Rules
-**The One Frame Rule.** Every page uses the same band, plate, column, and footer. A new page changes the content of the column, never the frame.
+**The First Screen Rule.** The motion switch and the primary action are in the first screen on every layout.
 
 ## Elevation & Depth
 
-The system is flat. No surface casts a shadow, and no surface floats over another. Depth comes from three tonal planes: the lapis band, the white sheet, and the tinted ground. The only `box-shadow` in the system is part of the focus indicator: a yellow ring with a 6px ink underline below the control. Links get a yellow field with a 4px ink underline.
+The system is flat. No surface has a shadow. A 1px line and a change of fill separate the panel, the fields, and the facts from the sky. Depth comes only from the scene: the bridge sits behind the content (`z-index: -1`), and the stars stay in the first screen of sky. The bridge uses SVG blur for its soft lights and for the fire glow on a refusal. These are light, not elevation.
 
 ### Shadow Vocabulary
-- **Focus field** (`box-shadow: 0 0 0 3px var(--hd-focus), 0 6px 0 0 var(--hd-focus-ink)`, with a 3px yellow outline): Every focus-visible control.
-- **Link focus** (`box-shadow: 0 -2px var(--hd-focus), 0 4px var(--hd-focus-ink)` on a yellow background): Every focus-visible link.
+- **Invalid field** (`box-shadow: inset 0 0 0 1px var(--hd-fire)`): Doubles the fire border of an invalid input to 2px. It is a border, not a lift.
 
 ### Named Rules
-**The Flat Notice Rule.** Surfaces stay flat in every state. A shadow appears only as part of keyboard focus.
+**The Flat Gate Rule.** No drop shadow on any component. Separate surfaces with a 1px line or a fill change.
 
 ## Shapes
 
-Every corner is square (0px). Controls have a 2px border. An invalid input changes to a 4px red border and keeps its outer size. Message boxes have a full 2px border in their state color, or a 1px hairline for a neutral note. Dividers are 1px hairlines. The table header rule is 2px ink.
+Every corner is square (`rounded.none`). Buttons, inputs, the panel, the problem box, the fact box, the switch track, and its knob have no radius. Borders are 1px; forced colors make them 2px. The icons are authored on a 24px grid with a 1.75 stroke, square caps, and miter joins, so they match the controls. The only curve in the system is the arc of the bridge: concentric quarter circles, with sky in the gaps between bands. The watcher's eye (the logo) is the other curved form. It is drawn in `currentColor` at 32px, 12px before the wordmark.
 
-The one non-rectangular shape is the origin plate. Its bottom edge has a shallow notch: `clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 0.5rem), 0 100%)`. The plate looks like a ribbon tab that hangs from the band.
-
-### Named Rules
-**The Square Corner Rule.** No element has a border radius. The plate notch is the only shaped edge.
-
-## Logo
-
-The watcher's eye: an open eye with a keyhole pupil. It watches, and it grants access. The brand book, the four SVG files and the tokens are in [`docs/brand/`](docs/brand/README.md).
-
-- **Files:** `heimdall-mark.svg` is the favicon and app icon. `heimdall-mark-dark.svg` is the dark variant. `heimdall-eye-on-lapis.svg` goes in the band. `heimdall-eye-ink.svg` is for one-ink use.
-- **The band:** the eye is 32px and sits 12px (`space-3`) before the wordmark. `HdFrame` draws it for the issuer tone only.
-- **The Client Band Rule:** a client band never carries the eye. A client is not Heimdall.
-- **The tile:** the tile is square. The Square Corner Rule applies to the logo.
-- **Colours:** use lapis and white, or ink alone. Do not use Signal Yellow, red or green on the logo. Each of these colours has one other meaning.
-- **Minimum size:** 16px. Below 16px, the keyhole disappears.
-- **Never** round the tile, add a gradient, glow or shadow, or put the eye on a client's band or plate.
+**The Square Corner Rule.** No radius on any control, box, or tile, including the logo tile.
 
 ## Components
 
 ### Buttons
-Plain, firm, and square.
-- **Shape:** square corners (0px), 2px border, minimum height 48px.
-- **Primary:** Issuer Lapis fill and border, white bold text, 8px by 24px padding. A form's submit button fills the column width.
-- **Hover / Focus:** Hover changes the fill and border to Deep Lapis in 120ms (cubic-bezier(0.16, 1, 0.3, 1)). Focus shows the yellow focus field.
-- **Secondary:** Page White fill, ink text, 2px ink border. Hover fills with Lapis Ground. Use it for the second choice, such as "Deny", and for "Show" in the password row.
-- **Quiet:** Transparent, inherits the text color, border in the current color, 4px by 12px padding, weight 600. Hover underlines the text. Use it in the band, such as "Sign out" in the demo.
-- **Busy:** A busy button gets `aria-disabled`, opacity 0.7, and the progress cursor. Its label changes, for example "Signing in".
-- **Paired:** A button attached to an input overlaps the input border by 2px, so the two share one edge.
-
-### Chips
-- **Status mark (demo):** A small inline box with a 2px border in the current color, 0.875rem bold text, and 8px side padding. Red reads "Refused". Green reads "Issued". It follows the One Meaning Rule.
-
-### Cards / Containers
-There are no cards. Three message boxes carry state only.
-- **Corner Style:** square (0px).
-- **Problem box:** 2px red border, Red Tint fill, red bold title "There is a problem". It takes focus when it appears.
-- **Confirm box:** 2px green border, Green Tint fill, green bold title.
-- **Note box:** 1px hairline border, Lapis Ground fill, for a neutral status.
-- **Shadow Strategy:** none (see Elevation & Depth).
-- **Internal Padding:** 16px by 24px.
+Heavy, square, and wide. The primary action reads its words first and its direction last.
+- **Shape:** Square (0px). Height is the control height plus 4px (60px). Weight 800.
+- **Primary ("go"):** Frost fill, on-act text, 1px frost border. Full width in the panel. The words are at the start and an arrow icon is at the end (`justify-content: space-between`).
+- **Hover:** The fill goes to `act-strong` in 160ms. The arrow moves 4px to the right in 240ms.
+- **Focus:** A 3px ember outline with a 2px gap. The ring is readable on the panel, the field, and the frost button.
+- **Busy:** The button keeps full contrast and its fill. Its words change ("Signing in") and its arrow goes to 50% opacity. It uses `aria-disabled`, not `disabled`, so it keeps focus.
+- **Secondary:** Transparent, ink text, `ink-muted` border. Hover fills it with `raised`. "Show" next to the password and "Deny" on consent use it.
+- **Quiet:** Transparent, `line-field` border, weight 600, small padding. For a minor action.
+- **Pair:** Allow and Deny sit in a grid of 1.2fr and 1fr, with a 0.75rem gap. Allow is the primary.
 
 ### Inputs / Fields
-- **Style:** Page White fill, 2px ink border, square, minimum height 48px, 8px by 12px padding, body size text. The label is bold and sits above the input. A hint or an error sits between the label and the input.
-- **Focus:** the yellow focus field with the ink underline.
-- **Error:** The border changes to 4px red. A bold red message above the input starts with the hidden word "Error:".
+- **Style:** Square, 56px tall, 1px `line-field` border, `field` fill, JetBrains Mono at 1rem. The label is above, in bold.
+- **Hover:** The border goes to `ink-muted`.
+- **Focus:** The ember ring sits on the edge (offset 0), and the border turns ember.
+- **Error:** The border turns fire red and doubles to 2px. A field error in `fire-text`, bold, small, sits between the label and the input. The input points to it with `aria-describedby`.
+- **Input row:** An input and a secondary button share one edge (the button overlaps by 1px).
 
-### Navigation
-- **Band navigation (demo):** Links in On-Lapis White, weight 600, no underline. Hover shows a 3px Mist bottom border. The active page shows a 3px white bottom border and `aria-current="page"`. The links wrap on narrow screens.
-- **Inline links:** Link Lapis with a 1px underline at 0.2em offset. Hover thickens the underline to 3px.
+### Gatehouse panel
+- **Corner Style:** Square.
+- **Background:** `panel`, with a 1px `line` border on desktop. On a refusal the border turns fire red.
+- **Shadow Strategy:** None (see Elevation & Depth).
+- **Internal Padding:** 2rem on top and the sides, 1.5rem at the foot.
+- **Content:** The task, one help line, and the development build note. The note is above a 1px rule, in note size and muted ink.
 
-### Lists and Tables
-- **Rule list:** No bullets. A hairline above the list and below each item. 16px vertical padding for each item.
-- **Table:** Full width, 1rem text, left-aligned, no vertical rules. A 2px ink rule below the header. Hairlines between rows. The caption is bold and left-aligned.
+### Gate plaque
+The signature component. It does the job of the old origin plate.
+- **Label:** A short phrase that reads into the host ("You are at the gate of", "You are signed in at"). Muted ink, 0.8125rem, weight 600, uppercase, tracking 0.12em. This style belongs to the plaque label only.
+- **Host:** The tenant host in mono host type, for example `acme.localhost:7299`. It wraps anywhere.
+- **Check line:** "Check that your address bar shows the same host." Muted ink, small size. Every plaque carries this line.
 
-### Origin Plate (signature component)
-A lapis tab hangs from the band at the left edge of the column. A small Mist label names the relation, such as "Signing in to" or "You are on". Below it, the current host shows in bold monospace at 1.125rem. The host is the same value as the address bar, so the user can compare the two and see a phishing copy. In a client app, the plate uses Client Slate and the label names the app as a Heimdall client.
+### Problem box
+- **Style:** Square, 1px fire border, `fire-tint` fill, padding 1rem by 1.25rem. A 24px alert icon in `fire-text` sits at the start and spans two rows.
+- **Content:** The title "There is a problem" in `fire-text`, weight 800, then the message. When the message is about a field, it is a link to that field.
+- **Behavior:** `role="alert"`. The page moves focus to the box.
 
-### Band and Busy Line
-The band holds the wordmark at the left and optional controls at the right. When a page waits for the server, a 3px white line moves across the bottom edge of the band (1.1s, the ease-out curve, repeated). It is the only authored animation. Reduced motion stops it.
+### Fact box
+- **Style:** Square, 1px `line` border, `field` fill, padding 1rem by 1.25rem.
+- **Content:** A label in note size and muted ink, then the value in mono value type. An optional meta line (for example, the App ID) is in note size.
+- **Error code variant:** The label and the code sit on one line. The code is in `fire-text`, bold.
+
+### Scope list
+Rows divided by a 1px `line` rule. Each row has a frost icon, the plain sentence, and the raw scope name in mono at note size and muted ink. An unknown scope shows its raw name in code style.
+
+### Motion switch
+- **Style:** A toggle button labeled "Motion", 44px tall, muted ink, weight 600, small size. The track is a 32 by 16px square outline with a 10px square knob.
+- **On:** The track fills with frost and the knob moves 16px to the right in `on-act`.
+- **Hover:** The text goes to ink, and a 1px `line` border appears.
+- **State:** `aria-pressed` carries the state. The default follows `prefers-reduced-motion`. The choice is stored in `localStorage` under `heimdall.motion`. When storage fails, the choice lasts for the page only.
+
+### The bridge (signature)
+An SVG arc of four frost bands (from outside: `bridge-1` to `bridge-4`), an ember thread, and a banked guard band at the outer edge. A sky of 46 fixed stars is behind it. The bridge is `aria-hidden`, because the text says the same state.
+
+| State | Bridge |
+|---|---|
+| `idle` | Stars twinkle (4.1s to 8.8s cycles). A soft light drifts up each band (11s to 19s). |
+| `busy` | A stream of lights runs up every band (0.8s cycle, each band 0.1s later). |
+| `refused` | The guard band turns fire red and widens. A fire glow burns under the bands (2.4s flicker). The frost dims to 55% brightness. The ember thread turns red. No light moves. |
+| `crossing` | Every band lights from the gate to the sky, once (700ms, each band 60ms later). |
+
+With motion off, the scene holds still. The state stays visible: crossing keeps every band lit, and refused keeps the fire.
+
+### Forced colors
+In forced-colors mode (Windows High Contrast), the bridge is hidden. Buttons, inputs, the panel, the problem box, and the fact box get a 2px system-color border (`CanvasText`; buttons `ButtonText`). The problem title uses `CanvasText`. Focus uses `Highlight`. The "on" track of the motion switch fills with `Highlight`.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** put every new page inside the one frame: band, origin plate, column, footer.
-- **Do** rank content with size and weight: Display for the page title, Headline for sections, Body at 1.125rem.
-- **Do** keep controls square, with a 2px border and a height of 48px.
-- **Do** use lapis for Heimdall and its actions, red for a refusal, green for a confirmation, and yellow for focus only.
-- **Do** show machine values (hosts, IDs, scopes, error codes) in monospace.
-- **Do** use the client band and plate color for any site that is not Heimdall.
-- **Do** keep text at 4.5:1 contrast or more in both themes.
-- **Do** state on every page that Heimdall is a development build, until the owner decides otherwise.
+- **Do** use frost for the bridge and Heimdall's actions, ember for the fire at rest and keyboard focus, and fire red for a refusal only (The One Meaning Rule).
+- **Do** show the host on the gate plaque in JetBrains Mono, with the line "Check that your address bar shows the same host."
+- **Do** put a plain heading under every figurative statement, and make that heading the `h1`.
+- **Do** set the display in Archivo 900 at 86% width, line height 0.86, tracking -0.045em, with a 3em measure on desktop.
+- **Do** make every control square and 56px tall (60px for buttons).
+- **Do** set the bridge state from the page state, and also say that state in text.
+- **Do** keep the motion switch in the first screen. Default it from `prefers-reduced-motion`, and keep the state readable with motion off.
+- **Do** give every edge and state a system-color border in forced-colors mode, and hide the bridge there.
+- **Do** serve fonts and every other asset from Heimdall's own origin.
 
 ### Don't:
-- **Don't** add a web font or load anything from a third-party origin (U8).
-- **Don't** use a card, a panel, or a shadow to rank content. A box carries a state only.
-- **Don't** use yellow for anything except keyboard focus.
-- **Don't** give a state color a second meaning, for example green for a brand accent.
-- **Don't** round a corner. The plate notch is the only shaped edge.
-- **Don't** mark a message with a thick side stripe. A message box has a full border.
-- **Don't** add a small label above a page title. The title stands alone.
-- **Don't** change a component for tenant branding. Change tokens only.
+- **Don't** use red for anything but a refusal. A busy or unavailable state is not a refusal.
+- **Don't** use ember for anything but the bridge's fire, the fire mark, and keyboard focus.
+- **Don't** round a corner, add a drop shadow, or add a gradient to a control or a panel.
+- **Don't** use JetBrains Mono for prose or headings.
+- **Don't** make any state depend on the bridge. Text, focus, and `aria-live` must carry it.
+- **Don't** center the task in a card on a gradient.
+- **Don't** use this look in a client app. The demo SPA and Huginn are not Heimdall, and the demo SPA keeps its own look in `ui/projects/demo/src/client-kit.css`.
+- **Don't** load a font or any other file from a third-party origin.

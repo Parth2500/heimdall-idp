@@ -1,6 +1,6 @@
 # Heimdall
 
-The Public-Service Notice. Heimdall is a custom OAuth 2.1 and OpenID Connect identity provider. Its few pages (sign in, consent, error, signed out, account) read as notices from the issuer: who is asking, which origin the browser is on, what leaves, and nothing else. This system is condensed from the repository's `DESIGN.md` and adds the new logo.
+Burning Bridge (decision U15, 2026-10-23). Heimdall is a custom OAuth 2.1 and OpenID Connect identity provider. In the myths, Heimdall guards Bifröst, the burning bridge to Asgard. Each account page (sign in, consent, error, signed out) is the gate at the foot of that bridge: the host you stand at, one decision, and a bridge that shows the state of the request. `DESIGN.md` holds the full system. This page is the short version, with the logo.
 
 ## Logo
 
@@ -14,58 +14,45 @@ The Public-Service Notice. Heimdall is a custom OAuth 2.1 and OpenID Connect ide
 | `heimdall-eye-ink.svg` | One ink (`ink`, #0b0c14), see-through iris. Print and single-colour contexts. |
 
 - **Tile:** square, no radius (**The Square Corner Rule** covers the logo too).
-- **In the band:** `heimdall-eye-on-lapis.svg` at 32px, 12px (`space-3`) before the wordmark "Heimdall" in the `wordmark` style. A client band (`client`) never carries the eye: it is not Heimdall.
-- **In code:** `HdFrame` (ui-kit) draws the eye inline for `tone="issuer"` only, in `currentColor`, so it follows `on-lapis` like the wordmark. A tenant colour change needs no new SVG.
-- **Colours:** lapis and white only, or ink alone. Never Signal Yellow: `focus` means keyboard focus and nothing else. Never red or green, which mean refuse and confirm.
+- **On a page:** the eye at 32px, 12px before the wordmark "Heimdall", at the top left of the gate. A client never carries the eye: it is not Heimdall.
+- **In code:** `HdGate` (ui-kit) draws the eye inline in `currentColor`, so it follows the display color in both themes. A tenant colour change needs no new SVG.
+- **Colours:** lapis and white only, or one ink. Never ember: ember means the bridge's fire and keyboard focus. Never red, which means a refusal.
 - **Minimum size:** 16px. The keyhole drops out below that; use the mark at 16px or larger.
 - **Never** round the tile, add a gradient, glow or shadow, or put the eye on a client's band or plate.
 
 ## Content fundamentals
 
-Plain, factual and short, like a public notice. Say who asks and what leaves ("Huginn wants your email address"). Name the host exactly, in monospace. Errors say what happened and what to do next. Every page states that Heimdall is a development build.
+Plain, factual and short. The large statement may be figurative ("Gate shut."), but a plain heading always follows it and says the same thing ("Heimdall does not know this app"). Say who asks and what leaves. Name the host exactly, in monospace. Errors say what happened and what to do next. Every page states that Heimdall is a development build.
 
 ## Colour
 
-One committed blue, cool neutrals and three state colours. **The One Meaning Rule:** each colour means one thing on every page.
+**The One Meaning Rule:** each colour means one thing on every page.
 
-- `lapis` speaks and acts: the band, the origin plate, primary buttons, selection and the logo. Hover moves to `lapis-strong`. Text on it is `on-lapis`, the plate label `on-lapis-muted`.
-- `client` replaces lapis in the frame of any site that is not Heimdall, such as the demo SPA.
-- `focus` (yellow) with `focus-ink` marks keyboard focus only.
-- `red` on `red-tint` refuses or fails; `green` on `green-tint` confirms.
-- `ink`, `ink-muted`, `page`, `ground` and `rule` are the neutrals. `ink-muted` still passes 4.5:1 on `page` and `ground`.
+- Frost blue (`bridge-1` to `bridge-4`, `act`) is the bridge and Heimdall's actions: primary buttons, selection, scope icons.
+- Ember (`ember`, `ember-bright`) is the bridge's fire at rest and keyboard focus.
+- Fire red (`fire`) is a refusal and nothing else: wrong credentials, the throttle, an error page, a Deny.
+- Night (default dark) and day (light) themes follow `prefers-color-scheme`. Text passes 4.5:1 in both.
 - **The Tokens Not Components Rule.** Tenant branding changes token values, never a component.
 
 ## Typography
 
-The system font stack only, by decision U8: no web font and no third-party origin on the sign-in page. Weight and size carry the hierarchy (**The Scale Contrast Rule**).
+Archivo (display and text) and JetBrains Mono (hosts, codes, scope names), self-hosted `woff2` files under the SIL Open Font License 1.1 (U8, U15). No font service and no third-party origin.
 
-- `display` for the one page title, `headline` for sections, `wordmark` (800, the only 800) for the name in the band.
-- `body` at 1.125rem with tabular numerals, `label` 700, `hint` 1rem, `small` 0.875rem.
-- `mono` only for values a person or machine compares character by character: hosts, client IDs, scopes, error codes (**The Machine Value Rule**).
+- The statement is Archivo 900, tight, two words to a line on desktop.
+- Mono only for values a person or machine compares character by character (**The Machine Value Rule**).
 
 ## Layout
 
-**The One Frame Rule.** Every page is the 64px band (`space-band-height`), the origin plate hanging from it, one left-aligned column of `space-column` (30rem) inside a `space-frame` (64rem) track, and the footer on `ground`. Content starts `space-12` below the plate. Spacing follows a 4px rhythm. One column at every width.
+Desktop: statement on the left, gatehouse panel on the right, gate plaque at the bottom left, the bridge behind the panel. Phone: statement, plaque, then the form, with the bridge as a corner arc. The primary button stays in the first screen of a 390x667 phone.
 
-## Shape and depth
+## Motion
 
-- Every corner is square (`radius-none`). Controls are 48px (`space-control`) with a 2px ink border (`space-border`). An invalid input moves to a 4px red border.
-- The only shaped edge is the origin plate's bottom notch: `clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 0.5rem), 0 100%)`.
-- Flat (**The Flat Notice Rule**). The only shadows are `shadow-focus-field` and `shadow-link-focus`.
+The bridge is state: lights drift (idle), run (busy), the outer band burns (refused), every band lights (crossing). The "Motion" switch stops it all; the default follows `prefers-reduced-motion`.
 
 ## Do and don't
 
-- Do put every page inside the one frame, and show the host in the plate in monospace.
-- Do keep text at 4.5:1 in both themes.
-- Don't add a web font, a card, a panel, a rounded corner or a side-stripe message.
-- Don't use yellow for anything but focus, or give a state colour a second meaning.
-
-## Not synced
-
-Taken from `Parth2500/heimdall-idp` at `main@806e0b2` (`DESIGN.md`). Not included yet:
-
-- **Components** (no bundle built): buttons (primary, secondary, quiet, busy, paired), status chip, problem, confirm and note boxes, inputs, band navigation, inline links, rule list, table, origin plate, band and busy line. Their rules are in `DESIGN.md`.
-- `display` is fluid in the app (`clamp(2rem, 1.6rem + 1.6vw, 2.75rem)`); it is stored here at its largest step. `mono` inherits its size in use.
-- The shadows use the light values of `focus` and `focus-ink` as literals; the app reads them from CSS variables.
-- The logo uses Issuer Lapis, not the teal from the logo exploration, to keep **The One Meaning Rule**. Switching the brand colour is a token change.
-- The account pages use the logo: the eye in the band and `favicon.svg` (with `favicon.ico` at 16, 32 and 48px made from it).
+- Do show the host on the gate plaque, with the address bar check line.
+- Do keep a plain heading under every figurative statement.
+- Don't use red for anything but a refusal, or ember for anything but the fire and focus.
+- Don't load a font or anything else from a third-party origin.
+- Don't use this look in a client app. The demo SPA keeps its own look.
