@@ -197,13 +197,14 @@ Boundary: B2. The endpoint revokes a refresh token with its family, or an access
 
 ## `GET /oauth/v1/userinfo`
 
-Boundary: B2 and B5. The endpoint needs a bearer access token. It returns the claims of the subject.
+Boundary: B2 and B5. The endpoint needs an access token, as a bearer token or as a DPoP-bound token (D28). It returns the claims of the subject.
 
 | STRIDE | Threat | Mitigation |
 |---|---|---|
 | Spoofing | An attacker sends a forged token, or a token for a different issuer or audience. | Heimdall checks the signature with `RS256` only (D8), with the tenant's published keys from memory. The `typ` must be `at+jwt`, so an ID token fails. It checks `iss`, `exp`, and that `aud` is the userinfo endpoint (D22). It rejects `client_credentials` tokens, because their subject is not a user. |
-| Spoofing | An attacker replays a stolen access token. | The short lifetime (D8). DPoP adds sender-constraining in Phase 2. |
-| Tampering | A client sends the token in the query string or form body. Logs and caches keep it. | Heimdall accepts the `Authorization: Bearer` header only. A token in the query string gets `invalid_request`, so the client developer sees the mistake. |
+| Spoofing | An attacker replays a stolen access token. | The short lifetime (D8). A DPoP-bound token works only with the `DPoP` scheme and a proof from its key, for this method, this URL, and this token (`ath`). Each proof works once (D26, D28). A bound token sent as `Bearer` gets `invalid_token`. |
+| Spoofing | A client presents an unbound token with the `DPoP` scheme, to look bound. | Heimdall refuses an unbound token with the `DPoP` scheme (`invalid_token`). A `cnf` that Heimdall cannot read makes the token invalid, so a bound token never falls back to a bearer token. |
+| Tampering | A client sends the token in the query string or form body. Logs and caches keep it. | Heimdall accepts the `Authorization` header only, with the `Bearer` or the `DPoP` scheme. A token in the query string gets `invalid_request`, so the client developer sees the mistake. |
 | Repudiation | A party disputes access to user data. | Heimdall writes `userinfo.read` for each successful call: `sub`, `client_id`, released scopes, correlation ID. It does not log claim values. A refused call goes to the log only. |
 | Information disclosure | The response gives more claims than the scope allows. | Heimdall releases only the claims that the granted scopes allow. Today `email` releases `email` and `email_verified`. `email_verified` is always false, because Heimdall has no email verification yet. The `sub` always equals the `sub` of the ID token. |
 | Information disclosure | A browser or proxy caches the response. | `Cache-Control: no-store`. CORS allows only client origins of the tenant (D23). It never uses `*`. Each response has `Vary: Origin`. |

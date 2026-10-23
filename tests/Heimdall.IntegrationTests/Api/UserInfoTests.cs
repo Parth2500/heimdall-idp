@@ -293,7 +293,8 @@ public sealed class UserInfoTests
         using var inQuery = await CallAsync(flow, token: null, path: "oauth/v1/userinfo?access_token=" + tokens.AccessToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, none.StatusCode);
-        Assert.Equal("Bearer", none.Headers.WwwAuthenticate.ToString());
+        // RFC 9449, section 7.1: both schemes work here, so the challenge names both.
+        Assert.Equal("Bearer, DPoP algs=\"ES256 RS256\"", none.Headers.WwwAuthenticate.ToString());
         Assert.Equal(HttpStatusCode.Unauthorized, basic.StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, inQuery.StatusCode);
         Assert.Equal("""{"error":"invalid_request"}""", await inQuery.Content.ReadAsStringAsync());

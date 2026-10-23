@@ -1,5 +1,6 @@
 using Heimdall.Application.Audit;
 using Heimdall.Application.Common;
+using Heimdall.Application.Dpop;
 using Heimdall.Application.Users;
 using Heimdall.Domain.Audit;
 using Heimdall.Domain.Users;
@@ -23,9 +24,27 @@ public static class UserInfoEndpoint
 /// </param>
 public sealed record UserInfoClaims(string Subject, string? Email, bool? EmailVerified);
 
+/// <summary>The authentication scheme of the <c>Authorization</c> header.</summary>
+public enum TokenScheme
+{
+    /// <summary><c>Authorization: Bearer</c> (RFC 6750).</summary>
+    Bearer,
+
+    /// <summary><c>Authorization: DPoP</c>, with a proof in the <c>DPoP</c> header (RFC 9449, section 7.1).</summary>
+    Dpop,
+}
+
+/// <summary>A userinfo request as the endpoint received it.</summary>
+/// <param name="AccessToken">The token from the <c>Authorization</c> header.</param>
+/// <param name="Scheme">The scheme that the token came with.</param>
+/// <param name="Method">The HTTP method. A DPoP proof must name it in <c>htm</c>.</param>
+/// <param name="DpopProof">The one <c>DPoP</c> header, or null.</param>
+public sealed record UserInfoRequest(string AccessToken, TokenScheme Scheme, string Method, string? DpopProof = null);
+
 /// <summary>
-/// <c>GET /oauth/v1/userinfo</c> (OpenID Connect Core, section 5.3). The caller sends a bearer access token for the
+/// <c>GET /oauth/v1/userinfo</c> (OpenID Connect Core, section 5.3). The caller sends an access token for the
 /// userinfo endpoint. Heimdall loads the user on each call, so a disabled user gets no data, even with a valid token.
+/// A DPoP-bound token works only with the DPoP scheme and a proof from its key (D28).
 /// </summary>
 /// <remarks>
 /// Every token failure is the same <c>invalid_token</c> (D5). The reason goes to the log, not the audit log: a bad
@@ -37,24 +56,35 @@ public sealed class UserInfoService
     public const string InsufficientScopeCode = "insufficient_scope";
 
     private readonly IAccessTokenValidator _validator;
+    private readonly IDpopProofValidator _proofs;
+    private readonly IDpopReplayStore _replay;
     private readonly IUserStore _users;
     private readonly IAuditLog _audit;
     private readonly TimeProvider _time;
 
-    public UserInfoService(IAccessTokenValidator validator, IUserStore users, IAuditLog audit, TimeProvider time)
+    public UserInfoService(
+        IAccessTokenValidator validator,
+        IDpopProofValidator proofs,
+        IDpopReplayStore replay,
+        IUserStore users,
+        IAuditLog audit,
+        TimeProvider time)
     {
         _validator = validator;
+        _proofs = proofs;
+        _replay = replay;
         _users = users;
         _audit = audit;
         _time = time;
     }
 
-    public async Task<Result<UserInfoClaims>> GetAsync(RequestContext context, string accessToken, CancellationToken cancellationToken)
+    public async Task<Result<UserInfoClaims>> GetAsync(RequestContext context, UserInfoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
-        ArgumentException.ThrowIfNullOrEmpty(accessToken);
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentException.ThrowIfNullOrEmpty(request.AccessToken);
 
-        var token = await _validator.ValidateAsync(context.Tenant.Id, accessToken, cancellationToken).ConfigureAwait(false);
+        var token = await _validator.ValidateAsync(context.Tenant.Id, request.AccessToken, cancellationToken).ConfigureAwait(false);
         if (token is null)
         {
             return Invalid("format, header, or signature");
@@ -76,6 +106,12 @@ public sealed class UserInfoService
         if (_time.GetUtcNow() >= token.ExpiresAt)
         {
             return Invalid("expired");
+        }
+
+        // D28: the binding before any user data. The replay check is a database write, so it runs after the cheap checks.
+        if (await CheckBindingAsync(context, request, token, cancellationToken).ConfigureAwait(false) is { } refused)
+        {
+            return Result.Failure<UserInfoClaims>(refused);
         }
 
         // A client_credentials token has a client as its subject, not a user. It never matches a user ID.
@@ -118,6 +154,50 @@ public sealed class UserInfoService
             cancellationToken).ConfigureAwait(false);
 
         return Result.Success(claims);
+    }
+
+    /// <summary>
+    /// RFC 9449, section 7: a bound token needs the DPoP scheme and a valid, unused proof from its key. A bound token sent
+    /// as a bearer token fails, or the binding would protect nothing (D28). An unbound token with the DPoP scheme fails
+    /// too, so a client cannot claim a binding that the token does not have.
+    /// </summary>
+    /// <returns>The error, or null when the binding holds.</returns>
+    private async Task<OAuthError?> CheckBindingAsync(
+        RequestContext context,
+        UserInfoRequest request,
+        VerifiedAccessToken token,
+        CancellationToken cancellationToken)
+    {
+        if (token.KeyThumbprint is not { } boundKey)
+        {
+            return request.Scheme == TokenScheme.Dpop ? new OAuthError(InvalidTokenCode, "unbound token with the DPoP scheme") : null;
+        }
+
+        if (request.Scheme != TokenScheme.Dpop)
+        {
+            return new OAuthError(InvalidTokenCode, "bound token sent as a bearer token");
+        }
+
+        if (request.DpopProof is null)
+        {
+            return OAuthError.InvalidDpopProof("proof missing");
+        }
+
+        var url = new Uri(context.Issuer + UserInfoEndpoint.Path);
+        var proof = _proofs.Validate(request.DpopProof, new DpopRequest(request.Method, url, request.AccessToken));
+        if (!proof.IsSuccess)
+        {
+            return proof.Error;
+        }
+
+        if (!string.Equals(proof.Value.KeyThumbprint, boundKey, StringComparison.Ordinal))
+        {
+            return OAuthError.InvalidDpopProof("proof key differs from cnf.jkt");
+        }
+
+        return await _replay.TryUseAsync(context.Tenant.Id, proof.Value, cancellationToken).ConfigureAwait(false)
+            ? null
+            : OAuthError.InvalidDpopProof("proof replayed");
     }
 
     private static Result<UserInfoClaims> Invalid(string reason) =>

@@ -2,6 +2,12 @@ using Heimdall.Application.Common;
 
 namespace Heimdall.Application.Dpop;
 
+/// <summary>The proof algorithms that Heimdall accepts (D25). Discovery and the DPoP challenge publish this list.</summary>
+public static class DpopAlgorithms
+{
+    public static readonly IReadOnlyList<string> Supported = ["ES256", "RS256"];
+}
+
 /// <summary>The request that a DPoP proof must match.</summary>
 /// <param name="Method">The HTTP method, as the server received it.</param>
 /// <param name="Url">The endpoint URL in the tenant: the issuer and the path. The proof's <c>htu</c> must equal it.</param>

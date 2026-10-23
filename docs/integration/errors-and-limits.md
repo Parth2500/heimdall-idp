@@ -53,8 +53,9 @@ If `client_id` or `redirect_uri` is wrong, Heimdall shows its own error page and
 | Status | `error` | Cause |
 |---|---|---|
 | `400` | `invalid_request` | The access token is in the query string. Send it in the `Authorization` header. |
-| `401` | None | No token. The response has `WWW-Authenticate: Bearer`. |
-| `401` | `invalid_token` | The token is malformed, expired, for another audience, or for a disabled user. |
+| `401` | None | No token. The response has `WWW-Authenticate: Bearer, DPoP algs="ES256 RS256"`. |
+| `401` | `invalid_token` | The token is malformed, expired, for another audience, or for a disabled user. Or a bound token came with the `Bearer` scheme, or an unbound token with the `DPoP` scheme. |
+| `401` | `invalid_dpop_proof` | A bound token came without a valid, unused proof from its key, for this request and this token. See [DPoP](dpop.md#errors). |
 | `403` | `insufficient_scope` | The token has no `openid` scope. |
 
 ## Rate limits

@@ -478,4 +478,32 @@ public sealed class AccessTokenValidatorTests : IDisposable
 
         Assert.Null(await Validate(SignSegments(TestJwt.Encode(Header()), payload)));
     }
+
+    private const string Jkt = "0ZcOCORZNYy-DWpqq30jZyJGHTN0d2HglBV3uiguA4I";
+
+    [Fact]
+    public async Task Bearer_token_has_no_key_thumbprint()
+    {
+        Assert.Null((await Validate(Sign(Header(), Payload())))!.KeyThumbprint);
+    }
+
+    [Fact]
+    public async Task Bound_token_returns_its_cnf_jkt()
+    {
+        var token = await Validate(Sign(Header(), With(Payload(), "cnf", new JsonObject { ["jkt"] = Jkt })));
+
+        Assert.Equal(Jkt, token!.KeyThumbprint);
+    }
+
+    // A cnf that Heimdall cannot read must not turn a bound token into a bearer token.
+    [Theory]
+    [InlineData("\"0ZcOCORZNYy-DWpqq30jZyJGHTN0d2HglBV3uiguA4I\"")]
+    [InlineData("{}")]
+    [InlineData("{\"jkt\":42}")]
+    [InlineData("{\"jkt\":\"too-short\"}")]
+    [InlineData("{\"x5t#S256\":\"0ZcOCORZNYy-DWpqq30jZyJGHTN0d2HglBV3uiguA4I\"}")]
+    public async Task Unreadable_cnf_makes_the_token_invalid(string cnf)
+    {
+        Assert.Null(await Validate(Sign(Header(), With(Payload(), "cnf", JsonNode.Parse(cnf)))));
+    }
 }

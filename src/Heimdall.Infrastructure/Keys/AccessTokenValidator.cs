@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using Heimdall.Application.Keys;
 using Heimdall.Application.UserInfo;
+using Heimdall.Domain.Common;
 using Heimdall.Domain.Keys;
 
 namespace Heimdall.Infrastructure.Keys;
@@ -115,9 +116,23 @@ internal sealed class AccessTokenValidator : IAccessTokenValidator
         var scopes = Jws.IsString(payload, "scope", out var scope)
             ? scope.Split(' ', StringSplitOptions.RemoveEmptyEntries)
             : [];
+
+        // RFC 9449, section 6.1: a bound token names its key in cnf.jkt. A cnf that Heimdall cannot read makes the token
+        // invalid: treating it as unbound would turn a bound token into a bearer token.
+        string? keyThumbprint = null;
+        if (payload.TryGetProperty("cnf", out var cnf))
+        {
+            if (cnf.ValueKind != JsonValueKind.Object || !Jws.IsString(cnf, "jkt", out var jkt) || !KeyThumbprint.IsValid(jkt))
+            {
+                return null;
+            }
+
+            keyThumbprint = jkt;
+        }
+
         try
         {
-            return new VerifiedAccessToken(iss, sub, aud, clientId, scopes, DateTimeOffset.FromUnixTimeSeconds(expSeconds));
+            return new VerifiedAccessToken(iss, sub, aud, clientId, scopes, DateTimeOffset.FromUnixTimeSeconds(expSeconds), keyThumbprint);
         }
         catch (ArgumentOutOfRangeException)
         {

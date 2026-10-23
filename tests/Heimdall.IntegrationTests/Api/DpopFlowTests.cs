@@ -62,16 +62,22 @@ public sealed class DpopFlowTests
             }
         }
 
-        public string Proof(string htu, DateTimeOffset iat, string? jti = null)
+        /// <param name="accessToken">At a resource, the token that the proof goes with. Its hash becomes <c>ath</c>.</param>
+        public string Proof(string htu, DateTimeOffset iat, string? jti = null, string htm = "POST", string? accessToken = null)
         {
             var header = new JsonObject { ["typ"] = "dpop+jwt", ["alg"] = "ES256", ["jwk"] = Jwk };
             var payload = new JsonObject
             {
                 ["jti"] = jti ?? Guid.NewGuid().ToString("N"),
-                ["htm"] = "POST",
+                ["htm"] = htm,
                 ["htu"] = htu,
                 ["iat"] = iat.ToUnixTimeSeconds(),
             };
+            if (accessToken is not null)
+            {
+                payload["ath"] = Base64Url.EncodeToString(SHA256.HashData(Encoding.ASCII.GetBytes(accessToken)));
+            }
+
             var input = Encode(header) + "." + Encode(payload);
             var signature = _key.SignData(Encoding.ASCII.GetBytes(input), HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
             return input + "." + Base64Url.EncodeToString(signature);
@@ -85,6 +91,8 @@ public sealed class DpopFlowTests
     private sealed record Flow(HeimdallApiFactory Api, TestTenant Tenant, HttpClient Http, string Code) : IAsyncDisposable
     {
         public string TokenUrl => Tenant.Issuer + "/oauth/v1/token";
+
+        public string UserInfoUrl => Tenant.Issuer + "/oauth/v1/userinfo";
 
         public DateTimeOffset Now => Api.Time.GetUtcNow();
 
@@ -124,7 +132,7 @@ public sealed class DpopFlowTests
         return new Flow(api, tenant, api.ClientFor(tenant.Host), code);
     }
 
-    private static Task<HttpResponseMessage> RedeemAsync(Flow flow, string? proof) =>
+    private static Task<HttpResponseMessage> RedeemAsync(Flow flow, string? proof, string? resource = null) =>
         PostTokenAsync(flow, proof,
         [
             new("grant_type", "authorization_code"),
@@ -132,6 +140,7 @@ public sealed class DpopFlowTests
             new("code_verifier", Verifier),
             new("redirect_uri", Callback),
             new("client_id", "web-app"),
+            .. resource is null ? Array.Empty<KeyValuePair<string, string>>() : [new("resource", resource)],
         ]);
 
     private static Task<HttpResponseMessage> RefreshAsync(Flow flow, string refreshToken, string? proof) =>
@@ -334,5 +343,122 @@ public sealed class DpopFlowTests
         var location = response.Headers.Location!.OriginalString;
         Assert.StartsWith(Callback + "?", location, StringComparison.Ordinal);
         Assert.Equal("invalid_request", QueryHelpers.ParseQuery(location[location.IndexOf('?', StringComparison.Ordinal)..])["error"].ToString());
+    }
+
+    // D28 and RFC 9449, section 7: /userinfo with a bound access token.
+
+    private sealed record UserInfoCall(Flow Flow, ClientKey Key, string AccessToken) : IAsyncDisposable
+    {
+        public async ValueTask DisposeAsync()
+        {
+            Key.Dispose();
+            await Flow.DisposeAsync();
+        }
+    }
+
+    private async Task<UserInfoCall> BoundUserInfoTokenAsync()
+    {
+        var flow = await SetUpAsync();
+        var key = new ClientKey();
+        using var redeemed = await RedeemAsync(flow, key.Proof(flow.TokenUrl, flow.Now), resource: flow.UserInfoUrl);
+        var accessToken = (await OkBodyAsync(redeemed)).GetProperty("access_token").GetString()!;
+        return new UserInfoCall(flow, key, accessToken);
+    }
+
+    private static Task<HttpResponseMessage> UserInfoAsync(Flow flow, string? authorization, params string[] proofs)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "oauth/v1/userinfo");
+        if (authorization is not null)
+        {
+            request.Headers.TryAddWithoutValidation("Authorization", authorization);
+        }
+
+        if (proofs.Length > 0)
+        {
+            request.Headers.TryAddWithoutValidation("DPoP", proofs);
+        }
+
+        return flow.Http.SendAsync(request);
+    }
+
+    private static void AssertChallenge(HttpResponseMessage response, string challenge)
+    {
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(challenge, string.Join(", ", response.Headers.WwwAuthenticate.Select(h => h.ToString())));
+    }
+
+    [DockerFact]
+    public async Task A_bound_token_reads_userinfo_with_the_DPoP_scheme_and_a_proof_from_its_key()
+    {
+        await using var call = await BoundUserInfoTokenAsync();
+        var proof = call.Key.Proof(call.Flow.UserInfoUrl, call.Flow.Now, htm: "GET", accessToken: call.AccessToken);
+
+        using var response = await UserInfoAsync(call.Flow, "DPoP " + call.AccessToken, proof);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.TryGetProperty("sub", out _));
+    }
+
+    [DockerFact]
+    public async Task A_bound_token_sent_as_a_bearer_token_is_refused()
+    {
+        await using var call = await BoundUserInfoTokenAsync();
+
+        using var response = await UserInfoAsync(call.Flow, "Bearer " + call.AccessToken);
+
+        AssertChallenge(response, "Bearer error=\"invalid_token\"");
+    }
+
+    [DockerFact]
+    public async Task A_bound_token_needs_a_proof_for_this_token_and_this_request()
+    {
+        await using var call = await BoundUserInfoTokenAsync();
+        var flow = call.Flow;
+        using var thiefKey = new ClientKey();
+
+        using var noProof = await UserInfoAsync(flow, "DPoP " + call.AccessToken);
+        using var noAth = await UserInfoAsync(flow, "DPoP " + call.AccessToken, call.Key.Proof(flow.UserInfoUrl, flow.Now, htm: "GET"));
+        using var wrongMethod = await UserInfoAsync(flow, "DPoP " + call.AccessToken, call.Key.Proof(flow.UserInfoUrl, flow.Now, accessToken: call.AccessToken));
+        using var otherKey = await UserInfoAsync(flow, "DPoP " + call.AccessToken, thiefKey.Proof(flow.UserInfoUrl, flow.Now, htm: "GET", accessToken: call.AccessToken));
+
+        const string Challenge = "DPoP algs=\"ES256 RS256\", error=\"invalid_dpop_proof\"";
+        AssertChallenge(noProof, Challenge);
+        AssertChallenge(noAth, Challenge);
+        AssertChallenge(wrongMethod, Challenge);
+        AssertChallenge(otherKey, Challenge);
+    }
+
+    [DockerFact]
+    public async Task A_userinfo_proof_works_once()
+    {
+        await using var call = await BoundUserInfoTokenAsync();
+        var proof = call.Key.Proof(call.Flow.UserInfoUrl, call.Flow.Now, htm: "GET", accessToken: call.AccessToken);
+
+        using var first = await UserInfoAsync(call.Flow, "DPoP " + call.AccessToken, proof);
+        using var replay = await UserInfoAsync(call.Flow, "DPoP " + call.AccessToken, proof);
+
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+        AssertChallenge(replay, "DPoP algs=\"ES256 RS256\", error=\"invalid_dpop_proof\"");
+    }
+
+    [DockerFact]
+    public async Task A_request_without_a_token_gets_both_challenges()
+    {
+        await using var flow = await SetUpAsync();
+
+        using var response = await UserInfoAsync(flow, authorization: null);
+
+        AssertChallenge(response, "Bearer, DPoP algs=\"ES256 RS256\"");
+    }
+
+    [DockerFact]
+    public async Task Discovery_lists_the_DPoP_proof_algorithms()
+    {
+        await using var flow = await SetUpAsync();
+
+        using var response = await flow.Http.GetAsync(".well-known/openid-configuration");
+
+        var algs = (await OkBodyAsync(response)).GetProperty("dpop_signing_alg_values_supported");
+        Assert.Equal(["ES256", "RS256"], algs.EnumerateArray().Select(a => a.GetString()));
     }
 }

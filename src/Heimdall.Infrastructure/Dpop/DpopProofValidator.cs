@@ -20,7 +20,7 @@ namespace Heimdall.Infrastructure.Dpop;
 internal sealed class DpopProofValidator : IDpopProofValidator
 {
     /// <summary>The values of <c>dpop_signing_alg_values_supported</c> in discovery.</summary>
-    public static readonly IReadOnlyList<string> SupportedAlgorithms = ["ES256", "RS256"];
+    public static readonly IReadOnlyList<string> SupportedAlgorithms = DpopAlgorithms.Supported;
 
     /// <summary>The largest difference between the proof's <c>iat</c> and the server time, in either direction.</summary>
     public static readonly TimeSpan MaxClockDifference = TimeSpan.FromSeconds(60);

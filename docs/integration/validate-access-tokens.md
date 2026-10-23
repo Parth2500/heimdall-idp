@@ -40,6 +40,7 @@ An access token is a JWT (RFC 9068). Example header and payload:
 | `jti` | A unique ID for the token. |
 | `scope` | The granted scopes, separated by spaces. Absent if no scope was granted. |
 | `auth_time` | When the user signed in. Only in user tokens. |
+| `cnf` | Only in a DPoP-bound token: `{"jkt": "<key thumbprint>"}` (RFC 9449, section 6.1). |
 
 ## Required checks
 
@@ -55,8 +56,9 @@ Do every check. Refuse the token if one check fails.
 | 6 | `aud` | Equals your API's audience exactly. A token for another API must fail here. |
 | 7 | `exp` | Is in the future. Allow at most 5 minutes of clock skew. |
 | 8 | `scope` | Contains the scope that the operation needs. |
+| 9 | `cnf` | If the token has `cnf`, it is DPoP-bound. Accept it only with `Authorization: DPoP` and a valid proof whose key thumbprint equals `cnf.jkt`, whose `ath` is the token's hash, and whose `jti` you have not seen. Refuse a bound token with `Authorization: Bearer`. See RFC 9449, section 7. |
 
-Check 6 matters most for security. Without it, any client that has a token for any API in the tenant could call your API.
+Check 6 matters most for security. Check 9 matters as much for a bound token: without it, a stolen bound token works as a bearer token. Without it, any client that has a token for any API in the tenant could call your API.
 
 Use a JWT library. Do not write signature checks by hand.
 

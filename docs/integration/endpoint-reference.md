@@ -142,7 +142,8 @@ CORS: client origins of public clients only. The `DPoP` request header is allowe
 
 Returns the user's claims (OpenID Connect Core, section 5.3).
 
-- Send the access token in `Authorization: Bearer <token>`. A token in the query string gets `400`.
+- Send the access token in `Authorization: Bearer <token>`. A DPoP-bound token (`token_type` `DPoP`) goes in `Authorization: DPoP <token>`, with a proof in the `DPoP` header. See [DPoP](dpop.md#call-userinfo-with-a-bound-token).
+- A token in the query string gets `400`.
 - The token's `aud` must be `<issuer>/oauth/v1/userinfo`.
 - The token's scope must have `openid`.
 

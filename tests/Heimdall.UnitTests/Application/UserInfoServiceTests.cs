@@ -17,6 +17,8 @@ public class UserInfoServiceTests
     private readonly Tenant _tenant = Tenant.Create(Guid.CreateVersion7(), "acme.example.com", "Acme", TenantSettings.Default, Now);
     private readonly FakeTimeProvider _time = new(Now);
     private readonly FakeValidator _validator = new();
+    private readonly FakeDpopProofValidator _proofs = new();
+    private readonly InMemoryDpopReplayStore _replay = new();
     private readonly InMemoryUserStore _users = new();
     private readonly RecordingAuditLog _audit = new();
     private readonly UserInfoService _service;
@@ -24,7 +26,7 @@ public class UserInfoServiceTests
 
     public UserInfoServiceTests()
     {
-        _service = new UserInfoService(_validator, _users, _audit, _time);
+        _service = new UserInfoService(_validator, _proofs, _replay, _users, _audit, _time);
         _user = User.Create(Guid.CreateVersion7(), _tenant.Id, "Alice@Example.com", "hash", Now);
         _users.Add(_user);
     }
@@ -36,13 +38,18 @@ public class UserInfoServiceTests
         string? subject = null,
         string audience = Audience,
         string scope = "openid email",
-        DateTimeOffset? expiresAt = null) =>
-        new(issuer, subject ?? _user.Id.ToString(), audience, "spa", scope.Split(' '), expiresAt ?? Now.AddMinutes(5));
+        DateTimeOffset? expiresAt = null,
+        string? boundKey = null) =>
+        new(issuer, subject ?? _user.Id.ToString(), audience, "spa", scope.Split(' '), expiresAt ?? Now.AddMinutes(5), boundKey);
 
-    private Task<Result<UserInfoClaims>> Get(VerifiedAccessToken? token)
+    private Task<Result<UserInfoClaims>> Get(
+        VerifiedAccessToken? token,
+        TokenScheme scheme = TokenScheme.Bearer,
+        string? proof = null,
+        string method = "GET")
     {
         _validator.Result = token;
-        return _service.GetAsync(Context, "the.access.token", CancellationToken.None);
+        return _service.GetAsync(Context, new UserInfoRequest("the.access.token", scheme, method, proof), CancellationToken.None);
     }
 
     private void AssertInvalid(Result<UserInfoClaims> result, string reason)
@@ -142,6 +149,83 @@ public class UserInfoServiceTests
         Assert.Equal(UserInfoService.InsufficientScopeCode, result.Error!.Code);
         Assert.Equal("openid scope missing", result.Error.AuditDetail);
         Assert.Empty(_audit.Events);
+    }
+
+    // D28 and RFC 9449, section 7: a bound token needs the DPoP scheme and an unused proof from its key.
+
+    private const string Key = "0ZcOCORZNYy-DWpqq30jZyJGHTN0d2HglBV3uiguA4I";
+    private const string OtherKey = "NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs";
+
+    private void AssertDpopRefused(Result<UserInfoClaims> result, string reason)
+    {
+        Assert.False(result.IsSuccess);
+        Assert.Equal(OAuthError.InvalidDpopProofCode, result.Error!.Code);
+        Assert.Equal(reason, result.Error.AuditDetail);
+        Assert.Empty(_audit.Events);
+    }
+
+    [Fact]
+    public async Task Bound_token_with_a_proof_from_its_key_releases_the_claims()
+    {
+        var result = await Get(Token(boundKey: Key), TokenScheme.Dpop, FakeDpopProofValidator.Proof(Key), method: "POST");
+
+        Assert.Equal(_user.Id.ToString(), result.Value.Subject);
+        var (_, request) = Assert.Single(_proofs.Checked);
+        Assert.Equal("POST", request.Method);
+        Assert.Equal(new Uri(Audience), request.Url);
+        Assert.Equal("the.access.token", request.AccessToken);
+    }
+
+    [Fact]
+    public async Task Bound_token_sent_as_a_bearer_token_is_refused()
+    {
+        AssertInvalid(await Get(Token(boundKey: Key), TokenScheme.Bearer, FakeDpopProofValidator.Proof(Key)), "bound token sent as a bearer token");
+    }
+
+    [Fact]
+    public async Task Unbound_token_with_the_DPoP_scheme_is_refused()
+    {
+        AssertInvalid(await Get(Token(), TokenScheme.Dpop, FakeDpopProofValidator.Proof(Key)), "unbound token with the DPoP scheme");
+    }
+
+    [Fact]
+    public async Task Bound_token_without_a_proof_is_refused()
+    {
+        AssertDpopRefused(await Get(Token(boundKey: Key), TokenScheme.Dpop), "proof missing");
+    }
+
+    [Fact]
+    public async Task Invalid_proof_is_refused()
+    {
+        AssertDpopRefused(await Get(Token(boundKey: Key), TokenScheme.Dpop, "not a proof"), "fake refused");
+    }
+
+    [Fact]
+    public async Task Proof_from_another_key_is_refused()
+    {
+        AssertDpopRefused(await Get(Token(boundKey: Key), TokenScheme.Dpop, FakeDpopProofValidator.Proof(OtherKey)), "proof key differs from cnf.jkt");
+        Assert.Empty(_replay.Seen);
+    }
+
+    [Fact]
+    public async Task Proof_works_once()
+    {
+        var proof = FakeDpopProofValidator.Proof(Key);
+        Assert.True((await Get(Token(boundKey: Key), TokenScheme.Dpop, proof)).IsSuccess);
+        _audit.Events.Clear();
+
+        AssertDpopRefused(await Get(Token(boundKey: Key), TokenScheme.Dpop, proof), "proof replayed");
+    }
+
+    [Fact]
+    public async Task Binding_is_checked_after_the_token_and_before_the_user()
+    {
+        // An expired token fails first and costs no replay write. A refused binding never loads the user.
+        AssertInvalid(await Get(Token(boundKey: Key, expiresAt: Now), TokenScheme.Dpop, FakeDpopProofValidator.Proof(Key)), "expired");
+        Assert.Empty(_proofs.Checked);
+
+        _users.Users.Remove(_user);
+        AssertDpopRefused(await Get(Token(boundKey: Key), TokenScheme.Dpop), "proof missing");
     }
 
     private sealed class FakeValidator : IAccessTokenValidator

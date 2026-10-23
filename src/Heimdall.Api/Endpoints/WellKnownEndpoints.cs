@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Heimdall.Api.Hosting;
+using Heimdall.Application.Dpop;
 using Heimdall.Application.Keys;
 using Heimdall.Application.UserInfo;
 using Microsoft.Net.Http.Headers;
@@ -42,7 +43,9 @@ internal static class WellKnownEndpoints
             ["S256"],
             ["public"],
             ["RS256"],
-            AuthorizationResponseIssParameterSupported: true);
+            AuthorizationResponseIssParameterSupported: true,
+            // RFC 9449, section 5.1: the proof algorithms that /token and /userinfo accept (D25).
+            DpopSigningAlgValuesSupported: [.. DpopAlgorithms.Supported]);
 
         return WriteCacheableAsync(context, JsonSerializer.SerializeToUtf8Bytes(document, Json), keyOptions.JwksCacheLifetime);
     }
@@ -94,7 +97,8 @@ internal static class WellKnownEndpoints
         [property: JsonPropertyName("code_challenge_methods_supported")] string[] CodeChallengeMethodsSupported,
         [property: JsonPropertyName("subject_types_supported")] string[] SubjectTypesSupported,
         [property: JsonPropertyName("id_token_signing_alg_values_supported")] string[] IdTokenSigningAlgValuesSupported,
-        [property: JsonPropertyName("authorization_response_iss_parameter_supported")] bool AuthorizationResponseIssParameterSupported);
+        [property: JsonPropertyName("authorization_response_iss_parameter_supported")] bool AuthorizationResponseIssParameterSupported,
+        [property: JsonPropertyName("dpop_signing_alg_values_supported")] string[] DpopSigningAlgValuesSupported);
 
     private sealed record JwkSet([property: JsonPropertyName("keys")] IReadOnlyList<RsaPublicJwk> Keys);
 }

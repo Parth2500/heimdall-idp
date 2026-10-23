@@ -27,7 +27,7 @@ Heimdall follows the standards. You do not need a Heimdall library. Use a certif
 - [Register a client](integration/register-a-client.md): what to give the operator, and the rules for redirect URIs.
 - [Sign in users](integration/sign-in-users.md): the authorization code flow with PKCE, step by step.
 - [Refresh tokens](integration/refresh-tokens.md): rotation, reuse detection, and how to store refresh tokens.
-- [DPoP](integration/dpop.md): bind tokens to a key that your client holds (RFC 9449). Supported at `/authorize` and `/token`; `/userinfo` and discovery are in progress.
+- [DPoP](integration/dpop.md): bind tokens to a key that your client holds (RFC 9449). Supported at `/authorize`, `/token`, and `/userinfo`.
 - [Service-to-service tokens](integration/service-to-service.md): the `client_credentials` grant.
 - [Validate access tokens](integration/validate-access-tokens.md): the checks that a resource server must do.
 - [Sign out](integration/sign-out.md): revocation, and what Heimdall does not support yet.
@@ -57,7 +57,7 @@ Each recipe uses a client that signs in with Heimdall today, or it says that it 
 | Resource indicators (`resource`, RFC 8707) | Supported at `/token`. |
 | Userinfo endpoint | Supported. It releases `sub`, `email`, and `email_verified`. |
 | Token revocation (RFC 7009) | Supported for refresh tokens. |
-| DPoP (RFC 9449) | Supported at `/authorize` (`dpop_jkt`) and at `/token`: bound codes, bound access tokens, and bound refresh tokens for public clients. Not yet at `/userinfo` or in discovery. |
+| DPoP (RFC 9449) | Supported: `dpop_jkt` at `/authorize`, bound access tokens, bound refresh tokens for public clients, bound tokens at `/userinfo`, and `dpop_signing_alg_values_supported` in discovery. No `DPoP-Nonce` yet. |
 | Client authentication | `client_secret_basic` for confidential clients. `none` for public clients. |
 | Implicit flow, hybrid flow, password grant | Not supported, by design (OAuth 2.1, RFC 9700). |
 | `response_mode=form_post` or `fragment` | Not supported. Heimdall returns the code in the query. |
