@@ -15,7 +15,7 @@ import { HdMotion, HdMotionSwitch } from './motion';
   imports: [HdBridge, HdMotionSwitch],
   host: { '[attr.data-bridge]': 'bridge()', '[class.still]': '!motion.on()' },
   template: `
-    <hd-bridge class="bridge" [state]="bridge()" />
+    <hd-bridge class="bridge" [state]="bridge()" [lit]="lit()" />
 
     <header class="brand">
       <!-- The watcher's eye (docs/brand). Only Heimdall's own pages carry it: a client is not Heimdall. -->
@@ -264,4 +264,6 @@ export class HdGate {
   readonly plateLabel = input('You are at the gate of');
   readonly host = input.required<string>();
   readonly bridge = input<BridgeState>('idle');
+  /** How far the crossing has come: the number of lit bands (0 to 4). */
+  readonly lit = input(0);
 }

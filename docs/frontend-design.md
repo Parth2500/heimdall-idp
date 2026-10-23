@@ -260,12 +260,14 @@ Status: **Approved** by the owner on 2026-10-23. The owner drew the direction wi
 
 | State | When | What the bridge does |
 |---|---|---|
-| `idle` | Nothing is in progress. | Stars twinkle. Soft lights move slowly along the bands. |
+| `idle` | Nothing is in progress. | Stars twinkle. Soft lights move slowly along the bands. The bands show the progress (see below). |
 | `busy` | Heimdall checks the password or loads a request. | Fast lights move up every band, one after the other. |
-| `refused` | Heimdall refuses (wrong credentials, throttle, error page), or the user selects Deny. | The outer band turns red and burns. The frost bands go dim. |
+| `refused` | Heimdall refuses (wrong credentials, throttle, error page), or the user selects Deny. | Every band turns red, and the outer band flares and burns. |
 | `crossing` | Sign-in or Allow succeeded. The browser is about to leave. | Every band lights from the gate to the sky. |
 
 - The page has short moments, taken from the owner's motion prototype ("Burning Bridge Motion"). On load, the bands draw in from the ground, the statement rises, and its full stop ignites. At rest, embers crawl along the thin ember line and the guard band flickers. A wrong password flares the guard band and shakes the panel once. The error page drops "Gate shut." in letter by letter. A busy button carries a running line. The form never waits on a moment.
+- Changed on 2026-10-23 at the owner's request: the bands show progress. Each band is unlit (dim frost) until the crossing reaches it. The login page lights no band. The consent page lights the two inner bands, because the password step is behind the user. A crossing lights all four. A band lights for a step that the user completed, never for a fact about the account. For example, a future email step (identifier-first) lights a band for every email, so the bridge cannot show whether an account exists.
+- The password field has an eye toggle inside the field, named "Show password", with `aria-pressed` as its state.
 - A "Motion" switch stops all movement. Its default follows `prefers-reduced-motion`. The browser keeps the user's choice in `localStorage`. When storage fails, the page works without it. With motion off, the state colors stay.
 - Each color has one meaning. Frost blue is the bridge and Heimdall's actions. Ember orange is the bridge's fire at rest and keyboard focus. Red is a refusal only.
 - Night and day themes come from `prefers-color-scheme`. In forced-colors mode (Windows High Contrast), the bridge is hidden and every control keeps a system-color border.

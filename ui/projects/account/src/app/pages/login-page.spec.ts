@@ -46,6 +46,19 @@ describe('LoginPage', () => {
     expect(plaque.textContent).toContain('Check that your address bar shows the same host.');
   });
 
+  it('shows the password with an eye toggle inside the field', async () => {
+    const { fixture, root } = await render({ request_id: REQUEST_ID });
+    const toggle = root.querySelector<HTMLButtonElement>('.hd-input-toggle')!;
+    expect(toggle.getAttribute('aria-label')).toBe('Show password');
+    expect(toggle.getAttribute('aria-pressed')).toBe('false');
+
+    toggle.click();
+    await fixture.whenStable();
+
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
+    expect(root.querySelector('#password')?.getAttribute('type')).toBe('text');
+  });
+
   it('names the action Sign in, in the heading and on the button', async () => {
     const { root } = await render({ request_id: REQUEST_ID });
 

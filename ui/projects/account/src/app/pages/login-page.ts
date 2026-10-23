@@ -79,7 +79,7 @@ interface Problem {
                 <span class="hd-visually-hidden">Error:</span> {{ problem()?.message }}
               </p>
             }
-            <div class="hd-input-row">
+            <div class="hd-input-wrap">
               <input
                 class="hd-input"
                 #passwordInput
@@ -93,14 +93,16 @@ interface Problem {
                 [value]="password()"
                 (input)="password.set(value($event))"
               />
+              <!-- A toggle button: the name stays "Show password", aria-pressed says if it is shown. -->
               <button
                 type="button"
-                class="hd-button hd-button--secondary"
+                class="hd-input-toggle"
+                aria-label="Show password"
                 [attr.aria-pressed]="showPassword()"
                 aria-controls="password"
                 (click)="showPassword.set(!showPassword())"
               >
-                {{ showPassword() ? 'Hide' : 'Show' }}
+                <hd-icon [name]="showPassword() ? 'eye-off' : 'eye'" />
               </button>
             </div>
           </div>

@@ -21,10 +21,10 @@ interface Band {
 
 /** Frost bands, from the outside in. Each gap between bands shows the sky. */
 const FROST: readonly Band[] = [
-  { radius: 1046, width: 36, tone: 'var(--hd-bridge-1)' },
-  { radius: 1002, width: 44, tone: 'var(--hd-bridge-2)' },
-  { radius: 952, width: 48, tone: 'var(--hd-bridge-3)' },
-  { radius: 900, width: 48, tone: 'var(--hd-bridge-4)' },
+  { radius: 1046, width: 36, tone: 'b1' },
+  { radius: 1002, width: 44, tone: 'b2' },
+  { radius: 952, width: 48, tone: 'b3' },
+  { radius: 900, width: 48, tone: 'b4' },
 ];
 
 const GUARD_RADIUS = 1092;
@@ -102,8 +102,9 @@ function sky(count: number): Star[] {
       @for (band of frost; track band.radius) {
         <path
           class="band"
+          [class]="band.tone"
+          [class.lit]="isLit($index)"
           [attr.d]="band.d"
-          [attr.stroke]="band.tone"
           [attr.stroke-width]="band.width"
           [style.animation-delay.ms]="(frost.length - 1 - $index) * 120"
           pathLength="100"
@@ -194,9 +195,35 @@ function sky(count: number): Star[] {
 
     /* Entrance: the bands draw from the ground up, the inner band first, 120ms apart. The fire
        lines light last. */
+    /* Each band is unlit (dim frost) until the crossing reaches it, then lit (full frost).
+       Any refusal burns every band in fire tones. */
     .band {
+      stroke: var(--unlit);
       stroke-dasharray: 100 100;
-      transition: filter 600ms var(--hd-ease-out);
+      transition: stroke 600ms var(--hd-ease-out);
+    }
+    .band.lit {
+      stroke: var(--lit);
+    }
+    .b1 {
+      --lit: var(--hd-bridge-1);
+      --unlit: var(--hd-bridge-unlit-1);
+      --burn: var(--hd-burn-1);
+    }
+    .b2 {
+      --lit: var(--hd-bridge-2);
+      --unlit: var(--hd-bridge-unlit-2);
+      --burn: var(--hd-burn-2);
+    }
+    .b3 {
+      --lit: var(--hd-bridge-3);
+      --unlit: var(--hd-bridge-unlit-3);
+      --burn: var(--hd-burn-3);
+    }
+    .b4 {
+      --lit: var(--hd-bridge-4);
+      --unlit: var(--hd-bridge-unlit-4);
+      --burn: var(--hd-burn-4);
     }
     :host(.entering) .band {
       animation: draw 900ms var(--hd-ease-out) both;
@@ -406,9 +433,8 @@ function sky(count: number): Star[] {
       opacity: 0.5;
       animation: burn 2.4s ease-in-out infinite;
     }
-    /* Dim the frost by darkening it at full opacity, so no fire shows through a band. */
     :host([data-state='refused']) .band {
-      filter: brightness(0.55);
+      stroke: var(--burn);
     }
     :host([data-state='refused']) .light {
       opacity: 0;
@@ -464,6 +490,8 @@ export class HdBridge {
     setTimeout(() => this.entering.set(false), 1600);
   }
   readonly state = input<BridgeState>('idle');
+  /** How many bands the crossing has lit, from the ground (inner band) up: 0 to 4. */
+  readonly lit = input(0);
 
   protected readonly box = BOX;
   protected readonly viewBox = `0 0 ${BOX} ${BOX}`;
@@ -471,4 +499,9 @@ export class HdBridge {
   protected readonly ember = arc(EMBER_RADIUS);
   protected readonly guard = arc(GUARD_RADIUS);
   protected readonly stars = sky(46);
+
+  /** Band `index` counts from the outside in, and bands light from the inside out. */
+  protected isLit(index: number): boolean {
+    return this.state() === 'crossing' || FROST.length - 1 - index < this.lit();
+  }
 }

@@ -40,7 +40,8 @@ type State =
   selector: 'acct-consent-page',
   imports: [PageFrame, NoSignInStatement, NoSignInText, HdIcon],
   template: `
-    <acct-page [bridge]="bridge()" plateLabel="You are signed in at">
+    <!-- The password step is behind the user: the two ground bands are lit. -->
+    <acct-page [bridge]="bridge()" [lit]="2" plateLabel="You are signed in at">
       <div hdStatement>
         @if (!requestId) {
           <acct-no-sign-in-statement />

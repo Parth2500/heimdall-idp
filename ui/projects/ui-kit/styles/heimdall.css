@@ -50,6 +50,14 @@
   --hd-bridge-2: #23338a;
   --hd-bridge-3: #182566;
   --hd-bridge-4: #0f1846;
+  --hd-bridge-unlit-1: #b4bdd6;
+  --hd-bridge-unlit-2: #a6b0cc;
+  --hd-bridge-unlit-3: #98a3c2;
+  --hd-bridge-unlit-4: #8a96b8;
+  --hd-burn-1: #e5372b;
+  --hd-burn-2: #c42c22;
+  --hd-burn-3: #a1241b;
+  --hd-burn-4: #7e1c15;
   --hd-bridge-gap: var(--hd-ground);
   --hd-bridge-light: #ffffff;
 
@@ -115,6 +123,14 @@
     --hd-bridge-3: #1e2f7a;
     --hd-bridge-4: #14205a;
     --hd-bridge-light: #dfe6ff;
+    --hd-bridge-unlit-1: #2c3552;
+    --hd-bridge-unlit-2: #242c46;
+    --hd-bridge-unlit-3: #1e253b;
+    --hd-bridge-unlit-4: #191f32;
+    --hd-burn-1: #e5372b;
+    --hd-burn-2: #b52a20;
+    --hd-burn-3: #8a2019;
+    --hd-burn-4: #631712;
 
     --hd-ember: #ff7a45;
     --hd-ember-banked: #5a2414;
@@ -319,6 +335,41 @@ code,
   flex: none;
   margin-left: -1px;
   border-color: var(--hd-line-field);
+}
+
+/* A control that lives inside its field, such as the password eye. The input keeps the full
+   width; its right padding leaves room for the toggle. */
+.hd-input-wrap {
+  position: relative;
+}
+
+.hd-input-wrap .hd-input {
+  padding-right: calc(var(--hd-control) + var(--hd-1));
+}
+
+.hd-input-toggle {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  bottom: 1px;
+  display: grid;
+  place-items: center;
+  width: calc(var(--hd-control) - 2px);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--hd-ink-muted);
+  cursor: pointer;
+  transition: color 160ms var(--hd-ease-out);
+}
+
+.hd-input-toggle:hover,
+.hd-input-toggle[aria-pressed='true'] {
+  color: var(--hd-ink);
+}
+
+.hd-input-toggle:focus-visible {
+  outline-offset: -3px;
 }
 
 .hd-button {

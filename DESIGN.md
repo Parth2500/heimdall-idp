@@ -315,7 +315,8 @@ Heavy, square, and wide. The primary action reads its words first and its direct
 - **Hover:** The fill goes to `act-strong` in 160ms. The arrow moves 4px to the right in 240ms.
 - **Focus:** A 3px ember outline with a 2px gap. The ring is readable on the panel, the field, and the frost button.
 - **Busy:** The button keeps full contrast and its fill. Its words change ("Signing in") and its arrow goes to 50% opacity. It uses `aria-disabled`, not `disabled`, so it keeps focus.
-- **Secondary:** Transparent, ink text, `ink-muted` border. Hover fills it with `raised`. "Show" next to the password and "Deny" on consent use it.
+- **Secondary:** Transparent, ink text, `ink-muted` border. Hover fills it with `raised`. "Deny" on consent uses it.
+- **In-field toggle:** The password eye sits inside the field at the right edge, full height, no border, `ink-muted`; hover and pressed go to ink. Its name is "Show password", and `aria-pressed` carries the state. The input keeps a right padding of one control width.
 - **Quiet:** Transparent, `line-field` border, weight 600, small padding. For a minor action.
 - **Pair:** Allow and Deny sit in a grid of 1.2fr and 1fr, with a 0.75rem gap. Allow is the primary.
 
@@ -365,8 +366,10 @@ An SVG arc of four frost bands (from outside: `bridge-1` to `bridge-4`), an embe
 |---|---|
 | `idle` | Stars twinkle (4.1s to 8.8s cycles). A soft light drifts up each band (11s to 19s). Embers (3 on, 2 off, in a path length of 100) crawl up the ember thread (6s). The banked guard band flickers in steps (3.2s). |
 | `busy` | A stream of lights runs up every band (0.8s cycle, each band 0.1s later). The embers crawl faster (1.5s). The busy button carries a 3px running line (1.1s). |
-| `refused` | The guard band turns fire red and flares (16, 64, then 44px in 450ms). A refused attempt with a problem box shakes the panel once (420ms). A fire glow burns under the bands (2.4s flicker). The frost dims to 55% brightness. The ember thread turns red. No light moves. |
+| `refused` | Every frost band burns in a fire tone (`burn-1` to `burn-4`, outer to inner). The guard band turns fire red and flares (16, 64, then 44px in 450ms). A refused attempt with a problem box shakes the panel once (420ms). A fire glow burns under the bands (2.4s flicker). The ember thread turns red. No light moves. |
 | `crossing` | Every band lights from the gate to the sky, once (700ms, each band 60ms later). |
+
+Progress: each band is unlit (`bridge-unlit-1` to `-4`, a dim frost) until the crossing reaches it, then lit (`bridge-1` to `-4`). Bands light from the inner band up: none on the login page, two on the consent page, all four when crossing. A band lights for a completed step, never for a fact about the account.
 
 On load, the bands draw in from the ground, inner band first, 120ms apart (900ms each). The fire lines light at 620ms. The statement rises 0.35em (600ms), and its fire mark ignites with an overshoot (`ease-back`, at 500ms). On the error page, the statement drops in letter by letter, 40ms apart. The form and the panel never animate in.
 

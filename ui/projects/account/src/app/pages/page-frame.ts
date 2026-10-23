@@ -7,7 +7,7 @@ import { BrowserNavigation } from '../session/flow';
   selector: 'acct-page',
   imports: [HdGate],
   template: `
-    <hd-gate [plateLabel]="plateLabel()" [host]="host" [bridge]="bridge()">
+    <hd-gate [plateLabel]="plateLabel()" [host]="host" [bridge]="bridge()" [lit]="lit()">
       <ng-container ngProjectAs="[hdStatement]">
         <ng-content select="[hdStatement]" />
       </ng-container>
@@ -18,5 +18,6 @@ import { BrowserNavigation } from '../session/flow';
 export class PageFrame {
   readonly plateLabel = input('You are at the gate of');
   readonly bridge = input<BridgeState>('idle');
+  readonly lit = input(0);
   protected readonly host = inject(BrowserNavigation).host();
 }
