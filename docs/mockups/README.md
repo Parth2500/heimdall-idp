@@ -2,7 +2,7 @@
 
 Static HTML mockups of a proposed new look for the account pages. They are design references, not production code. No build step uses them.
 
-**Status:** proposed on 2026-10-25. U15 (Burning Bridge) in `docs/frontend-design.md` is still the recorded decision. The owner must approve a new decision before the account pages change.
+**Status:** approved on 2026-10-25 as U16 in `docs/frontend-design.md`. U16 replaces U15 (Burning Bridge). The mockups are a reference. The UI may change. The features stay.
 
 ## Open the mockups
 

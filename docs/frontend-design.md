@@ -250,9 +250,9 @@ The tokens and the frame component are in `ui/projects/ui-kit`. Tenant branding 
 
 **Reason.** The host is already in the address bar, so the plate reveals nothing new. It helps the user compare the two and see a phishing copy. A plain public-service look loads fast, works without a web font, and states only facts.
 
-### U15. Visual direction: Burning Bridge
+### U15. Visual direction: Burning Bridge (superseded by U16)
 
-Status: **Approved** by the owner on 2026-10-23. The owner drew the direction with Claude in Figma ("Heimdall · Burning Bridge"). The owner asked the build to go further than the Figma frames. The direction contract is in `.impeccable/surfaces/ui-projects-account.md`.
+Status: **Superseded** on 2026-10-25 by U16. The text stays here as a record. It was **approved** by the owner on 2026-10-23. The owner drew the direction with Claude in Figma ("Heimdall · Burning Bridge"). The owner asked the build to go further than the Figma frames. The direction contract is in `.impeccable/surfaces/ui-projects-account.md`.
 
 **Decision.**
 
@@ -285,6 +285,26 @@ Status: **Approved** by the owner on 2026-10-23. The owner drew the direction wi
 - The bridge makes each state visible at a distance, but no state depends on it. Text, focus, and `aria-live` still carry every state (U12).
 - Red means only "refused", so a user learns that red fire means "Heimdall said no".
 - Self-hosted fonts add no third-party origin to the CSP. The two files are about 130 KB. The browser caches them for a year, because each file name has a content hash.
+
+### U16. Visual direction: Ledger card
+
+Status: **Approved** by the owner on 2026-10-25. It replaces U15. The owner chose it because the design is more mature. The mockups are in `docs/mockups/`.
+
+**Decision.**
+
+- Each account page is one centered card, 448 px wide at most. On a phone, the card loses its border and fills the screen.
+- Every page shows the tenant host in a monospace font, with the text "Check that your address bar shows the same host." This keeps the purpose of the U13 plate and the U15 plaque.
+- Red means a refusal only. Blue is for Heimdall's actions and for the keyboard focus ring.
+- Fonts: IBM Plex Sans and IBM Plex Mono, both under the SIL Open Font License 1.1. Heimdall serves them from its own origin (U8). The pages never load them from a font service.
+- Night and day themes come from `prefers-color-scheme`.
+- The mockups are a reference, not code. The UI may change from the mockups. The features that the mockups show do not change.
+- Keyboard focus needs a contrast ratio of at least 3:1 against the page (WCAG 2.2, 1.4.11). Yellow on white does not meet it. The build draws one 3px ring in the action blue, with a 2px gap. It has about 7:1 on the card in both themes.
+
+**Reason.** The card is a common pattern that users know from other sign-in pages. It carries the host, the account, and the state in plain text. The build drops the bridge, the motion switch, and the Archivo fonts.
+
+**What stays.** The U15 rules for the password toggle (a button named "Show password" with `aria-pressed`), forced-colors mode (every control keeps a system-color border), `aria-live`, and the demo SPA keeping its own client look do not change.
+
+**Built on 2026-10-25.** `HdCard` replaces `HdGate`, `HdBridge` and `HdMotionSwitch`. The login page still shows the email and password fields together. The mockups' email-first steps need server work and come with the account picker (#41). The focus ring is in `heimdall.css`.
 
 ### U14. Later work that these pages need
 
@@ -380,7 +400,7 @@ These rows go into `docs/threat-model.md` when the owner approves this design:
 |---|---|---|
 | Tampering | XSS in an account page runs attacker script. | Angular encodes every bound value. The CSP allows only same-origin script with a nonce for each request. Trusted Types block the DOM sinks that Angular does not sanitize (U3). |
 | Tampering | A changed bundle file on the server or a cache. | Subresource integrity on each script (U3). |
-| Spoofing | A phishing copy of the login page on another origin. | It cannot set or send the `__Host-` cookie, and the login API refuses its `Origin`. The page shows the tenant host on the gate plaque (U15). |
+| Spoofing | A phishing copy of the login page on another origin. | It cannot set or send the `__Host-` cookie, and the login API refuses its `Origin`. The page shows the tenant host in the card (U16). |
 | Information disclosure | The error page prints an attacker's value from the URL. | The page shows text for a fixed list of codes only (U6). |
 | Elevation of privilege | A malicious npm package runs in the login page. | Lockfile, `npm ci --ignore-scripts`, audit in CI, few dependencies, no third-party origins (U8). |
 | Information disclosure | XSS in the demo SPA reads stored tokens. | Tokens are in memory only (U10). |
@@ -388,7 +408,7 @@ These rows go into `docs/threat-model.md` when the owner approves this design:
 
 ## 9. Open questions for the owner
 
-1. Approve U14, or change it. U1 to U12 and U15 are approved. U15 replaced U13 on 2026-10-23.
+1. Approve U14, or change it. U1 to U12 and U16 are approved. U15 replaced U13 on 2026-10-23. U16 replaced U15 on 2026-10-25.
 2. Decided on 2026-10-19: the demo SPA uses `angular-auth-oidc-client` (U9).
 3. Build a BFF demo later (U10, alternative)?
 4. Decided on 2026-10-19: the account pages and the demo SPA are built in parallel. The demo SPA cannot finish a sign-in until S1 to S4 exist.
