@@ -16,12 +16,14 @@ public sealed class Session
 
     private Session(
         TokenHash idHash,
+        string sid,
         Guid tenantId,
         Guid userId,
         DateTimeOffset createdAt,
         DateTimeOffset absoluteExpiresAt)
     {
         IdHash = idHash;
+        Sid = sid;
         TenantId = tenantId;
         UserId = userId;
         CreatedAt = createdAt;
@@ -31,6 +33,9 @@ public sealed class Session
     }
 
     public TokenHash IdHash { get; }
+
+    /// <summary>The public session ID (D29). The ID token carries it, and each code and family records it.</summary>
+    public string Sid { get; }
 
     public Guid TenantId { get; }
 
@@ -47,14 +52,17 @@ public sealed class Session
 
     public DateTimeOffset? RevokedAt { get; private set; }
 
-    /// <summary>Starts a session after a successful sign-in. The caller creates a new ID each time (D13).</summary>
-    public static Session Start(TokenHash idHash, Guid tenantId, Guid userId, TimeSpan absoluteLifetime, DateTimeOffset now)
+    /// <summary>
+    /// Starts a session after a successful sign-in. The caller creates a new ID and a new <c>sid</c> each time (D13, D29).
+    /// </summary>
+    public static Session Start(TokenHash idHash, string sid, Guid tenantId, Guid userId, TimeSpan absoluteLifetime, DateTimeOffset now)
     {
+        SessionSid.Require(sid, nameof(sid));
         Guard.NotEmpty(tenantId, nameof(tenantId));
         Guard.NotEmpty(userId, nameof(userId));
         Guard.Positive(absoluteLifetime, nameof(absoluteLifetime));
 
-        return new Session(idHash, tenantId, userId, now, now + absoluteLifetime);
+        return new Session(idHash, sid, tenantId, userId, now, now + absoluteLifetime);
     }
 
     /// <summary>

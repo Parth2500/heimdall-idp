@@ -1,5 +1,6 @@
 using Heimdall.Domain.Clients;
 using Heimdall.Domain.Common;
+using Heimdall.Domain.Sessions;
 
 namespace Heimdall.Domain.Tokens;
 
@@ -33,9 +34,11 @@ public sealed class TokenFamily
         DateTimeOffset createdAt,
         DateTimeOffset absoluteExpiresAt,
         DateTimeOffset idleExpiresAt,
-        string? dpopKeyThumbprint)
+        string? dpopKeyThumbprint,
+        string? sid)
     {
         Id = id;
+        Sid = sid;
         DpopKeyThumbprint = dpopKeyThumbprint;
         TenantId = tenantId;
         ClientPk = clientPk;
@@ -79,6 +82,12 @@ public sealed class TokenFamily
 
     public FamilyRevocationReason? RevocationReason { get; private set; }
 
+    /// <summary>
+    /// The <c>sid</c> of the session that issued the code (D29). A sign-out revokes every family of its session (D33).
+    /// Null only for a family whose code is from before the column existed.
+    /// </summary>
+    public string? Sid { get; }
+
     public static TokenFamily Start(
         Guid id,
         Guid tenantId,
@@ -88,7 +97,8 @@ public sealed class TokenFamily
         string scope,
         TokenLifetimes lifetimes,
         DateTimeOffset now,
-        string? dpopKeyThumbprint = null)
+        string? dpopKeyThumbprint = null,
+        string? sid = null)
     {
         Guard.NotEmpty(id, nameof(id));
         Guard.NotEmpty(tenantId, nameof(tenantId));
@@ -102,7 +112,9 @@ public sealed class TokenFamily
 
         var thumbprint = dpopKeyThumbprint is null ? null : KeyThumbprint.Require(dpopKeyThumbprint, nameof(dpopKeyThumbprint));
 
-        return new TokenFamily(id, tenantId, clientPk, userId, sourceCodeId, Guard.NotBlank(scope, nameof(scope)), now, absolute, idle, thumbprint);
+        var sessionSid = sid is null ? null : SessionSid.Require(sid, nameof(sid));
+
+        return new TokenFamily(id, tenantId, clientPk, userId, sourceCodeId, Guard.NotBlank(scope, nameof(scope)), now, absolute, idle, thumbprint, sessionSid);
     }
 
     public bool IsActive(DateTimeOffset now) =>

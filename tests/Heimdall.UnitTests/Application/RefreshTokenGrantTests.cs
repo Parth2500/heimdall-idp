@@ -138,6 +138,7 @@ public class RefreshTokenGrantTests
         Assert.Equal(UserInfoAudience, access.Audience);
         Assert.Equal("spa", access.ClientId);
         Assert.Equal(["openid", "profile", "offline_access"], access.Scopes);
+        Assert.Equal(_family.Id, access.FamilyId);
         Assert.Equal(now, access.IssuedAt);
         Assert.Equal(now.AddMinutes(5), access.ExpiresAt);
         Assert.Matches("^[0-9a-f]{32}$", access.JwtId);

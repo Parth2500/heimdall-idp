@@ -10,7 +10,7 @@ internal sealed class SessionConfiguration : IEntityTypeConfiguration<Session>
 {
     public void Configure(EntityTypeBuilder<Session> builder)
     {
-        builder.ToTable("sessions");
+        builder.ToTable("sessions", t => t.HasCheckConstraint("ck_sessions_sid", "length(sid) = 22"));
 
         // D12: the key is the SHA-256 hash of the session ID. The ID itself is never stored.
         builder.HasKey(s => s.IdHash);
@@ -21,6 +21,10 @@ internal sealed class SessionConfiguration : IEntityTypeConfiguration<Session>
 
         // Ending all sessions of a user (password change, disable) looks them up by tenant and user.
         builder.HasIndex(s => new { s.TenantId, s.UserId });
+
+        // D29: the public session ID. Unique in the tenant, so one sid always names one session.
+        builder.Property(s => s.Sid).HasMaxLength(22).IsFixedLength().IsRequired();
+        builder.HasIndex(s => new { s.TenantId, s.Sid }).IsUnique();
 
         builder.Property(s => s.CreatedAt);
         builder.Property(s => s.LastSeenAt);

@@ -130,6 +130,7 @@ Heimdall deletes the row in the same transaction that inserts the code. If two r
 | `created_at`, `expires_at` | timestamptz | `expires_at` is `created_at` plus 5 minutes. |
 | `redeemed_at` | timestamptz, null | |
 | `dpop_key_thumbprint` | text, null | From the request's `dpop_jkt` (D27). When set, only a DPoP proof from this key redeems the code. Check: null or 43 characters. |
+| `sid` | char(22), null | The `sid` of the session that issued the code (D29). The family copies it at redemption. It has no foreign key, because a code can outlive its session row. Null only for a code from before the column existed. |
 
 ### `token_families`
 The family is its own table. Reasons:
@@ -149,6 +150,9 @@ The family is its own table. Reasons:
 | `revoked_at` | timestamptz, null | |
 | `revoked_reason` | text, null | `reuse_detected`, `user_logout`, `admin`, `user_disabled`, `consent_removed`. |
 | `dpop_key_thumbprint` | text, null | The DPoP key of a public client's family (D24). When set, each rotation needs a proof from this key. Check: null or 43 characters. |
+| `sid` | char(22), null | The `sid` of the session that signed the user in (D29). A sign-out revokes every family with this value (D33). Index `(tenant_id, sid)` where not null. No foreign key, because the purge job deletes the session first. |
+
+Each access token from a user grant carries the family ID in the `fid` claim (D29). The value is opaque and authenticates nothing.
 
 ### `refresh_tokens`
 | Column | Type | Note |
@@ -166,6 +170,7 @@ A token is valid when `used_at IS NULL` and its family is not revoked or expired
 | Column | Type | Note |
 |---|---|---|
 | `id_hash` | bytea PK | The hash of the session ID in the cookie (D12). |
+| `sid` | char(22) | The public session ID (D29): 128 random bits, separate from the cookie secret. **Unique with `tenant_id`.** The ID token carries it as the `sid` claim. |
 | `tenant_id`, `user_id` | uuid | |
 | `created_at`, `last_seen_at` | timestamptz | |
 | `auth_time` | timestamptz | For `max_age`. |

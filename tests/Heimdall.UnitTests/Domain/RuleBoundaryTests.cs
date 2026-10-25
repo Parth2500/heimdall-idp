@@ -47,14 +47,14 @@ public class RuleBoundaryTests
     {
         { "client id", () => Client.Create(Guid.Empty, Id, "c", "C", ClientType.Public, [GrantType.AuthorizationCode], [], [Callback], false, null, Now) },
         { "client tenant", () => Client.Create(Id, Guid.Empty, "c", "C", ClientType.Public, [GrantType.AuthorizationCode], [], [Callback], false, null, Now) },
-        { "session tenant", () => Session.Start(TokenHash.Compute("s"), Guid.Empty, Id, TimeSpan.FromHours(1), Now) },
-        { "session user", () => Session.Start(TokenHash.Compute("s"), Id, Guid.Empty, TimeSpan.FromHours(1), Now) },
+        { "session tenant", () => Session.Start(TokenHash.Compute("s"), "sid-for-tests-00000000", Guid.Empty, Id, TimeSpan.FromHours(1), Now) },
+        { "session user", () => Session.Start(TokenHash.Compute("s"), "sid-for-tests-00000000", Id, Guid.Empty, TimeSpan.FromHours(1), Now) },
         { "user id", () => User.Create(Guid.Empty, Id, "a@example.com", "hash", Now) },
         { "user tenant", () => User.Create(Id, Guid.Empty, "a@example.com", "hash", Now) },
-        { "code id", () => AuthorizationCode.Create(Guid.Empty, Id, Id, Id, TokenHash.Compute("c"), Callback, "openid", Challenge, null, Now, Now) },
-        { "code tenant", () => AuthorizationCode.Create(Id, Guid.Empty, Id, Id, TokenHash.Compute("c"), Callback, "openid", Challenge, null, Now, Now) },
-        { "code client", () => AuthorizationCode.Create(Id, Id, Guid.Empty, Id, TokenHash.Compute("c"), Callback, "openid", Challenge, null, Now, Now) },
-        { "code user", () => AuthorizationCode.Create(Id, Id, Id, Guid.Empty, TokenHash.Compute("c"), Callback, "openid", Challenge, null, Now, Now) },
+        { "code id", () => AuthorizationCode.Create(Guid.Empty, Id, Id, Id, TokenHash.Compute("c"), Callback, "openid", Challenge, null, Now, Now, "sid-for-tests-00000000") },
+        { "code tenant", () => AuthorizationCode.Create(Id, Guid.Empty, Id, Id, TokenHash.Compute("c"), Callback, "openid", Challenge, null, Now, Now, "sid-for-tests-00000000") },
+        { "code client", () => AuthorizationCode.Create(Id, Id, Guid.Empty, Id, TokenHash.Compute("c"), Callback, "openid", Challenge, null, Now, Now, "sid-for-tests-00000000") },
+        { "code user", () => AuthorizationCode.Create(Id, Id, Id, Guid.Empty, TokenHash.Compute("c"), Callback, "openid", Challenge, null, Now, Now, "sid-for-tests-00000000") },
         { "request id", () => AuthorizationRequest.Create(Guid.Empty, Id, Id, Callback, "openid", null, null, Challenge, false, null, Now) },
         { "request tenant", () => AuthorizationRequest.Create(Id, Guid.Empty, Id, Callback, "openid", null, null, Challenge, false, null, Now) },
         { "request client", () => AuthorizationRequest.Create(Id, Id, Guid.Empty, Callback, "openid", null, null, Challenge, false, null, Now) },
@@ -86,7 +86,7 @@ public class RuleBoundaryTests
     public void Used_and_redeemed_need_a_real_successor()
     {
         var token = RefreshToken.Create(Id, Id, Id, TokenHash.Compute("r"), Now);
-        var code = AuthorizationCode.Create(Id, Id, Id, Id, TokenHash.Compute("c"), Callback, "openid", Challenge, null, Now, Now);
+        var code = AuthorizationCode.Create(Id, Id, Id, Id, TokenHash.Compute("c"), Callback, "openid", Challenge, null, Now, Now, "sid-for-tests-00000000");
         var request = AuthorizationRequest.Create(Id, Id, Id, Callback, "openid", null, null, Challenge, false, null, Now);
 
         Assert.Throws<DomainException>(() => token.Use(Guid.Empty, Now));
@@ -210,7 +210,7 @@ public class RuleBoundaryTests
     public void Session_created_at_the_same_instant_as_a_password_change_is_valid()
     {
         var user = User.Create(Id, Id, "a@example.com", "hash", Now);
-        var session = Session.Start(TokenHash.Compute("s"), Id, user.Id, TimeSpan.FromHours(12), Now);
+        var session = Session.Start(TokenHash.Compute("s"), "sid-for-tests-00000000", Id, user.Id, TimeSpan.FromHours(12), Now);
 
         Assert.True(session.IsValid(Id, user, TimeSpan.FromMinutes(30), Now));
 
@@ -222,7 +222,7 @@ public class RuleBoundaryTests
     public void Session_ends_exactly_at_the_idle_limit_and_a_second_revoke_keeps_the_first_time()
     {
         var user = User.Create(Id, Id, "a@example.com", "hash", Now.AddDays(-1));
-        var session = Session.Start(TokenHash.Compute("s"), Id, user.Id, TimeSpan.FromHours(12), Now);
+        var session = Session.Start(TokenHash.Compute("s"), "sid-for-tests-00000000", Id, user.Id, TimeSpan.FromHours(12), Now);
         var idle = TimeSpan.FromMinutes(30);
 
         Assert.True(session.IsValid(Id, user, idle, Now + idle - TimeSpan.FromTicks(1)));
@@ -341,7 +341,7 @@ public class RuleBoundaryTests
     public static TheoryData<string, Action> ZeroDurations() => new()
     {
         { "jwks cache lifetime", () => SigningKey.Create(Id, Id, "kid", "{}", "file:k", TimeSpan.Zero, Now) },
-        { "session lifetime", () => Session.Start(TokenHash.Compute("s"), Id, Id, TimeSpan.Zero, Now) },
+        { "session lifetime", () => Session.Start(TokenHash.Compute("s"), "sid-for-tests-00000000", Id, Id, TimeSpan.Zero, Now) },
         { "family idle extension", () => TokenFamily.Start(Id, Id, Id, Id, Id, "openid", Lifetimes, Now).ExtendIdle(TimeSpan.Zero, Now) },
         { "rotation token lifetime", () => SigningKeyRotation.Rotate(
             SigningKey.Create(Guid.CreateVersion7(), Id, "k1", "{}", "file:k1", TimeSpan.FromMinutes(1), Now),

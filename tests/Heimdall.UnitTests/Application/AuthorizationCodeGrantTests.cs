@@ -22,6 +22,7 @@ public class AuthorizationCodeGrantTests
     private const string UserInfoAudience = Issuer + "/oauth/v1/userinfo";
     private const string Callback = "https://app.example.com/callback";
     private const string Code = "the-authorization-code";
+    private const string Sid = "sid-of-the-session-001";
     private const string Verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
     private static readonly DateTimeOffset Now = new(2026, 10, 18, 12, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset AuthTime = Now.AddMinutes(-1);
@@ -96,6 +97,7 @@ public class AuthorizationCodeGrantTests
             nonce,
             AuthTime,
             _time.GetUtcNow(),
+            Sid,
             dpopKey);
         _tokens.Codes.Add(issued);
         return issued;
@@ -152,6 +154,7 @@ public class AuthorizationCodeGrantTests
         Assert.Equal(Now.AddMinutes(5), access.ExpiresAt);
         Assert.Matches("^[0-9a-f]{32}$", access.JwtId);
         Assert.Equal(AuthTime, access.AuthTime);
+        Assert.Equal(_tokens.Families[0].Id, access.FamilyId);
 
         var (idTenantId, id) = Assert.Single(_signer.SignedIdTokens);
         Assert.Equal(_tenant.Id, idTenantId);
@@ -162,8 +165,10 @@ public class AuthorizationCodeGrantTests
         Assert.Equal(Now.AddMinutes(5), id.ExpiresAt);
         Assert.Equal(AuthTime, id.AuthTime);
         Assert.Equal("n-0S6_WzA2Mj", id.Nonce);
+        Assert.Equal(Sid, id.Sid);
 
         var family = Assert.Single(_tokens.Families);
+        Assert.Equal(Sid, family.Sid);
         Assert.Equal(_tenant.Id, family.TenantId);
         Assert.Equal(_spa.Id, family.ClientPk);
         Assert.Equal(_userId, family.UserId);
@@ -359,7 +364,7 @@ public class AuthorizationCodeGrantTests
     {
         var other = AuthorizationCode.Create(
             Guid.CreateVersion7(), Guid.CreateVersion7(), _spa.Id, _userId, TokenHash.Compute(Code),
-            Callback, "openid", ChallengeOf(Verifier), null, AuthTime, Now);
+            Callback, "openid", ChallengeOf(Verifier), null, AuthTime, Now, Sid);
         _tokens.Codes.Add(other);
 
         Rejected(await Redeem(), OAuthError.InvalidGrantCode, "unknown code");

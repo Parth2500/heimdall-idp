@@ -80,7 +80,10 @@ public sealed class SessionService
         }
 
         var sessionId = Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(32));
-        var session = Session.Start(TokenHash.Compute(sessionId), context.Tenant.Id, login.User!.Id, context.Tenant.Settings.SessionAbsolute, now);
+
+        // D29: the public sid is separate random bits. It must not be derived from the cookie secret.
+        var sid = Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(16));
+        var session = Session.Start(TokenHash.Compute(sessionId), sid, context.Tenant.Id, login.User!.Id, context.Tenant.Settings.SessionAbsolute, now);
         _sessions.Add(session);
         await _sessions.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 

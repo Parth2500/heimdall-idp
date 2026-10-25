@@ -24,6 +24,7 @@ public class TokenTests
             nonce: "n-0S6_WzA2Mj",
             authTime: Now,
             now: Now,
+            sid: "sid-for-tests-00000000",
             dpopKeyThumbprint);
 
     private static TokenFamily NewFamily(string scope = "openid profile offline_access") =>

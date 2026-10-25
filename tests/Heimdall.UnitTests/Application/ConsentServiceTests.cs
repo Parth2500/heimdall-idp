@@ -72,7 +72,7 @@ public class ConsentServiceTests
     private string SignedIn(DateTimeOffset authTime)
     {
         var id = Base64Url.EncodeToString(Guid.NewGuid().ToByteArray().Concat(Guid.NewGuid().ToByteArray()).ToArray());
-        _sessions.Add(Session.Start(TokenHash.Compute(id), _tenant.Id, _user.Id, TimeSpan.FromHours(12), authTime));
+        _sessions.Add(Session.Start(TokenHash.Compute(id), "sid-for-tests-00000000", _tenant.Id, _user.Id, TimeSpan.FromHours(12), authTime));
         return id;
     }
 

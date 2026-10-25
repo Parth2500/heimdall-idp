@@ -311,6 +311,7 @@ public sealed class AuthorizationService
             request.Nonce,
             session.Session.AuthTime,
             now,
+            session.Session.Sid,
             request.DpopKeyThumbprint);
 
         _store.AddCode(authorizationCode);

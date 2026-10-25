@@ -104,9 +104,16 @@ internal sealed class JwtTokenSigner : ITokenSigner
             writer.WriteString("jkt", keyThumbprint);
             writer.WriteEndObject();
         }
+
+        // D29: the family of a user grant, so introspection can see a revocation before exp.
+        if (claims.FamilyId is { } familyId)
+        {
+            writer.WriteString("fid", familyId.ToString("N"));
+        }
     });
 
-    // OpenID Connect Core, section 2: iss, sub, aud, exp, iat are required. auth_time and nonce when known.
+    // OpenID Connect Core, section 2: iss, sub, aud, exp, iat are required. auth_time and nonce when known. sid names the
+    // session for a logout (Back-Channel Logout 1.0, section 2.1, D29).
     private static byte[] WritePayload(IdTokenClaims claims) => WriteJson(writer =>
     {
         writer.WriteString("iss", claims.Issuer);
@@ -118,6 +125,11 @@ internal sealed class JwtTokenSigner : ITokenSigner
         if (claims.Nonce is { } nonce)
         {
             writer.WriteString("nonce", nonce);
+        }
+
+        if (claims.Sid is { } sid)
+        {
+            writer.WriteString("sid", sid);
         }
     });
 

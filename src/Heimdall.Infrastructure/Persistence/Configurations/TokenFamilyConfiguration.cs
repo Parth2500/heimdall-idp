@@ -18,6 +18,7 @@ internal sealed class TokenFamilyConfiguration : IEntityTypeConfiguration<TokenF
                 "revoked_reason IS NULL OR revoked_reason IN ('reuse_detected', 'user_logout', 'admin', 'user_disabled', 'consent_removed')");
             t.HasCheckConstraint("ck_token_families_idle", "idle_expires_at <= absolute_expires_at");
             t.HasCheckConstraint("ck_token_families_dpop_key", "dpop_key_thumbprint IS NULL OR length(dpop_key_thumbprint) = 43");
+            t.HasCheckConstraint("ck_token_families_sid", "sid IS NULL OR length(sid) = 22");
         });
 
         builder.HasKey(f => f.Id);
@@ -42,6 +43,10 @@ internal sealed class TokenFamilyConfiguration : IEntityTypeConfiguration<TokenF
             .HasColumnName("revoked_reason")
             .HasConversion(new SnakeCaseEnumConverter<FamilyRevocationReason>())
             .HasMaxLength(32);
+
+        // D29, D33: a sign-out revokes every family of its session. No foreign key: the session row is purged first.
+        builder.Property(f => f.Sid).HasMaxLength(22).IsFixedLength();
+        builder.HasIndex(f => new { f.TenantId, f.Sid }).HasFilter("sid IS NOT NULL");
 
         // Revoke all families of a user or a client.
         builder.HasIndex(f => f.UserId);

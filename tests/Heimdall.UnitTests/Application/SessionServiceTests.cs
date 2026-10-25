@@ -65,6 +65,10 @@ public class SessionServiceTests
         Assert.Equal(Now + TenantSettings.Default.SessionAbsolute, session.AbsoluteExpiresAt);
         Assert.Equal(1, _sessions.SaveCount);
 
+        // D29: the public sid is its own random value, not a part of the cookie secret.
+        Assert.True(SessionSid.IsValid(session.Sid));
+        Assert.DoesNotContain(session.Sid, result.SessionId, StringComparison.Ordinal);
+
         var started = _audit.Events.Single(e => e.Type == AuditEventTypes.SessionStarted);
         Assert.Equal(_user.Id, started.SubjectUserId);
         Assert.Equal("corr-1", started.CorrelationId);
@@ -88,6 +92,7 @@ public class SessionServiceTests
         var second = await SignIn();
 
         Assert.NotEqual(first.SessionId, second.SessionId);
+        Assert.NotEqual(_sessions.Sessions[0].Sid, _sessions.Sessions[1].Sid);
     }
 
     [Fact]

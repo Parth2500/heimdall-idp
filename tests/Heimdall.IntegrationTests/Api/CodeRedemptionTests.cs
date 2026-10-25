@@ -164,6 +164,12 @@ public sealed class CodeRedemptionTests
         var stored = await StoredCodeAsync(flow, code);
         Assert.NotNull(stored.RedeemedAt);
         var family = await FamilyAsync(flow, stored.FamilyId!.Value);
+
+        // D29: the ID token names the session, the family records it, and the access token names the family.
+        Assert.Matches("^[A-Za-z0-9_-]{22}$", idJwt.GetClaim("sid").Value);
+        Assert.Equal(idJwt.GetClaim("sid").Value, stored.Sid);
+        Assert.Equal(stored.Sid, family.Sid);
+        Assert.Equal(family.Id.ToString("N"), accessJwt.GetClaim("fid").Value);
         Assert.True(family.IsActive(flow.Api.Time.GetUtcNow()));
         Assert.Equal(43, body.GetProperty("refresh_token").GetString()!.Length);
     }

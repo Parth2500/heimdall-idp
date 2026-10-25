@@ -1,4 +1,5 @@
 using Heimdall.Domain.Common;
+using Heimdall.Domain.Sessions;
 
 namespace Heimdall.Domain.Tokens;
 
@@ -37,7 +38,8 @@ public sealed class AuthorizationCode
         string? nonce,
         DateTimeOffset authTime,
         DateTimeOffset createdAt,
-        string? dpopKeyThumbprint)
+        string? dpopKeyThumbprint,
+        string sid)
     {
         Id = id;
         TenantId = tenantId;
@@ -52,6 +54,7 @@ public sealed class AuthorizationCode
         CreatedAt = createdAt;
         ExpiresAt = createdAt + Lifetime;
         DpopKeyThumbprint = dpopKeyThumbprint;
+        Sid = sid;
     }
 
     public Guid Id { get; }
@@ -85,6 +88,12 @@ public sealed class AuthorizationCode
     /// </summary>
     public string? DpopKeyThumbprint { get; }
 
+    /// <summary>
+    /// The <c>sid</c> of the session that issued the code (D29). The family copies it, so a sign-out finds the tokens of
+    /// that sign-in. Null only for a code from before the column existed.
+    /// </summary>
+    public string? Sid { get; }
+
     public DateTimeOffset? RedeemedAt { get; private set; }
 
     /// <summary>The family that this code started. It is set when the code is redeemed.</summary>
@@ -102,9 +111,11 @@ public sealed class AuthorizationCode
         string? nonce,
         DateTimeOffset authTime,
         DateTimeOffset now,
+        string sid,
         string? dpopKeyThumbprint = null)
     {
         Guard.NotEmpty(id, nameof(id));
+        SessionSid.Require(sid, nameof(sid));
         Guard.NotEmpty(tenantId, nameof(tenantId));
         Guard.NotEmpty(clientPk, nameof(clientPk));
         Guard.NotEmpty(userId, nameof(userId));
@@ -126,7 +137,8 @@ public sealed class AuthorizationCode
             nonce,
             authTime,
             now,
-            dpopKeyThumbprint is null ? null : KeyThumbprint.Require(dpopKeyThumbprint, nameof(dpopKeyThumbprint)));
+            dpopKeyThumbprint is null ? null : KeyThumbprint.Require(dpopKeyThumbprint, nameof(dpopKeyThumbprint)),
+            sid);
     }
 
     /// <summary>Marks the code as used. A used code is reported before an expired one, because reuse is an attack signal.</summary>

@@ -213,8 +213,9 @@ public sealed class AuthorizationCodeGrant
         // D24: a public client's family is bound to the DPoP key, so its refresh tokens need that key. A confidential
         // client authenticates at each refresh, so its family stays unbound.
         var familyKey = client.Type == ClientType.Public ? keyThumbprint : null;
-        var family = TokenFamily.Start(familyId, context.Tenant.Id, client.Id, code.UserId, code.Id, code.Scope, lifetimes, now, familyKey);
-        var response = await CreateTokensAsync(context, client, code, audience, lifetimes, keyThumbprint, now, cancellationToken).ConfigureAwait(false);
+        var family = TokenFamily.Start(familyId, context.Tenant.Id, client.Id, code.UserId, code.Id, code.Scope, lifetimes, now, familyKey, code.Sid);
+        var response = await CreateTokensAsync(context, client, code, familyId, audience, lifetimes, keyThumbprint, now, cancellationToken)
+            .ConfigureAwait(false);
 
         _tokens.AddFamily(family);
         if (response.RefreshToken is { } refreshToken)
@@ -230,6 +231,7 @@ public sealed class AuthorizationCodeGrant
         RequestContext context,
         Client client,
         AuthorizationCode code,
+        Guid familyId,
         string audience,
         TokenLifetimes lifetimes,
         string? keyThumbprint,
@@ -249,7 +251,8 @@ public sealed class AuthorizationCodeGrant
                 now + lifetimes.AccessToken,
                 Guid.NewGuid().ToString("N"),
                 code.AuthTime,
-                keyThumbprint),
+                keyThumbprint,
+                familyId),
             cancellationToken).ConfigureAwait(false);
 
         string? idToken = null;
@@ -257,7 +260,7 @@ public sealed class AuthorizationCodeGrant
         {
             idToken = await _signer.SignIdTokenAsync(
                 context.Tenant.Id,
-                new IdTokenClaims(context.Issuer, code.UserId.ToString(), client.ClientId, now, now + lifetimes.AccessToken, code.AuthTime, code.Nonce),
+                new IdTokenClaims(context.Issuer, code.UserId.ToString(), client.ClientId, now, now + lifetimes.AccessToken, code.AuthTime, code.Nonce, code.Sid),
                 cancellationToken).ConfigureAwait(false);
         }
 

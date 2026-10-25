@@ -240,7 +240,8 @@ public sealed class RefreshTokenGrant
                 now,
                 now + lifetimes.AccessToken,
                 Guid.NewGuid().ToString("N"),
-                KeyThumbprint: keyThumbprint),
+                KeyThumbprint: keyThumbprint,
+                FamilyId: family.Id),
             cancellationToken).ConfigureAwait(false);
 
         var refreshToken = Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(32));

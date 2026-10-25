@@ -83,7 +83,8 @@ public sealed class PurgeTests
             Challenge,
             null,
             created,
-            created);
+            created,
+            "sid-for-tests-00000000");
         if (familyId is { } id)
         {
             code.Redeem(id, created);
@@ -144,10 +145,10 @@ public sealed class PurgeTests
             Guid.CreateVersion7(), fixture.TenantId, fixture.ClientPk, "https://app.example.com/callback", "openid", null, null, Challenge, false, null, now - TimeSpan.FromMinutes(11));
         var liveRequest = AuthorizationRequest.Create(
             Guid.CreateVersion7(), fixture.TenantId, fixture.ClientPk, "https://app.example.com/callback", "openid", null, null, Challenge, false, null, now);
-        var oldSession = Session.Start(TokenHash.Compute("old"), fixture.TenantId, fixture.User.Id, TimeSpan.FromHours(12), now - TimeSpan.FromDays(9));
-        var revokedRecently = Session.Start(TokenHash.Compute("revoked"), fixture.TenantId, fixture.User.Id, TimeSpan.FromHours(12), now - TimeSpan.FromDays(1));
+        var oldSession = Session.Start(TokenHash.Compute("old"), "sid-purge-old-00000000", fixture.TenantId, fixture.User.Id, TimeSpan.FromHours(12), now - TimeSpan.FromDays(9));
+        var revokedRecently = Session.Start(TokenHash.Compute("revoked"), "sid-purge-revoked-0000", fixture.TenantId, fixture.User.Id, TimeSpan.FromHours(12), now - TimeSpan.FromDays(1));
         revokedRecently.Revoke(now - TimeSpan.FromDays(1));
-        var liveSession = Session.Start(TokenHash.Compute("live"), fixture.TenantId, fixture.User.Id, TimeSpan.FromHours(12), now);
+        var liveSession = Session.Start(TokenHash.Compute("live"), "sid-purge-live-0000000", fixture.TenantId, fixture.User.Id, TimeSpan.FromHours(12), now);
         await SaveAsync(fixture, db =>
         {
             db.AuthorizationCodes.AddRange(oldCode, recentCode);

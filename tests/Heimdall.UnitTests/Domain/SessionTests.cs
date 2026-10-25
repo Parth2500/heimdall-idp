@@ -16,7 +16,7 @@ public class SessionTests
         User.Create(Guid.CreateVersion7(), TenantId, "ada@example.com", "argon2id$hash", createdAt ?? Now.AddDays(-1));
 
     private static Session NewSession(User user) =>
-        Session.Start(TokenHash.Compute("session-id"), TenantId, user.Id, Absolute, Now);
+        Session.Start(TokenHash.Compute("session-id"), "sid-for-tests-00000000", TenantId, user.Id, Absolute, Now);
 
     [Fact]
     public void New_session_is_valid()

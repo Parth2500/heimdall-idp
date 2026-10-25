@@ -75,7 +75,7 @@ public class AuthorizationServiceTests
     private string SignedIn(DateTimeOffset? authTime = null, User? user = null)
     {
         var id = Base64Url.EncodeToString(Guid.NewGuid().ToByteArray().Concat(Guid.NewGuid().ToByteArray()).ToArray());
-        _sessions.Add(Session.Start(TokenHash.Compute(id), _tenant.Id, (user ?? _user).Id, TimeSpan.FromHours(12), authTime ?? Now));
+        _sessions.Add(Session.Start(TokenHash.Compute(id), "sid-for-tests-00000000", _tenant.Id, (user ?? _user).Id, TimeSpan.FromHours(12), authTime ?? Now));
         return id;
     }
 
@@ -433,6 +433,7 @@ public class AuthorizationServiceTests
         Assert.Equal("openid profile", stored.Scope);
         Assert.Equal(Challenge, stored.CodeChallenge);
         Assert.Equal("n-0S6_WzA2Mj", stored.Nonce);
+        Assert.Equal(Assert.Single(_sessions.Sessions).Sid, stored.Sid);
         Assert.Equal(authTime, stored.AuthTime);
         Assert.Equal(Now, stored.CreatedAt);
 

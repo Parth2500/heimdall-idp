@@ -12,7 +12,10 @@ internal sealed class AuthorizationCodeConfiguration : IEntityTypeConfiguration<
     public void Configure(EntityTypeBuilder<AuthorizationCode> builder)
     {
         builder.ToTable("authorization_codes", t =>
-            t.HasCheckConstraint("ck_authorization_codes_dpop_key", "dpop_key_thumbprint IS NULL OR length(dpop_key_thumbprint) = 43"));
+        {
+            t.HasCheckConstraint("ck_authorization_codes_dpop_key", "dpop_key_thumbprint IS NULL OR length(dpop_key_thumbprint) = 43");
+            t.HasCheckConstraint("ck_authorization_codes_sid", "sid IS NULL OR length(sid) = 22");
+        });
 
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id).ValueGeneratedNever();
@@ -33,6 +36,9 @@ internal sealed class AuthorizationCodeConfiguration : IEntityTypeConfiguration<
         builder.Property(c => c.ExpiresAt);
         builder.Property(c => c.RedeemedAt);
         builder.Property(c => c.DpopKeyThumbprint).HasMaxLength(43);
+
+        // D29: the family copies it at redemption. No foreign key: a code can outlive its session row.
+        builder.Property(c => c.Sid).HasMaxLength(22).IsFixedLength();
 
         // ON DELETE SET NULL: a code survives its family for the purge delay (docs/schema-design.md, "Purge job").
         // The migration makes this key DEFERRABLE INITIALLY DEFERRED: the redemption UPDATE sets family_id before the

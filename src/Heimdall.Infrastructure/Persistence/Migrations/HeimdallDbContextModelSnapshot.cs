@@ -316,6 +316,13 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("revoked_at");
 
+                    b.Property<string>("Sid")
+                        .IsRequired()
+                        .HasMaxLength(22)
+                        .HasColumnType("character(22)")
+                        .HasColumnName("sid")
+                        .IsFixedLength();
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
@@ -337,10 +344,17 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_sessions_user_id");
 
+                    b.HasIndex("TenantId", "Sid")
+                        .IsUnique()
+                        .HasDatabaseName("ix_sessions_tenant_id_sid");
+
                     b.HasIndex("TenantId", "UserId")
                         .HasDatabaseName("ix_sessions_tenant_id_user_id");
 
-                    b.ToTable("sessions", (string)null);
+                    b.ToTable("sessions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sessions_sid", "length(sid) = 22");
+                        });
                 });
 
             modelBuilder.Entity("Heimdall.Domain.Tenants.Tenant", b =>
@@ -476,6 +490,12 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(1024)")
                         .HasColumnName("scope");
 
+                    b.Property<string>("Sid")
+                        .HasMaxLength(22)
+                        .HasColumnType("character(22)")
+                        .HasColumnName("sid")
+                        .IsFixedLength();
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
@@ -507,6 +527,8 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                     b.ToTable("authorization_codes", null, t =>
                         {
                             t.HasCheckConstraint("ck_authorization_codes_dpop_key", "dpop_key_thumbprint IS NULL OR length(dpop_key_thumbprint) = 43");
+
+                            t.HasCheckConstraint("ck_authorization_codes_sid", "sid IS NULL OR length(sid) = 22");
                         });
                 });
 
@@ -697,6 +719,12 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(1024)")
                         .HasColumnName("scope");
 
+                    b.Property<string>("Sid")
+                        .HasMaxLength(22)
+                        .HasColumnType("character(22)")
+                        .HasColumnName("sid")
+                        .IsFixedLength();
+
                     b.Property<Guid>("SourceCodeId")
                         .HasColumnType("uuid")
                         .HasColumnName("source_code_id");
@@ -728,6 +756,10 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_token_families_user_id");
 
+                    b.HasIndex("TenantId", "Sid")
+                        .HasDatabaseName("ix_token_families_tenant_id_sid")
+                        .HasFilter("sid IS NOT NULL");
+
                     b.ToTable("token_families", null, t =>
                         {
                             t.HasCheckConstraint("ck_token_families_dpop_key", "dpop_key_thumbprint IS NULL OR length(dpop_key_thumbprint) = 43");
@@ -735,6 +767,8 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_token_families_idle", "idle_expires_at <= absolute_expires_at");
 
                             t.HasCheckConstraint("ck_token_families_revoked_reason", "revoked_reason IS NULL OR revoked_reason IN ('reuse_detected', 'user_logout', 'admin', 'user_disabled', 'consent_removed')");
+
+                            t.HasCheckConstraint("ck_token_families_sid", "sid IS NULL OR length(sid) = 22");
                         });
                 });
 

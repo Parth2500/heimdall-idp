@@ -31,7 +31,7 @@ public class AuthorizationRequestTests
             dpopKeyThumbprint);
 
     private static Session SignedInAt(DateTimeOffset authTime) =>
-        Session.Start(TokenHash.Compute("session-id-for-tests"), TenantId, Guid.CreateVersion7(), TimeSpan.FromHours(12), authTime);
+        Session.Start(TokenHash.Compute("session-id-for-tests"), "sid-for-tests-00000000", TenantId, Guid.CreateVersion7(), TimeSpan.FromHours(12), authTime);
 
     [Fact]
     public void Request_expires_after_ten_minutes()
