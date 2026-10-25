@@ -72,16 +72,14 @@ public static class OutboundAddressGuard
     {
         ArgumentNullException.ThrowIfNull(context);
         var endPoint = context.DnsEndPoint;
-        var addresses = IPAddress.TryParse(endPoint.Host, out var literal)
-            ? [literal]
-            : await Dns.GetHostAddressesAsync(endPoint.Host, cancellationToken).ConfigureAwait(false);
+        var addresses = Checked(
+            endPoint.Host,
+            IPAddress.TryParse(endPoint.Host, out var literal)
+                ? [literal]
+                : await Dns.GetHostAddressesAsync(endPoint.Host, cancellationToken).ConfigureAwait(false));
 
-        // One blocked address refuses the host. A name that resolves to a public and a private address is not trusted.
-        if (addresses.Length == 0 || !addresses.All(IsAllowed))
-        {
-            throw new HttpRequestException($"Heimdall refuses to connect to '{endPoint.Host}': it resolves to a blocked address (D35).");
-        }
-
+        // The unit tests stop at the check above: the lines below open a real socket, which needs the network.
+        // Stryker disable all
         var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
         try
         {
@@ -93,5 +91,21 @@ public static class OutboundAddressGuard
             socket.Dispose();
             throw;
         }
+
+        // Stryker restore all
+    }
+
+    /// <summary>
+    /// The addresses to connect to, or a refusal. One blocked address refuses the host: a name that resolves to a public
+    /// and a private address is not trusted.
+    /// </summary>
+    internal static IPAddress[] Checked(string host, IPAddress[] addresses)
+    {
+        if (addresses.Length == 0 || !addresses.All(IsAllowed))
+        {
+            throw new HttpRequestException($"Heimdall refuses to connect to '{host}': it resolves to a blocked address (D35).");
+        }
+
+        return addresses;
     }
 }

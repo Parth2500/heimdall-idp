@@ -94,6 +94,7 @@ internal sealed class TenantJwsVerifier
             return payload;
         }
 
+        // Stryker disable once Statement : disposal frees pooled memory, and no test can observe it.
         payload?.Dispose();
         return null;
     }

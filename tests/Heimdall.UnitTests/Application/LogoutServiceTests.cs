@@ -399,6 +399,10 @@ public class LogoutServiceTests
         Assert.Same(LogoutSignedOut.Instance, await EndSession(null, ("client_id", ""), ("post_logout_redirect_uri", ""), ("state", ""), ("id_token_hint", "")));
 
     [Fact]
+    public async Task Empty_state_is_no_state() =>
+        Assert.Equal(new LogoutRedirect(Bye, null), await EndSession(null, ("client_id", "spa"), ("post_logout_redirect_uri", Bye), ("state", "")));
+
+    [Fact]
     public async Task State_of_the_limit_returns_unchanged()
     {
         var state = new string('s', LogoutService.MaxStateLength);
@@ -429,8 +433,7 @@ public class LogoutServiceTests
 
         var outcome = await EndSession(cookie, ("id_token_hint", Hint), ("client_id", "huginn"), ("post_logout_redirect_uri", "https://huginn.example.com/bye"));
 
-        Assert.IsType<LogoutErrorPage>(outcome);
-        Assert.Equal(OAuthError.InvalidRequestCode, ((LogoutErrorPage)outcome).Error);
+        Assert.Equal(new LogoutErrorPage(OAuthError.InvalidRequestCode, "client_id differs from the aud of id_token_hint"), outcome);
         Assert.Null(SessionOf(cookie).RevokedAt);
     }
 

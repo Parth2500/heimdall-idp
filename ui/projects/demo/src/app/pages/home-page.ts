@@ -61,9 +61,8 @@ import { ClaimsTable } from './claims-table';
       }
       @if (session.signedOutHere()) {
         <p role="status" class="hd-note">
-          The client revoked its refresh token and dropped its tokens. Your Heimdall session is
-          still active, so the next sign-in may not ask for a password. Heimdall has no RP-initiated
-          logout yet.
+          You signed out of Heimdall. Heimdall ended its session and revoked the tokens of that
+          sign-in, so the next sign-in asks for your password.
         </p>
       }
       <button class="hd-button" type="button" (click)="session.signIn()">

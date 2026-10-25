@@ -86,4 +86,30 @@ public class OutboundAddressGuardTests
 
         Assert.Contains("blocked address", error.ToString(), StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Host_with_only_public_addresses_is_kept_unchanged()
+    {
+        IPAddress[] addresses = [IPAddress.Parse("93.184.216.34"), IPAddress.Parse("2606:4700::1111")];
+
+        Assert.Same(addresses, OutboundAddressGuard.Checked("app.example.com", addresses));
+    }
+
+    [Fact]
+    public void One_blocked_address_refuses_the_whole_host()
+    {
+        // DNS rebinding: a name that also resolves to the metadata address is not trusted at all.
+        IPAddress[] addresses = [IPAddress.Parse("93.184.216.34"), IPAddress.Parse("169.254.169.254")];
+
+        var error = Assert.Throws<HttpRequestException>(() => OutboundAddressGuard.Checked("app.example.com", addresses));
+        Assert.Contains("'app.example.com'", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Blocked_address_first_refuses_the_host_too() =>
+        Assert.Throws<HttpRequestException>(() => OutboundAddressGuard.Checked("h", [IPAddress.Parse("10.0.0.1"), IPAddress.Parse("93.184.216.34")]));
+
+    [Fact]
+    public void Host_with_no_address_is_refused() =>
+        Assert.Throws<HttpRequestException>(() => OutboundAddressGuard.Checked("h", []));
 }

@@ -17,7 +17,8 @@ export function demoAuthConfig(origin: string): OpenIdConfiguration {
     authority: HEIMDALL_ISSUER,
     clientId: DEMO_CLIENT_ID,
     redirectUrl: `${origin}/callback`,
-    postLogoutRedirectUri: origin,
+    // Exactly the URI that seed-dev registers, with the slash: Heimdall compares by exact match (D32).
+    postLogoutRedirectUri: `${origin}/`,
     // Authorization code with PKCE S256. The library makes the verifier and the challenge.
     responseType: 'code',
     scope: DEMO_SCOPES,

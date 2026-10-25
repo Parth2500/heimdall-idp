@@ -12,6 +12,12 @@ import { RefreshTokenHistory } from './refresh-token-history';
  */
 export const RESUME_FLAG = 'heimdall-demo.resume';
 
+/**
+ * A flag in sessionStorage that survives the trip to Heimdall's `end_session_endpoint` and back.
+ * It holds no token. The home page then says that the Heimdall session ended.
+ */
+export const SIGNED_OUT_FLAG = 'heimdall-demo.signed-out';
+
 export type SessionState = 'starting' | 'signed-out' | 'signed-in' | 'redirecting';
 
 /** The OAuth `error` codes that the demo names. Any other value shows as `unknown_error` (U6). */
@@ -50,7 +56,7 @@ export class DemoSession {
   readonly error = this.errorSignal.asReadonly();
   /** Goes up by one each time the client gets new tokens. Pages read the tokens again then. */
   readonly tokenVersion = signal(0);
-  /** True after the user signed out in this page. The home page then explains what stays. */
+  /** True after the user signed out of Heimdall from this page. The home page says so. */
   readonly signedOutHere = signal(false);
   /** True when the last sign-in could not read Heimdall's discovery document. */
   readonly unreachable = signal(false);
@@ -64,6 +70,11 @@ export class DemoSession {
 
     // The authorization response puts `error` in the query when the user denies consent.
     this.errorSignal.set(knownErrorOrUnknown(new URL(url).searchParams.get('error')));
+
+    if (sessionStorage.getItem(SIGNED_OUT_FLAG) !== null) {
+      sessionStorage.removeItem(SIGNED_OUT_FLAG);
+      this.signedOutHere.set(true);
+    }
 
     const result = await firstValueFrom(this.oidc.checkAuth(url));
     if (result.isAuthenticated) {
@@ -113,16 +124,23 @@ export class DemoSession {
   }
 
   /**
-   * Revokes the refresh token at Heimdall (RFC 7009), then drops every token in memory.
-   * The Heimdall session cookie stays until RP-initiated logout exists (U14).
+   * Revokes the refresh token at Heimdall (RFC 7009), then sends the browser to Heimdall's
+   * `end_session_endpoint` (RP-Initiated Logout 1.0, #40). The library adds `id_token_hint` and
+   * `post_logout_redirect_uri`, and it clears its storage. Heimdall ends its session and every
+   * token family of it, then sends the browser back here.
    */
   async signOut(): Promise<void> {
     try {
+      // First, so this family ends even when the user does not confirm the sign-out at Heimdall.
       await firstValueFrom(this.oidc.revokeRefreshToken());
-    } finally {
-      this.endLocally();
-      this.signedOutHere.set(true);
+    } catch {
+      // The sign-out at Heimdall revokes the family too.
     }
+    sessionStorage.removeItem(RESUME_FLAG);
+    sessionStorage.setItem(SIGNED_OUT_FLAG, '1');
+    this.history.clear();
+    this.stateSignal.set('redirecting');
+    await firstValueFrom(this.oidc.logoff());
   }
 
   /** Drops every token in memory without a call to Heimdall. */

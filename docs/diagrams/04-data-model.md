@@ -15,12 +15,14 @@ erDiagram
     clients ||--o{ authorization_codes : receives
     clients ||--o{ token_families : owns
     clients ||--o{ consents : receives
+    clients ||--o{ backchannel_logouts : "gets a logout_token"
     users ||--o{ sessions : opens
     users ||--o{ consents : grants
     users ||--o{ authorization_codes : "is subject of"
     users ||--o{ token_families : "is subject of"
     token_families ||--o{ refresh_tokens : contains
     authorization_codes }o--o| token_families : "starts"
+    sessions ||..o{ token_families : "sid (no FK)"
     refresh_tokens |o--o| refresh_tokens : "replaced_by"
 
     tenants {
@@ -47,6 +49,8 @@ erDiagram
         text_array allowed_grant_types
         text_array redirect_uris
         text_array allowed_audiences
+        text_array post_logout_redirect_uris
+        text backchannel_logout_uri
     }
     client_secrets {
         uuid id PK
@@ -68,6 +72,7 @@ erDiagram
         bytea code_hash UK
         uuid family_id FK
         text dpop_key_thumbprint
+        char22 sid
         timestamptz expires_at
         timestamptz redeemed_at
     }
@@ -79,6 +84,7 @@ erDiagram
         timestamptz idle_expires_at
         timestamptz revoked_at
         text dpop_key_thumbprint
+        char22 sid
     }
     refresh_tokens {
         uuid id PK
@@ -89,9 +95,18 @@ erDiagram
     }
     sessions {
         bytea id_hash PK
+        char22 sid UK
         uuid user_id FK
         timestamptz absolute_expires_at
         timestamptz revoked_at
+    }
+    backchannel_logouts {
+        uuid id PK
+        uuid client_pk FK
+        uuid user_id
+        char22 sid
+        int attempts
+        timestamptz next_attempt_at
     }
     dpop_proofs {
         uuid tenant_id PK

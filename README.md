@@ -69,11 +69,11 @@ dotnet tool restore
 cd tests/Heimdall.UnitTests
 dotnet stryker --project Heimdall.Domain.csproj
 dotnet stryker --project Heimdall.Application.csproj
-dotnet stryker --project Heimdall.Infrastructure.csproj -m "**/Keys/AccessTokenValidator.cs" -m "**/Keys/Jws.cs" -m "**/Dpop/DpopProofValidator.cs"
+dotnet stryker --project Heimdall.Infrastructure.csproj -m "**/Keys/AccessTokenValidator.cs" -m "**/Keys/TenantJwsVerifier.cs" -m "**/Keys/IdTokenHintValidator.cs" -m "**/Keys/Jws.cs" -m "**/Dpop/DpopProofValidator.cs" -m "**/Logout/OutboundAddressGuard.cs"
 dotnet stryker --project Heimdall.Api.csproj -m "**/Endpoints/OAuthFormReader.cs"
 ```
 
-In Infrastructure and Api, only the token validator, the DPoP proof validator, and the form reader have unit tests. The integration tests cover the rest.
+In Infrastructure and Api, only the token and hint validators, the DPoP proof validator, the outbound address guard, and the form reader have unit tests. The integration tests cover the rest.
 
 A surviving mutant shows a rule that no test checks. Write a test that kills it.
 Some mutants change only the timing or the text, and no test can detect them. Mark each one in the code with `// Stryker disable once <mutator> : <reason>`.

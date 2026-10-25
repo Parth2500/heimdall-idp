@@ -118,14 +118,14 @@ With this configuration, the handler checks `state`, the PKCE redemption, the ID
 
 ## Sign out
 
-Sign out of the cookie scheme only:
+Sign out of both schemes. The OpenID Connect handler reads `end_session_endpoint` from discovery and sends the browser there with `id_token_hint`, because `SaveTokens` keeps the ID token. Register `SignedOutCallbackPath` (`/signout-callback-oidc` by default) as a post-logout redirect URI.
 
 ```csharp
 app.MapPost("/logout", async (HttpContext context) =>
 {
     await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-    return Results.Redirect("/");
+    await context.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme, new AuthenticationProperties { RedirectUri = "/" });
 }).RequireAuthorization();
 ```
 
-Do not sign out of the OpenID Connect scheme. That call needs an `end_session_endpoint`, which Heimdall does not have yet. See [Sign out](../sign-out.md).
+Use `POST` with antiforgery for your own `/logout`, so another site cannot sign your users out of your app. See [Sign out](../sign-out.md) for what Heimdall ends.

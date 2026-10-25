@@ -226,7 +226,7 @@ Status: **Approved** by the owner on 2026-10-19.
 | Refresh | A "Refresh now" button. The page shows that the refresh token changed (the first 6 characters of a SHA-256 of each token, never the token). |
 | Theft demo | A "Replay the old refresh token" button. It sends the previous refresh token to `/token`. The page shows `invalid_grant`, then shows that the current refresh token also fails: Heimdall revoked the whole family. |
 | DPoP demo | Added on 2026-10-23 (#17). The key thumbprint, and a "Steal the current refresh token" button. It sends the current refresh token without a proof, as a thief without the key would. The page shows `invalid_dpop_proof`, then shows that the client still refreshes with its key: the stolen token is useless, and nothing is revoked. |
-| Sign out | Revokes the refresh token (`/revoke`), then clears memory. The page says that the Heimdall session stays until RP-initiated logout exists (U14). |
+| Sign out | Revokes the refresh token (`/revoke`), then sends the browser to the `end_session_endpoint` with `id_token_hint` (#40). Heimdall ends its session and comes back to the demo, which says so. |
 
 The theft demo is the strongest portfolio screen. It shows refresh token reuse detection at work, in a real browser, with no grace window.
 

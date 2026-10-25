@@ -2,17 +2,61 @@
 
 [Documentation home](../documentation.md)
 
-Sign-out has three parts. Heimdall supports two of them today.
+Sign-out has three parts. Heimdall supports all three.
 
-| Part | What ends | Supported |
+| Part | What ends | How |
 |---|---|---|
-| Your app's session | The user's session in your app. | Yes. Your app does it. |
-| The refresh token family | Every refresh token from this sign-in. | Yes. Revoke it at `/revoke`. |
-| The Heimdall session | The user's session at Heimdall, for every app. | Not yet. RP-initiated logout is planned (issue #40). |
+| Your app's session | The user's session in your app. | Your app ends it. |
+| The Heimdall session | The user's session at Heimdall, for every app on this browser. | Send the browser to the `end_session_endpoint` (RP-Initiated Logout 1.0). |
+| The tokens of that sign-in | Every refresh token family of the Heimdall session, for every app. | Heimdall revokes them when the session ends. |
 
-## Step 1: Revoke the refresh token
+A sign-out at Heimdall also tells the servers of the other apps in the session, if they registered a `backchannel_logout_uri` (Back-Channel Logout 1.0).
 
-If your client has a refresh token, revoke it (RFC 7009):
+## Step 1: End your app's session
+
+Delete your app's session and the tokens that it holds. In a browser app, clear the tokens from memory. Keep the ID token for step 2.
+
+## Step 2: Send the browser to Heimdall
+
+Read `end_session_endpoint` from discovery. Then send the browser there:
+
+```http
+GET /oauth/v1/logout?id_token_hint=eyJhbGciOiJSUzI1NiIs...
+    &post_logout_redirect_uri=https%3A%2F%2Forders.example.com%2Fsigned-out
+    &state=af0ifjsldkj HTTP/1.1
+Host: acme.example.com
+```
+
+| Parameter | Required | Notes |
+|---|---|---|
+| `id_token_hint` | Recommended | The ID token of this sign-in. An expired ID token is valid here. Heimdall checks its signature, `iss`, and `aud`. |
+| `client_id` | No | Your `client_id`. Use it when you have no ID token. When you send both, it must equal the `aud` of the ID token. |
+| `post_logout_redirect_uri` | No | Where Heimdall sends the browser after the sign-out. It must be in your registered list, by exact match. |
+| `state` | No | Heimdall returns it unchanged. At most 512 characters. |
+
+`POST` with a form body works too. Each parameter can appear only once.
+
+### What Heimdall does
+
+| Request | Result |
+|---|---|
+| An ID token of this browser's current session | Heimdall ends the session at once. Then it sends the browser to your URI with `state`. |
+| No ID token, or an ID token of an older session | Heimdall asks the user: "Sign out of Heimdall?". The session ends only when the user clicks "Sign out". Then the browser goes to your URI. |
+| No Heimdall session in the browser | Nothing to end. The browser goes to your URI at once. |
+| A URI that is not registered for your client, or no client | Heimdall shows its own "You are signed out" page and redirects nowhere. |
+| A `client_id` that differs from the ID token's `aud`, a `state` over 512 characters, or a repeated parameter | Heimdall shows its error page, ends nothing, and redirects nowhere. |
+
+Why the confirmation: another site can send a browser to this endpoint. Without the ID token of the current session, Heimdall cannot know that the request comes from an app of that session. A click on a Heimdall page proves that the user wants to sign out (logout CSRF).
+
+### What ends
+
+- The Heimdall session. The next sign-in asks for the password.
+- Every refresh token family of that session, for every app, also with `offline_access`. A refresh then gets `invalid_grant`. This is stricter than Back-Channel Logout 1.0, section 2.7, which keeps `offline_access` tokens.
+- Access tokens stay valid until `exp` (5 minutes by default). Heimdall cannot recall a JWT.
+
+## Step 3 (optional): Revoke the refresh token first
+
+If your app has a refresh token, you can revoke it at `/revoke` before step 2. This ends your family even when the user does not confirm the sign-out at Heimdall.
 
 ```http
 POST /oauth/v1/revoke HTTP/1.1
@@ -23,25 +67,62 @@ token=8xLOxBtZp8...
 &client_id=orders-web
 ```
 
-A confidential client sends HTTP Basic instead of `client_id`.
+A confidential client sends HTTP Basic instead of `client_id`. Revocation ends the whole family. Heimdall returns `200` for every well-formed request from an authenticated client, and it does not tell you if the token existed (RFC 7009).
 
-- Revocation ends the **whole family**, including the newest refresh token.
-- Heimdall returns `200` with an empty body for every well-formed request from an authenticated client. The response does not tell you if the token existed. This is RFC 7009 behavior.
-- Heimdall ignores `token_type_hint`.
-- Heimdall cannot revoke an access token. It stays valid until `exp` (5 minutes by default). Send an access token to `/revoke` and you get `200`, but nothing changes.
-- A client can revoke only its own tokens. A token of another client gets `200` and nothing changes.
+## Receive a back-channel logout
 
-## Step 2: End your app's session
+Register a `backchannel_logout_uri` on your server. When the user signs out of Heimdall from any app, Heimdall sends:
 
-Delete your app's session and every token that it holds. In a browser app, clear the tokens from memory.
+```http
+POST /backchannel-logout HTTP/1.1
+Host: orders.example.com
+Content-Type: application/x-www-form-urlencoded
 
-## The Heimdall session stays
+logout_token=eyJhbGciOiJSUzI1NiIsImtpZCI6Ii4uLiIsInR5cCI6ImxvZ291dCtqd3QifQ...
+```
 
-Heimdall has no `end_session_endpoint` yet. After step 1 and step 2, the user's Heimdall session is still active. If the user clicks "Sign in" again, Heimdall can sign them in with no login page.
+The `logout_token` is a JWT:
 
-This matters on a shared computer. Until RP-initiated logout exists, use one of these options:
+```json
+{
+  "iss": "https://acme.example.com",
+  "sub": "0190f1e2-3a4b-7c5d-8e9f-a0b1c2d3e4f5",
+  "aud": "orders-web",
+  "iat": 1792603478,
+  "exp": 1792603598,
+  "jti": "5a1c0b5e8f3a4d7e9b2c6f1a0d3e8b47",
+  "sid": "Qm9vazEyMzQ1Njc4OTAxMg",
+  "events": { "http://schemas.openid.net/event/backchannel-logout": {} }
+}
+```
 
-- Send `prompt=login` on the next sign-in. Heimdall then asks for credentials again, even with an active session.
-- Tell the user to close the browser. The Heimdall session cookie has no expiry date, so the browser deletes it on close. Some browsers restore cookies when they restore the last session, so this option is not certain.
+Check it before you act on it:
 
-In all cases, Heimdall ends the session after its idle timeout (30 minutes by default) or its absolute lifetime (12 hours by default).
+1. The header has `alg` `RS256`, `typ` `logout+jwt`, and a `kid` from the JWKS. Check the signature.
+2. `iss` is the issuer, and `aud` is your `client_id`.
+3. `iat` is recent, and `exp` has not passed. The token lives 2 minutes.
+4. `events` has the back-channel logout event, and the token has no `nonce`. So no ID token can pass as a logout token.
+5. You have not seen this `jti` before. Keep each `jti` until its `exp`.
+
+Then end every session of your app with this `sid`. The ID token of each sign-in has the same `sid` claim, so store it with your session. Answer `200`. Heimdall reads no response body.
+
+Delivery rules:
+
+- Heimdall sends the call from a background job, a few seconds after the sign-out. The user's sign-out never waits for your server.
+- One call has a 5-second limit. Heimdall follows no redirect.
+- After a failure, Heimdall tries again after 30 seconds, then 1, 2, 4, and 8 minutes. After the fifth retry fails, it stops and writes an audit event.
+- You can get the same sign-out twice, with two `jti` values. Ending a session that already ended must do nothing.
+- Your endpoint must use `https` on a public address. Heimdall refuses loopback, private, and link-local addresses, except in Development.
+
+## Register the URIs
+
+The operator registers these values for your client, with the rules of a redirect URI (absolute, `https`, plain `http` only for a loopback address, no fragment, no wildcard):
+
+- `post_logout_redirect_uris`: a list. Matching is by exact string.
+- `backchannel_logout_uri`: one URI, or none.
+
+## Library support
+
+- `oidc-client-ts` and `angular-auth-oidc-client`: `signoutRedirect()` and `logoff()` read `end_session_endpoint` and send `id_token_hint`.
+- ASP.NET Core: `SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme)` sends the browser to `end_session_endpoint` with `id_token_hint`, when `SaveTokens` is on. See [the ASP.NET Core recipe](recipes/aspnet-core.md).
+- `openid-client` (Node.js): `buildEndSessionUrl(config, { id_token_hint, post_logout_redirect_uri, state })`. See [the Node.js recipe](recipes/node-server.md).

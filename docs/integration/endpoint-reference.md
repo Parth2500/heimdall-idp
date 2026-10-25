@@ -12,6 +12,7 @@ All paths are relative to the tenant's issuer, for example `https://acme.example
 | `/oauth/v1/token` | `POST` | Issues tokens. |
 | `/oauth/v1/userinfo` | `GET`, `POST` | Returns the user's claims. |
 | `/oauth/v1/revoke` | `POST` | Revokes a refresh token family. |
+| `/oauth/v1/logout` | `GET`, `POST` | Ends the Heimdall session (RP-Initiated Logout 1.0). |
 
 ## `GET /.well-known/openid-configuration`
 
@@ -33,7 +34,12 @@ Returns the discovery document (OpenID Connect Discovery 1.0). It lists only wha
   "code_challenge_methods_supported": ["S256"],
   "subject_types_supported": ["public"],
   "id_token_signing_alg_values_supported": ["RS256"],
-  "authorization_response_iss_parameter_supported": true
+  "authorization_response_iss_parameter_supported": true,
+  "dpop_signing_alg_values_supported": ["ES256", "RS256"],
+  "end_session_endpoint": "https://acme.example.com/oauth/v1/logout",
+  "frontchannel_logout_supported": false,
+  "backchannel_logout_supported": true,
+  "backchannel_logout_session_supported": true
 }
 ```
 
@@ -177,3 +183,23 @@ Revokes a refresh token family (RFC 7009). The form and client authentication ru
 Response: `200` with an empty body, for any token, after successful client authentication. An error only for a malformed request (`400`) or failed client authentication (`401`).
 
 CORS: client origins of public clients only.
+
+## `GET` or `POST /oauth/v1/logout`
+
+The `end_session_endpoint` (RP-Initiated Logout 1.0). The browser comes here, not your server. See [Sign out](sign-out.md) for the full rules.
+
+| Parameter | Required | Notes |
+|---|---|---|
+| `id_token_hint` | Recommended | An ID token of this tenant. An expired one is valid. |
+| `client_id` | No | Must equal the hint's `aud` when both are present. |
+| `post_logout_redirect_uri` | No | Must be registered for the client, by exact match. |
+| `state` | No | Returned unchanged. At most 512 characters. |
+
+Response: always `302`, with `Cache-Control: no-store`.
+
+- To your URI with `state`: the session ended, or the browser had none.
+- To `/account/logout`: the user must confirm first.
+- To `/account/signed-out?logout=done`: no registered URI, or no client.
+- To `/account/error?error=invalid_request`: a malformed request. Nothing ends.
+
+Rate limit: the per-IP limit of `/authorize`.

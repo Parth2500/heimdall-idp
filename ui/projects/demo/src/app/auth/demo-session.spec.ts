@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { OidcSecurityService, PublicEventsService } from 'angular-auth-oidc-client';
-import { EMPTY, of } from 'rxjs';
+import { EMPTY, of, throwError } from 'rxjs';
 import { HeimdallDiscovery } from './discovery';
-import { DemoSession, RESUME_FLAG, knownErrorOrUnknown } from './demo-session';
+import { DemoSession, RESUME_FLAG, SIGNED_OUT_FLAG, knownErrorOrUnknown } from './demo-session';
 
 const APP = 'https://demo.localhost:4300';
 
@@ -102,5 +102,64 @@ describe('DemoSession.start', () => {
 
     expect(oidc.authorize).toHaveBeenCalledOnce();
     expect(session.unreachable()).toBe(false);
+  });
+});
+
+describe('DemoSession.signOut', () => {
+  let oidc: {
+    checkAuth: ReturnType<typeof vi.fn>;
+    revokeRefreshToken: ReturnType<typeof vi.fn>;
+    logoff: ReturnType<typeof vi.fn>;
+  };
+  let session: DemoSession;
+
+  beforeEach(() => {
+    sessionStorage.clear();
+    oidc = {
+      checkAuth: vi.fn(() => of({ isAuthenticated: false })),
+      revokeRefreshToken: vi.fn(() => of({})),
+      logoff: vi.fn(() => of(null)),
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: OidcSecurityService, useValue: oidc },
+        { provide: PublicEventsService, useValue: { registerForEvents: () => EMPTY } },
+        { provide: HeimdallDiscovery, useValue: { endpoints: vi.fn() } },
+      ],
+    });
+    session = TestBed.inject(DemoSession);
+  });
+
+  it('revokes first, then sends the browser to the end_session_endpoint', async () => {
+    sessionStorage.setItem(RESUME_FLAG, '1');
+
+    await session.signOut();
+
+    expect(oidc.revokeRefreshToken).toHaveBeenCalledOnce();
+    expect(oidc.logoff).toHaveBeenCalledOnce();
+    expect(oidc.revokeRefreshToken.mock.invocationCallOrder[0]).toBeLessThan(
+      oidc.logoff.mock.invocationCallOrder[0],
+    );
+    // No reload may sign the user in again on the way out.
+    expect(sessionStorage.getItem(RESUME_FLAG)).toBeNull();
+    expect(sessionStorage.getItem(SIGNED_OUT_FLAG)).toBe('1');
+    expect(session.state()).toBe('redirecting');
+  });
+
+  it('still signs out at Heimdall when the revocation fails', async () => {
+    oidc.revokeRefreshToken.mockReturnValue(throwError(() => new Error('offline')));
+
+    await session.signOut();
+
+    expect(oidc.logoff).toHaveBeenCalledOnce();
+  });
+
+  it('says once, after the trip back, that the Heimdall session ended', async () => {
+    sessionStorage.setItem(SIGNED_OUT_FLAG, '1');
+
+    await session.start(`${APP}/`);
+
+    expect(session.signedOutHere()).toBe(true);
+    expect(sessionStorage.getItem(SIGNED_OUT_FLAG)).toBeNull();
   });
 });

@@ -63,8 +63,8 @@ Each recipe uses a client that signs in with Heimdall today, or it says that it 
 | `response_mode=form_post` or `fragment` | Not supported. Heimdall returns the code in the query. |
 | `client_secret_post`, `private_key_jwt` | Not supported. |
 | Request objects (`request`) and PAR (`request_uri`) | Not supported yet. PAR is planned. |
-| DPoP (RFC 9449) | Not supported yet. It is planned. |
-| RP-initiated logout (`end_session_endpoint`) | Not supported yet. See [Sign out](integration/sign-out.md). |
+| RP-initiated logout (`end_session_endpoint`) | Supported, with a confirm page when the request has no ID token of the current session. See [Sign out](integration/sign-out.md). |
+| Back-channel logout | Supported. The `logout_token` carries `sid`. Front-channel logout is not supported, by design: browsers block third-party cookies in frames. |
 | Dynamic client registration | Not supported. The operator registers clients. |
 | Token introspection (RFC 7662) | Not supported yet. It is planned. |
 | Silent renew in a hidden iframe | Not supported, by design. Heimdall pages refuse to load in a frame. Use refresh tokens. |

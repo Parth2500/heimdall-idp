@@ -63,8 +63,8 @@ public sealed class DevelopmentSeeder
     public const string HuginnClientId = "huginn";
     public const string HuginnRedirectUri = "http://localhost:4200/api/auth/heimdall/callback";
 
-    /// <summary>Huginn's sign-in page, where the browser returns after a sign-out at Heimdall (D32).</summary>
-    public const string HuginnPostLogoutRedirectUri = "http://localhost:4200/login";
+    /// <summary>Huginn's sign-in page, where the browser returns after a sign-out at Heimdall (D32). Heimdall adds <c>state</c>.</summary>
+    public const string HuginnPostLogoutRedirectUri = "http://localhost:4200/public/login?signedOut=heimdall";
 
     /// <summary>
     /// The Huginn API itself, not the dev proxy: Heimdall's server calls it (D34). Loopback is allowed only in

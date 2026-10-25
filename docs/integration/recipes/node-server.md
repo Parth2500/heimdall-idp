@@ -164,4 +164,15 @@ A redirect URI on `http://localhost` is allowed for development, because it is a
 
 ## Sign out
 
-Delete your app's session. If you kept a refresh token, revoke it first with `oidc.tokenRevocation(config, refreshToken)`. See [Sign out](../sign-out.md).
+Keep the ID token and its `sid` with your session at sign-in. At sign-out, delete your app's session, then send the browser to Heimdall:
+
+```ts
+const url = oidc.buildEndSessionUrl(config, {
+  id_token_hint: session.idToken,
+  post_logout_redirect_uri: 'https://orders.example.com/signed-out',
+  state: oidc.randomState(),
+});
+res.redirect(url.href);
+```
+
+If you kept a refresh token, revoke it first with `oidc.tokenRevocation(config, refreshToken)`. To end your sessions when the user signs out from another app, add a back-channel logout endpoint. See [Sign out](../sign-out.md).
