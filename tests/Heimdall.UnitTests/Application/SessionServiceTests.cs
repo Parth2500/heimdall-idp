@@ -211,49 +211,4 @@ public class SessionServiceTests
         Assert.Equal(saves + 1, _sessions.SaveCount);
         Assert.Equal(Now.AddMinutes(1), _sessions.Sessions[0].LastSeenAt);
     }
-
-    [Fact]
-    public async Task Sign_out_ends_the_session_and_is_audited()
-    {
-        var id = (await SignIn()).SessionId;
-        _time.Advance(TimeSpan.FromMinutes(5));
-        var saves = _sessions.SaveCount;
-
-        await _service.SignOutAsync(Context, id, CancellationToken.None);
-
-        var session = _sessions.Sessions[0];
-        Assert.Equal(Now.AddMinutes(5), session.RevokedAt);
-        Assert.Equal(saves + 1, _sessions.SaveCount);
-        Assert.Null(await Validate(id));
-        var revoked = _audit.Events.Single(e => e.Type == AuditEventTypes.SessionRevoked);
-        Assert.Equal(_user.Id, revoked.SubjectUserId);
-        Assert.Equal(Convert.ToHexStringLower(session.IdHash.AsSpan()), revoked.Data["session_hash"]);
-    }
-
-    [Fact]
-    public async Task Second_sign_out_does_nothing()
-    {
-        var id = (await SignIn()).SessionId;
-        await _service.SignOutAsync(Context, id, CancellationToken.None);
-        var events = _audit.Events.Count;
-        var saves = _sessions.SaveCount;
-
-        await _service.SignOutAsync(Context, id, CancellationToken.None);
-
-        Assert.Equal(events, _audit.Events.Count);
-        Assert.Equal(saves, _sessions.SaveCount);
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("not-a-session")]
-    [InlineData("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")]
-    public async Task Sign_out_without_a_session_does_nothing(string? id)
-    {
-        await _service.SignOutAsync(Context, id, CancellationToken.None);
-
-        Assert.Empty(_audit.Events);
-        Assert.Equal(id is { Length: SessionService.SessionIdLength } ? 1 : 0, _sessions.Queries);
-        Assert.Equal(0, _sessions.SaveCount);
-    }
 }

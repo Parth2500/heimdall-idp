@@ -125,27 +125,6 @@ public sealed class SessionService
         return new ValidSession(session, user);
     }
 
-    /// <summary>Ends the session. Signing out twice, or with no session, does nothing.</summary>
-    public async Task SignOutAsync(RequestContext context, string? sessionId, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(context);
-
-        if (TryHash(sessionId) is not { } hash)
-        {
-            return;
-        }
-
-        var session = await _sessions.FindAsync(context.Tenant.Id, hash, cancellationToken).ConfigureAwait(false);
-        if (session is not { RevokedAt: null })
-        {
-            return;
-        }
-
-        session.Revoke(_time.GetUtcNow());
-        await _sessions.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        await WriteAuditAsync(context, AuditEventTypes.SessionRevoked, session, cancellationToken).ConfigureAwait(false);
-    }
-
     /// <summary>The hash of a well-formed session ID, or null. Only base64url text of the exact length is accepted.</summary>
     private static TokenHash? TryHash(string? sessionId) =>
         sessionId is { Length: SessionIdLength } && Base64Url.IsValid(sessionId) ? TokenHash.Compute(sessionId) : null;

@@ -45,7 +45,11 @@ internal static class WellKnownEndpoints
             ["RS256"],
             AuthorizationResponseIssParameterSupported: true,
             // RFC 9449, section 5.1: the proof algorithms that /token and /userinfo accept (D25).
-            DpopSigningAlgValuesSupported: [.. DpopAlgorithms.Supported]);
+            DpopSigningAlgValuesSupported: [.. DpopAlgorithms.Supported],
+            // RP-Initiated Logout 1.0, section 3 (D30).
+            EndSessionEndpoint: issuer + LogoutEndpoint.Path,
+            // Front-Channel Logout is out of scope: browsers block third-party cookies in iframes.
+            FrontchannelLogoutSupported: false);
 
         return WriteCacheableAsync(context, JsonSerializer.SerializeToUtf8Bytes(document, Json), keyOptions.JwksCacheLifetime);
     }
@@ -98,7 +102,9 @@ internal static class WellKnownEndpoints
         [property: JsonPropertyName("subject_types_supported")] string[] SubjectTypesSupported,
         [property: JsonPropertyName("id_token_signing_alg_values_supported")] string[] IdTokenSigningAlgValuesSupported,
         [property: JsonPropertyName("authorization_response_iss_parameter_supported")] bool AuthorizationResponseIssParameterSupported,
-        [property: JsonPropertyName("dpop_signing_alg_values_supported")] string[] DpopSigningAlgValuesSupported);
+        [property: JsonPropertyName("dpop_signing_alg_values_supported")] string[] DpopSigningAlgValuesSupported,
+        [property: JsonPropertyName("end_session_endpoint")] string EndSessionEndpoint,
+        [property: JsonPropertyName("frontchannel_logout_supported")] bool FrontchannelLogoutSupported);
 
     private sealed record JwkSet([property: JsonPropertyName("keys")] IReadOnlyList<RsaPublicJwk> Keys);
 }

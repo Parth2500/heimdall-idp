@@ -176,7 +176,7 @@ public sealed class SessionEndpointTests
 
         using var logout = await browser.LogoutAsync();
 
-        Assert.Equal(HttpStatusCode.NoContent, logout.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, logout.StatusCode);
         Assert.Null(browser.SessionId);
         using var replay = new BrowserSession(api, tenant.Host);
         replay.Cookies[SessionEndpoints.SessionCookie] = id;

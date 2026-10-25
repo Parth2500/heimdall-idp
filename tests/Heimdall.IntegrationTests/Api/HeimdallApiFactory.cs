@@ -97,6 +97,8 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
         bool requireConsent = false,
         string[]? audiences = null,
         bool requireDpop = false,
+        string[]? postLogoutRedirectUris = null,
+        string? backchannelLogoutUri = null,
         params string[] redirectUris)
     {
         var client = Client.Create(
@@ -113,6 +115,7 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
             Time.GetUtcNow(),
             audiences ?? ["https://api.example.com"],
             requireDpop);
+        client.UpdateLogoutUris(postLogoutRedirectUris ?? [], backchannelLogoutUri);
         client.Approve();
 
         await using var scope = Services.CreateAsyncScope();

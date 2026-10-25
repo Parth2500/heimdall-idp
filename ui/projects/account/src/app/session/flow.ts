@@ -15,6 +15,28 @@ export function resumePath(requestId: string): string {
   return `/oauth/v1/authorize/resume?request_id=${encodeURIComponent(requestId)}`;
 }
 
+/**
+ * The sealed sign-out request from the page address, or null (U17). The page never opens it. It
+ * only sends it back, so any value that is not plain URL-safe text is dropped.
+ */
+export function logoutRequestOrNull(value: string | null | undefined): string | null {
+  return value && value.length <= 4096 && /^[A-Za-z0-9_-]+$/.test(value) ? value : null;
+}
+
+/**
+ * True for a place that Heimdall's answer may name after a sign-out: an absolute http(s) URL (a
+ * registered post-logout redirect URI) or a path on this origin. Never a script URL.
+ */
+export function isSafeDestination(value: unknown): value is string {
+  if (typeof value !== 'string') {
+    return false;
+  }
+  if (value.startsWith('/')) {
+    return !value.startsWith('//') && !value.startsWith('/\\');
+  }
+  return /^https?:\/\//i.test(value);
+}
+
 /** Leaves the Angular app. A class, so tests can replace it. */
 @Injectable({ providedIn: 'root' })
 export class BrowserNavigation {

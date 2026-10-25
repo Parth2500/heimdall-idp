@@ -22,6 +22,12 @@ public sealed class PurgeOptions
     /// <summary>How long an ended session stays, for an investigation.</summary>
     public TimeSpan SessionRetention { get; set; } = TimeSpan.FromDays(7);
 
+    /// <summary>
+    /// How long a back-channel logout row may stay (D35). The delivery job deletes each row after its last retry, within
+    /// an hour. This limit removes the rows of a server where the job did not run.
+    /// </summary>
+    public TimeSpan BackchannelLogoutRetention { get; set; } = TimeSpan.FromDays(1);
+
     /// <summary>Checks the values. Call it at startup, so a bad configuration stops the server.</summary>
     public IReadOnlyList<string> Validate()
     {
@@ -42,6 +48,7 @@ public sealed class PurgeOptions
             (nameof(FamilyRetention), FamilyRetention),
             (nameof(CodeRetention), CodeRetention),
             (nameof(SessionRetention), SessionRetention),
+            (nameof(BackchannelLogoutRetention), BackchannelLogoutRetention),
         })
         {
             if (value <= TimeSpan.Zero)

@@ -839,6 +839,63 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Heimdall.Infrastructure.Persistence.BackchannelLogoutRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempts");
+
+                    b.Property<Guid>("ClientPk")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_pk");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at");
+
+                    b.Property<string>("Sid")
+                        .IsRequired()
+                        .HasMaxLength(22)
+                        .HasColumnType("character(22)")
+                        .HasColumnName("sid")
+                        .IsFixedLength();
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_backchannel_logouts");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_backchannel_logouts_created_at");
+
+                    b.HasIndex("NextAttemptAt")
+                        .HasDatabaseName("ix_backchannel_logouts_next_attempt_at");
+
+                    b.HasIndex("TenantId", "ClientPk")
+                        .HasDatabaseName("ix_backchannel_logouts_tenant_id_client_pk");
+
+                    b.ToTable("backchannel_logouts", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_backchannel_logouts_attempts", "attempts >= 0");
+
+                            t.HasCheckConstraint("ck_backchannel_logouts_sid", "length(sid) = 22");
+                        });
+                });
+
             modelBuilder.Entity("Heimdall.Infrastructure.Persistence.ClientSecretRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1090,6 +1147,24 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_users_tenants_tenant_id");
+                });
+
+            modelBuilder.Entity("Heimdall.Infrastructure.Persistence.BackchannelLogoutRecord", b =>
+                {
+                    b.HasOne("Heimdall.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_backchannel_logouts_tenants_tenant_id");
+
+                    b.HasOne("Heimdall.Domain.Clients.Client", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "ClientPk")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_backchannel_logouts_clients_tenant_id_client_pk");
                 });
 
             modelBuilder.Entity("Heimdall.Infrastructure.Persistence.ClientSecretRecord", b =>

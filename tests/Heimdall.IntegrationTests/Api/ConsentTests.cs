@@ -198,7 +198,7 @@ public sealed class ConsentTests
         await using var setup = await SetUpAsync();
         using (var logout = await setup.Browser.LogoutAsync())
         {
-            Assert.Equal(HttpStatusCode.NoContent, logout.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, logout.StatusCode);
         }
 
         using var prompt = await setup.Browser.SendAsync(HttpMethod.Get, $"session/v1/consent?request_id={setup.RequestId}");

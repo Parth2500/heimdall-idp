@@ -167,6 +167,7 @@ public sealed class RowLevelSecurityTests
         }
 
         Assert.Contains(tables, t => t.Name == "dpop_proofs");
+        Assert.Contains(tables, t => t.Name == "backchannel_logouts");
         Assert.All(tables, t => Assert.True(t.Enabled && t.Forced && t.Policy, $"{t.Name}: row-level security is not complete."));
     }
 }

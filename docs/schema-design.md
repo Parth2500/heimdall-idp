@@ -181,6 +181,19 @@ A token is valid when `used_at IS NULL` and its family is not revoked or expired
 
 The idle limit is `last_seen_at` plus the tenant's `session_idle_seconds`. Heimdall updates `last_seen_at` at most once a minute, so a session check is not a write on each request. The idle limit can therefore be up to one minute late.
 
+### `backchannel_logouts`
+The outbox of back-channel logouts (D34, D35). The sign-out transaction inserts one row for each client that gets a `logout_token`. The delivery job deletes the row after a success, or after the last retry.
+
+| Column | Type | Note |
+|---|---|---|
+| `id` | uuid PK | |
+| `tenant_id`, `client_pk` | uuid | Composite foreign key to `clients`, with `ON DELETE CASCADE`. |
+| `user_id` | uuid | The `sub` of the logout token. No foreign key: the row only names the user. |
+| `sid` | char(22) | The `sid` of the logout token (D29). Check: 22 characters. |
+| `created_at` | timestamptz | The purge job removes a row that is older than one day. |
+| `attempts` | integer | The deliveries that a job started. Check: not negative. |
+| `next_attempt_at` | timestamptz | When the next delivery may start. A job that takes a row moves it forward, as a lease. |
+
 ### `consents`
 | Column | Type | Note |
 |---|---|---|
@@ -272,6 +285,25 @@ After a successful rotation, the application checks that the user is active and 
 
 **Revoke a family** (`/revoke`, logout, admin) is the second statement above with another `revoked_reason`. The statement is idempotent. `/revoke` uses the reason `user_logout`.
 
+**End a session** (`/oauth/v1/logout`, `/session/v1/logout`, D33). Three statements in one transaction:
+```sql
+UPDATE sessions SET revoked_at = @now
+WHERE  tenant_id = @tenant AND id_hash = @hash AND revoked_at IS NULL;
+
+UPDATE token_families SET revoked_at = @now, revoked_reason = 'user_logout'
+WHERE  tenant_id = @tenant AND sid = @sid AND revoked_at IS NULL
+RETURNING id, client_pk, user_id;
+
+INSERT INTO backchannel_logouts (id, tenant_id, client_pk, user_id, sid, created_at, attempts, next_attempt_at)
+SELECT gen_random_uuid(), f.tenant_id, f.client_pk, f.user_id, f.sid, @now, 0, @now
+FROM   (SELECT DISTINCT tenant_id, client_pk, user_id, sid
+        FROM token_families WHERE tenant_id = @tenant AND sid = @sid) AS f
+JOIN   clients AS c ON c.tenant_id = f.tenant_id AND c.id = f.client_pk
+WHERE  c.backchannel_logout_uri IS NOT NULL
+RETURNING client_pk;
+```
+The first statement is the lock. When two sign-outs of one session run together, the second waits on the row, then matches no row. Then it stops, so it revokes nothing and queues nothing twice. The insert also includes families that a reuse revoked earlier, because their client can still hold a session of its own. A redeemed code always has a family, so the insert needs no read of `authorization_codes`.
+
 ## Indexes
 
 | Table | Index | Reason |
@@ -357,6 +389,7 @@ Indexes for the job: `token_families (idle_expires_at)`, `token_families (revoke
 | `authorization_requests` | `expires_at` has passed | |
 | `login_throttles` | No failure for 24 hours, and no wait is running | The row would start again at zero anyway. |
 | `dpop_proofs` | `expires_at` has passed | None. After that time the proof fails the `iat` check anyway. |
+| `backchannel_logouts` | `created_at` is more than one day ago | The delivery job deletes each row within an hour. This rule removes the rows of a server where the job did not run. |
 | `sessions` | `absolute_expires_at` or `revoked_at` is more than 7 days ago | A session that ended by its idle timeout stays until this time. The idle timeout is a tenant setting, so this rule keeps the statement on one table. |
 
 Order: delete families first, then codes. `authorization_codes.family_id` has `ON DELETE SET NULL`, so a code survives its family for the 24-hour delay. `token_families.source_code_id` is a plain column with no foreign key. It is an audit reference only. This avoids a circular foreign key between the two tables.

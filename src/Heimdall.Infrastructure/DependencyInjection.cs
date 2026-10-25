@@ -4,6 +4,7 @@ using Heimdall.Application.Authorization;
 using Heimdall.Application.Clients;
 using Heimdall.Application.Dpop;
 using Heimdall.Application.Keys;
+using Heimdall.Application.Logout;
 using Heimdall.Application.Sessions;
 using Heimdall.Application.Tenants;
 using Heimdall.Application.Tokens;
@@ -80,6 +81,8 @@ public static class DependencyInjection
         services.AddSingleton<ISigningKeyCache, SigningKeyCache>();
         services.AddSingleton<ITokenSigner, JwtTokenSigner>();
         services.AddSingleton<IAccessTokenValidator, AccessTokenValidator>();
+        services.AddSingleton<IIdTokenHintValidator, IdTokenHintValidator>();
+        services.AddScoped<ILogoutStore, EfLogoutStore>();
         services.AddSingleton<IDpopProofValidator, DpopProofValidator>();
         services.AddScoped<IDpopReplayStore, EfDpopReplayStore>();
         services.TryAddSingleton(new PurgeOptions());

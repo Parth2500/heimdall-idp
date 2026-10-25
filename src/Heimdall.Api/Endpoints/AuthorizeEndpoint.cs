@@ -18,6 +18,12 @@ public sealed class UiOptions
     /// <summary>The page for a refused request that Heimdall cannot send back to the client (U6).</summary>
     public string ErrorPath { get; set; } = AccountPages.Prefix + "/error";
 
+    /// <summary>The page where the user confirms a sign-out that no matching hint started (D31, U17).</summary>
+    public string LogoutPath { get; set; } = AccountPages.Prefix + "/logout";
+
+    /// <summary>The page after a sign-out that goes back to no client (D32).</summary>
+    public string SignedOutPath { get; set; } = AccountPages.Prefix + "/signed-out";
+
     /// <summary>The built account application, relative to the content root (U2).</summary>
     public string AccountDirectory { get; set; } = "wwwroot/account";
 }
@@ -111,7 +117,7 @@ internal static partial class AuthorizeEndpoint
     }
 
     /// <summary>Adds parameters to a URI that may already have a query. A registered URI has no fragment.</summary>
-    private static string AppendQuery(string uri, IEnumerable<KeyValuePair<string, string>> parameters)
+    internal static string AppendQuery(string uri, IEnumerable<KeyValuePair<string, string>> parameters)
     {
         var builder = new StringBuilder(uri);
         var separator = uri.Contains('?', StringComparison.Ordinal) ? '&' : '?';

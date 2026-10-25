@@ -20,7 +20,7 @@ internal static partial class AccountPages
     public const string NoncePlaceholder = "__HEIMDALL_CSP_NONCE__";
 
     /// <summary>The routes of the Angular application. Any other path under the prefix is a static file or 404.</summary>
-    public static readonly IReadOnlyList<string> Pages = ["login", "consent", "error", "signed-out"];
+    public static readonly IReadOnlyList<string> Pages = ["login", "consent", "error", "logout", "signed-out"];
 
     // U3. No 'unsafe-inline': Angular puts the nonce on the styles that it adds at run time.
     private const string PolicyTemplate =

@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using Heimdall.Api.Hosting;
 using Heimdall.Application.Authorization;
 using Heimdall.Application.Common;
+using Heimdall.Application.Logout;
 using Heimdall.Application.Sessions;
 using Heimdall.Application.Users;
 using Heimdall.Infrastructure.Telemetry;
@@ -119,24 +120,52 @@ internal static partial class SessionEndpoints
         return Results.NoContent();
     }
 
-    private static async Task<IResult> LogoutAsync(HttpContext context, IAntiforgery antiforgery, SessionService sessions, ILoggerFactory loggers)
+    /// <summary>
+    /// The confirm button of the sign-out page (D31). It ends the session as <c>/oauth/v1/logout</c> does (D33). The body
+    /// may carry the sealed <c>logout_request</c> of the page (U17). The answer names where the page sends the browser:
+    /// a registered post-logout redirect URI, or Heimdall's signed-out page.
+    /// </summary>
+    private static async Task<IResult> LogoutAsync(
+        HttpContext context,
+        IAntiforgery antiforgery,
+        LogoutService logout,
+        LogoutRequestProtector protector,
+        Microsoft.Extensions.Options.IOptions<UiOptions> ui,
+        ILoggerFactory loggers)
     {
+        var logger = loggers.CreateLogger(typeof(SessionEndpoints));
         OAuthResponses.NoStore(context.Response);
 
         // Logout needs the same CSRF checks: a cross-site page must not be able to sign the user out.
-        if (await RefuseBrowserRequestAsync(context, antiforgery, loggers.CreateLogger(typeof(SessionEndpoints)), requireJson: false)
-            .ConfigureAwait(false) is { } refused)
+        if (await RefuseBrowserRequestAsync(context, antiforgery, logger, requireJson: false).ConfigureAwait(false) is { } refused)
         {
             return refused;
         }
 
-        await sessions.SignOutAsync(
-            TenantResolutionMiddleware.GetRequestContext(context),
-            context.Request.Cookies[SessionCookie],
-            context.RequestAborted).ConfigureAwait(false);
+        LogoutBody? body = null;
+        if (context.Request.HasJsonContentType())
+        {
+            try
+            {
+                body = await context.Request.ReadFromJsonAsync<LogoutBody>(Json, context.RequestAborted).ConfigureAwait(false);
+            }
+            catch (Exception exception) when (exception is JsonException or BadHttpRequestException)
+            {
+                LogRefused(logger, "malformed or oversized body");
+                return Error(StatusCodes.Status400BadRequest, "invalid_request");
+            }
+        }
+
+        var requestContext = TenantResolutionMiddleware.GetRequestContext(context);
+
+        // A sealed value that does not open (changed, expired, or from another tenant) only loses the redirect.
+        var target = protector.Unprotect(requestContext.Tenant.Id, body?.LogoutRequest);
+        var outcome = await logout.ConfirmAsync(requestContext, context.Request.Cookies[SessionCookie], target, context.RequestAborted)
+            .ConfigureAwait(false);
 
         context.Response.Cookies.Delete(SessionCookie, SessionCookieOptions());
-        return Results.NoContent();
+        var location = outcome is LogoutRedirect redirect ? LogoutEndpoint.RedirectLocation(redirect) : LogoutEndpoint.SignedOutLocation(ui.Value);
+        return Results.Json(new LogoutResultBody(location), Json);
     }
 
     /// <summary>Who is signed in, for the page. Same origin only: Heimdall sends no CORS headers.</summary>
@@ -225,7 +254,7 @@ internal static partial class SessionEndpoints
             : Error(StatusCodes.Status400BadRequest, error.Code);
     }
 
-    private static CookieOptions SessionCookieOptions() => new()
+    internal static CookieOptions SessionCookieOptions() => new()
     {
         HttpOnly = true,
         Secure = true,
@@ -306,6 +335,10 @@ internal static partial class SessionEndpoints
         [property: JsonPropertyName("client_name")] string ClientName,
         [property: JsonPropertyName("scopes")] IReadOnlyList<string> Scopes,
         [property: JsonPropertyName("redirect_host")] string RedirectHost);
+
+    private sealed record LogoutBody([property: JsonPropertyName("logout_request")] string? LogoutRequest);
+
+    private sealed record LogoutResultBody([property: JsonPropertyName("redirect_to")] string RedirectTo);
 
     private sealed record ErrorBody([property: JsonPropertyName("error")] string Error);
 }

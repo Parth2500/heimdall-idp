@@ -3,6 +3,7 @@ namespace Heimdall.Application.UserInfo;
 /// <summary>The claims of an access token whose format, header, and signature are valid.</summary>
 /// <remarks>The validator does not check <c>iss</c>, <c>aud</c>, or <c>exp</c>. <see cref="UserInfoService"/> does.</remarks>
 /// <param name="KeyThumbprint">The <c>cnf.jkt</c> of a DPoP-bound token (RFC 9449, section 6.1), or null for a bearer token.</param>
+/// <param name="FamilyId">The <c>fid</c> claim of a user grant's token (D29), or null for <c>client_credentials</c>.</param>
 public sealed record VerifiedAccessToken(
     string Issuer,
     string Subject,
@@ -10,7 +11,8 @@ public sealed record VerifiedAccessToken(
     string ClientId,
     IReadOnlyList<string> Scopes,
     DateTimeOffset ExpiresAt,
-    string? KeyThumbprint = null);
+    string? KeyThumbprint = null,
+    Guid? FamilyId = null);
 
 /// <summary>Checks an access token that this tenant signed (RFC 9068).</summary>
 public interface IAccessTokenValidator

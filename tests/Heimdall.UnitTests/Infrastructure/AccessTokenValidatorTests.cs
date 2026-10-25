@@ -506,4 +506,29 @@ public sealed class AccessTokenValidatorTests : IDisposable
     {
         Assert.Null(await Validate(Sign(Header(), With(Payload(), "cnf", JsonNode.Parse(cnf)))));
     }
+
+    [Fact]
+    public async Task Client_credentials_token_has_no_family() =>
+        Assert.Null((await Validate(Sign(Header(), Payload())))!.FamilyId);
+
+    [Fact]
+    public async Task User_token_returns_its_fid()
+    {
+        var family = Guid.CreateVersion7();
+
+        var token = await Validate(Sign(Header(), With(Payload(), "fid", family.ToString("N"))));
+
+        Assert.Equal(family, token!.FamilyId);
+    }
+
+    // D29: Heimdall writes 32 hex digits. Any other fid is not one of Heimdall's, so the token is invalid.
+    [Theory]
+    [InlineData("\"0190f1e2-3a4b-7c5d-8e9f-a0b1c2d3e4f5\"")]
+    [InlineData("\"0190f1e23a4b7c5d8e9fa0b1c2d3e4f\"")]
+    [InlineData("\"\"")]
+    [InlineData("42")]
+    [InlineData("null")]
+    [InlineData("{}")]
+    public async Task Unreadable_fid_makes_the_token_invalid(string fid) =>
+        Assert.Null(await Validate(Sign(Header(), With(Payload(), "fid", JsonNode.Parse(fid)))));
 }

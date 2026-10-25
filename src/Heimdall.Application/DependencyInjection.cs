@@ -2,6 +2,7 @@ using Heimdall.Application.Authorization;
 using Heimdall.Application.Clients;
 using Heimdall.Application.Dpop;
 using Heimdall.Application.Keys;
+using Heimdall.Application.Logout;
 using Heimdall.Application.Sessions;
 using Heimdall.Application.Settings;
 using Heimdall.Application.Tokens;
@@ -35,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<SessionService>();
         services.AddScoped<AuthorizationService>();
         services.AddScoped<ConsentService>();
+        services.AddScoped<LogoutService>();
         return services;
     }
 }

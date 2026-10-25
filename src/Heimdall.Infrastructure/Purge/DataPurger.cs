@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Heimdall.Infrastructure.Purge;
 
 /// <summary>The rows that one purge pass deleted, for each table.</summary>
-public sealed record PurgeResult(int Families, int Codes, int Requests, int Sessions, int LoginThrottles, int DpopProofs);
+public sealed record PurgeResult(int Families, int Codes, int Requests, int Sessions, int LoginThrottles, int DpopProofs, int BackchannelLogouts = 0);
 
 /// <summary>
 /// Deletes rows that no flow needs any more (docs/schema-design.md, "Purge job"). It is a platform operation across all
@@ -129,7 +129,22 @@ public sealed class DataPurger
                 cancellationToken),
             cancellationToken).ConfigureAwait(false);
 
-        return new PurgeResult(families, codes, requests, sessions, throttles, proofs);
+        // D35: an undelivered logout older than the retention is of no use. A client session that old has ended too.
+        var logoutCutoff = now - _options.BackchannelLogoutRetention;
+        var logouts = await RepeatAsync(
+            () => db.Database.ExecuteSqlAsync(
+                $"""
+                DELETE FROM backchannel_logouts
+                WHERE id IN (
+                    SELECT id FROM backchannel_logouts
+                    WHERE  created_at < {logoutCutoff}
+                    LIMIT  {batch}
+                    FOR UPDATE SKIP LOCKED)
+                """,
+                cancellationToken),
+            cancellationToken).ConfigureAwait(false);
+
+        return new PurgeResult(families, codes, requests, sessions, throttles, proofs, logouts);
     }
 
     private async Task<int> RepeatAsync(Func<Task<int>> deleteBatch, CancellationToken cancellationToken)

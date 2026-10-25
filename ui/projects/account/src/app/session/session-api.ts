@@ -60,6 +60,18 @@ export class SessionApi {
     );
   }
 
+  /**
+   * Ends the Heimdall session after the user confirms (D31). The page sends back only the sealed
+   * value that Heimdall gave it (U17). The answer names where the browser goes next.
+   */
+  logout(logoutRequest: string | null): Promise<{ readonly redirect_to: string }> {
+    return this.call(
+      this.http.post<{ readonly redirect_to: string }>(`${SESSION_API}/logout`, {
+        logout_request: logoutRequest,
+      }),
+    );
+  }
+
   /** Sends the decision only. The server knows the client and the scopes (U5). */
   decide(requestId: string, approve: boolean): Promise<void> {
     return this.call(

@@ -310,10 +310,27 @@ Status: **Approved** by the owner on 2026-10-25. It replaces U15. The owner chos
 
 These items are not part of the first build. They are listed so that no page claims them:
 
-- RP-initiated logout (OpenID Connect `end_session_endpoint`, issue #40). Until then, "Sign out" in a client ends only the client's tokens.
+- RP-initiated logout (OpenID Connect `end_session_endpoint`, issue #40). Built on 2026-10-26, see U17.
 - An account picker for `prompt=select_account` (issue #41). It needs a session model with several accounts first.
 - A tenant display name. The pages show the host only, because no API returns a display name yet.
 - Registration, email verification, and password reset (threat model, out of scope). The login page has no "Forgot password" link until they exist. A link to a missing feature would break principle N8.
+
+### U17. The sign-out pages carry no return address
+
+Status: **Proposed** on 2026-10-26, built with issue #40. Claude asks the owner to approve it.
+
+**Decision.** `/oauth/v1/logout` sends the browser to `/account/logout` when the user must confirm (D31). Heimdall checks the redirect target first: the client, the registered URI, and `state`. Then it seals the target with ASP.NET Core Data Protection, for 10 minutes and for one tenant. The page gets the sealed value as `logout_request` and sends it back unchanged in `POST /session/v1/logout`. The answer names where the page sends the browser: a registered post-logout redirect URI, or `/account/signed-out?logout=done`. The page follows only an `http` or `https` URL or a path on its own origin.
+
+**Reason.** U4 allows no return address from the browser. A sealed value cannot point to another site, because a changed value does not open. After it opens, Heimdall checks the client and the URI again, so a client that an admin disables while the page is open gets no redirect.
+
+**Page states:**
+
+| Page | Shown to the user |
+|---|---|
+| `/account/logout` | "Sign out of Heimdall?" and a "Sign out" button. The note "To stay signed in, close this tab." Nothing ends until the click. |
+| `/account/logout`, failed call | "Heimdall did not sign you out. Check your connection, then try again." |
+| `/account/signed-out?logout=done` | "You are signed out". The next sign-in asks for the password. |
+| `/account/signed-out` with no marker | The signed-out text of U4, as before. |
 
 ## 4. Flows
 

@@ -14,7 +14,8 @@ interface ErrorText {
 export const ERROR_TEXT: Readonly<Record<string, ErrorText>> = {
   invalid_request: {
     refused: true,
-    title: 'This sign-in request is not valid',
+    // /authorize and /oauth/v1/logout both send this code here, so the text names no flow.
+    title: 'This request is not valid',
     body: 'The app sent a request that Heimdall cannot accept. Go back to the app, then try again. If it happens again, tell the owner of the app.',
   },
   invalid_client: {

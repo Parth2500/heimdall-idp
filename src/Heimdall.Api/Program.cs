@@ -47,6 +47,7 @@ builder.Services.AddSingleton(provider => provider.GetRequiredService<IOptions<S
 builder.Services.AddOptions<IssuerOptions>().Bind(builder.Configuration.GetSection(IssuerOptions.SectionName));
 builder.Services.AddOptions<UiOptions>().Bind(builder.Configuration.GetSection(UiOptions.SectionName));
 builder.Services.AddSingleton<AccountIndex>();
+builder.Services.AddSingleton<LogoutRequestProtector>();
 
 // D16: the platform limits. A minimum of zero, or a minimum above its maximum, stops the server at startup.
 builder.Services.AddOptions<PlatformLimits>()
@@ -183,6 +184,7 @@ app.MapGet(WellKnownEndpoints.DiscoveryPath, WellKnownEndpoints.DiscoveryAsync);
 app.MapGet(WellKnownEndpoints.JwksPath, WellKnownEndpoints.JwksAsync);
 SessionEndpoints.Map(app);
 AuthorizeEndpoint.Map(app);
+LogoutEndpoint.Map(app);
 UserInfoApiEndpoint.Map(app);
 
 await app.RunAsync();
