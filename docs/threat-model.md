@@ -82,6 +82,48 @@ These decisions apply to every endpoint. The tables below refer to them by ID.
 | D27 | `/authorize` accepts `dpop_jkt` (RFC 9449, section 10). A malformed value gets `invalid_request`. Heimdall stores it with the request and the code. The code then needs a proof from that key. The key check is in the redemption statement, so a request without the key does not use up the code. A missing proof gets `invalid_dpop_proof`. A proof from another key gets `invalid_grant`. | The whole flow, from the first redirect to the refresh token, is bound to one key. |
 | D28 | `/userinfo` accepts a bound token only with `Authorization: DPoP` and a valid proof. A bound token sent as `Bearer` fails with `invalid_token`. | A thief cannot use a bound token as a bearer token. Without this rule, the binding does nothing. |
 
+## Sign-out: `/oauth/v1/logout` and back-channel logout (issue #40)
+
+Status: **Proposed** on 2026-10-23. Not built yet. Decisions D29 to D35 wait for the owner's approval.
+
+Boundary: B1 (the browser comes to Heimdall) and a new outbound boundary B6 (Heimdall calls a client's server). The standards are OpenID Connect RP-Initiated Logout 1.0 and OpenID Connect Back-Channel Logout 1.0. Front-channel logout is out of scope, because browsers block third-party cookies in iframes.
+
+Today a session has no public identifier, and a token family does not record the session that created it. So Heimdall cannot end "the tokens of this sign-in", and a client cannot match a logout to its own session. D29 adds that link.
+
+| ID | Decision | Reason |
+|---|---|---|
+| D29 | Each session gets a public session ID, `sid`: 128 random bits, separate from the cookie secret (D12). The `sid` cannot authenticate anything. The ID token carries it as the `sid` claim. Each code and each token family records the `sid` of the session that created it. | The cookie secret, and its hash, must never leave the server. A client needs a value that names the session, to match a back-channel logout. A family needs the link, so that a sign-out ends the tokens of that sign-in. |
+| D30 | The `end_session_endpoint` is `/oauth/v1/logout`, for `GET` and `POST`. An `id_token_hint` is valid when Heimdall signed it with a key in the tenant's JWKS (also a retired key), `iss` is the tenant, and `aud` is a client of the tenant. Heimdall ignores `exp`, because a client usually sends an expired ID token at sign-out. A `client_id` parameter must equal `aud` when both are present. | RP-Initiated Logout 1.0, section 2. The signature check stops a forged hint. An expired hint still names the client and the user, and it cannot give access to anything. |
+| D31 | Heimdall ends the session at once only when the hint is valid and its `sid` equals the `sid` of the browser's session. In every other case, a session ends only after the user confirms on a Heimdall page. The confirm button sends `POST /session/v1/logout`, with the three CSRF layers of the login API. A `GET` never ends a session without a matching hint. | Logout CSRF: an attacker's page can send the browser to `/oauth/v1/logout`, but it cannot get the victim's ID token for this session. A hint from an older session does not count, so a leaked old ID token cannot sign the user out without a click. |
+| D32 | `post_logout_redirect_uri` must be in the client's registered list, compared by exact match, as for redirect URIs (RFC 9700). The hint or `client_id` names the client. With no client, or an unregistered URI, Heimdall shows its signed-out page and redirects nowhere. Heimdall returns `state` unchanged, at most 512 characters. | An unchecked redirect after sign-out is an open redirect, and phishing pages use it. The signed-out page names no reason, so the endpoint does not show which URIs a client registered. |
+| D33 | Ending a session is one transaction: Heimdall sets `revoked_at` on the session, revokes every token family with that `sid` (reason `user_logout`), and queues the back-channel logouts. Then it deletes the session cookie. This includes families with `offline_access`. Access tokens stay valid until `exp` (5 minutes, D8). `/session/v1/logout` uses the same path. | The user asked to sign out, so the refresh tokens of that sign-in end too. One transaction means that no family survives a sign-out half done. Heimdall cannot recall a JWT, and the short lifetime limits the gap. |
+| D34 | A back-channel logout goes to each client that has a code or a family with the session's `sid` and a registered `backchannel_logout_uri`. The `logout_token` is a JWT with `typ` `logout+jwt`, signed `RS256` with the tenant's active key. It has `iss`, `aud` (the `client_id`), `iat`, `exp` (2 minutes after `iat`), `jti`, `sub`, `sid`, and the back-channel logout event. It has no `nonce`. | Back-Channel Logout 1.0, section 2.4. The `typ` stops a client from taking the token for an ID token. The short lifetime and `jti` let a client refuse a replay. |
+| D35 | Heimdall delivers back-channel logouts from an outbox table, in a background job, never in the user's request. It sends one `POST` with a 5-second timeout, follows no redirect, and reads no response body. It retries a failure 5 times with growing waits, then drops it and writes an audit event. A `backchannel_logout_uri` is registered like a redirect URI: absolute, `https` (plain `http` only for a loopback address), no fragment. Outside Development, Heimdall refuses to connect to a loopback, private, or link-local address, checked on the resolved address at connect time. | A slow or failing client must not slow down or break the user's sign-out. The outbox survives a server restart. The address check at connect time stops server-side request forgery to internal services, also after a DNS change (DNS rebinding). |
+
+### `GET` and `POST /oauth/v1/logout`
+
+| STRIDE | Threat | Mitigation |
+|---|---|---|
+| Spoofing | An attacker forges an `id_token_hint` to name a user or a client. | Heimdall checks the signature, `iss`, and `aud` (D30). A forged hint is not valid, so the user must confirm (D31). |
+| Tampering | Logout CSRF: an attacker's page sends the victim's browser to the endpoint. | Without a valid hint for this session, the user must confirm with a POST that has the CSRF layers of the login API (D31). |
+| Tampering | Open redirect: an attacker sets `post_logout_redirect_uri` to a phishing page. | Exact match against the client's registered list. Otherwise no redirect (D32). |
+| Information disclosure | The endpoint shows which URIs or clients exist. | An unregistered URI and an unknown client both get the same signed-out page. |
+| Repudiation | A user says they did not sign out. | Heimdall writes `session.revoked` with the reason (`rp_initiated` or `user_confirmed`), the `client_id` of the hint, and the correlation ID. |
+| Denial of service | An attacker with an old ID token of the victim signs the victim out. | A hint counts only when its `sid` is the current session (D31). An old hint needs the user's click. |
+| Elevation of privilege | Refresh tokens of the session keep working after sign-out. | The same transaction revokes every family with the session's `sid` (D33). |
+| Elevation of privilege | An access token keeps working after sign-out. | It works until `exp`, at most 5 minutes (D8). Heimdall cannot recall a JWT. A resource server that needs instant revocation uses introspection (issue #19). |
+
+### Back-channel logout (Heimdall calls the client)
+
+| STRIDE | Threat | Mitigation |
+|---|---|---|
+| Spoofing | An attacker sends a fake `logout_token` to a client to sign users out. | The token is signed with the tenant's key and has `iss`, `aud`, `exp`, and `jti` (D34). The client guide tells the client to check all of them. |
+| Spoofing | A client takes a `logout_token` for an ID token, or the reverse. | `typ` is `logout+jwt`, the token has the logout event and no `nonce`. An ID token has `typ` `JWT`. |
+| Tampering | An attacker replays a captured `logout_token`. | The client refuses a `jti` that it has seen, until `exp`. A replay can only repeat the same sign-out. |
+| Information disclosure | The `logout_token` reveals more than the client knows. | It has only `sub` and `sid`, which the client already got in the ID token. |
+| Denial of service | A slow or dead client endpoint holds up sign-out or fills the outbox. | Delivery is in a background job with a 5-second timeout and 5 retries, then the row is dropped (D35). The user's request never waits. |
+| Elevation of privilege | Server-side request forgery: a `backchannel_logout_uri` points at an internal service. | An admin approves the URI at registration. Outside Development, Heimdall refuses loopback, private, and link-local addresses at connect time, and follows no redirect (D35). |
+
 ## DPoP proofs (RFC 9449)
 
 The rules are D24 to D28. The table covers the proof itself. The sections for `/token`, the refresh flow, and `/userinfo` refer to it.
@@ -267,7 +309,7 @@ Additional decisions for this boundary:
 | **Denial of service** | An attacker sends failed logins on purpose to lock out a victim. | Heimdall throttles. It does not lock. The throttle is for each account and source, so the attacker's failures slow only the attacker's source. The real user at another address can still sign in. A distributed attacker with many addresses gets a separate wait at each one, and the IP rate limit still applies to each. |
 | Denial of service | Argon2id costs much CPU and memory. An attacker sends many login requests. | Rate limit for each IP before the hash runs. A limit on the number of concurrent hash operations. |
 | **Elevation of privilege** | A session stays valid after a password change or account disable. | Heimdall ends all sessions of the user on password change and on disable. It checks the user status on each `/authorize` request. |
-| Elevation of privilege | Logout CSRF: an attacker's page ends the victim's session. | Logout needs a POST with an anti-forgery token. |
+| Elevation of privilege | Logout CSRF: an attacker's page ends the victim's session. | Logout needs a POST with an anti-forgery token. RP-initiated logout ends a session without a click only with a valid ID token of this session (D31). |
 | Elevation of privilege | A session never ends. | The session has an idle timeout and an absolute lifetime. Neither one extends the other. |
 
 Out of scope for now: registration, email verification, password reset, and account recovery. Each one needs its own table. They are the most common route to account takeover, so add them before any public deployment.

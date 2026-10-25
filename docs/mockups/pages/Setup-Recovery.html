@@ -1,0 +1,121 @@
+<!doctype html>
+<!-- Heimdall design mockup. Not production code. Exported from the design canvas; see README.md. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Setup — Recovery codes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.hd-page{min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:48px 24px}
+.hd-card{width:100%;max-width:448px;box-sizing:border-box;padding:36px 40px 32px;border:1px solid;border-radius:10px;display:flex;flex-direction:column;gap:24px}
+.hd-alt{height:44px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 12px;font:inherit;font-size:14px;font-weight:600;background:transparent;border:1.5px solid;border-radius:4px;cursor:pointer;text-decoration:none}
+.hd-foot{width:100%;max-width:448px;box-sizing:border-box;display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;font-size:12px}
+@media (max-width:520px){.hd-page{justify-content:flex-start;padding:0 0 24px;background-image:none !important}.hd-card{border:0 !important;border-radius:0;padding:20px;background:transparent !important}.hd-foot{padding:0 20px}}
+input:focus,button:focus,a:focus{outline:3px solid #f2b705;outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="hd-page" style="background-color: #f6f6f3; background-image: radial-gradient(ellipse 34% 48% at 50% 50%, #f6f6f3 55%, rgba(246,246,243,0) 100%), linear-gradient(#dedfd8 1px, transparent 1px), linear-gradient(90deg, #dedfd8 1px, transparent 1px), linear-gradient(#ebebe5 1px, transparent 1px), linear-gradient(90deg, #ebebe5 1px, transparent 1px); background-size: 100% 100%, 120px 120px, 120px 120px, 24px 24px, 24px 24px; background-position: center, center, center, center, center; color: #14161a; font-family: 'IBM Plex Sans', system-ui, sans-serif">
+  <main class="hd-card" style="background: #ffffff; border-color: #d9d9d3">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; letter-spacing: -0.01em">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#14161a" stroke-width="2" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        Heimdall
+      </div>
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 4px 8px; border: 1px solid #d9d9d3; border-radius: 3px; color: #3a3f47">acme.localhost:7299</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <h1 style="margin: 0; font-size: 28px; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em">Save your recovery codes</h1>
+      <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #3a3f47">If you lose your phone or passkey, each code lets you sign in once. Heimdall shows these codes only now.</p>
+    </div>
+
+    <ol aria-label="Recovery codes" style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 2px solid #14161a">
+      
+        <li style="display: flex; align-items: baseline; gap: 10px; padding: 11px 4px; border-bottom: 1px solid #d9d9d3">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #555a63; width: 18px">01</span>
+          <code style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; letter-spacing: 0.06em">7KQ2M-XR4TD</code>
+        </li>
+      
+        <li style="display: flex; align-items: baseline; gap: 10px; padding: 11px 4px; border-bottom: 1px solid #d9d9d3">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #555a63; width: 18px">02</span>
+          <code style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; letter-spacing: 0.06em">P9WHN-3CBVE</code>
+        </li>
+      
+        <li style="display: flex; align-items: baseline; gap: 10px; padding: 11px 4px; border-bottom: 1px solid #d9d9d3">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #555a63; width: 18px">03</span>
+          <code style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; letter-spacing: 0.06em">L6FZA-QM8RU</code>
+        </li>
+      
+        <li style="display: flex; align-items: baseline; gap: 10px; padding: 11px 4px; border-bottom: 1px solid #d9d9d3">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #555a63; width: 18px">04</span>
+          <code style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; letter-spacing: 0.06em">T2YDK-WN5HS</code>
+        </li>
+      
+        <li style="display: flex; align-items: baseline; gap: 10px; padding: 11px 4px; border-bottom: 1px solid #d9d9d3">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #555a63; width: 18px">05</span>
+          <code style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; letter-spacing: 0.06em">E8GXP-J4CVL</code>
+        </li>
+      
+        <li style="display: flex; align-items: baseline; gap: 10px; padding: 11px 4px; border-bottom: 1px solid #d9d9d3">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #555a63; width: 18px">06</span>
+          <code style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; letter-spacing: 0.06em">R3MUB-K7ZTA</code>
+        </li>
+      
+        <li style="display: flex; align-items: baseline; gap: 10px; padding: 11px 4px; border-bottom: 1px solid #d9d9d3">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #555a63; width: 18px">07</span>
+          <code style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; letter-spacing: 0.06em">H5NQW-D2XEF</code>
+        </li>
+      
+        <li style="display: flex; align-items: baseline; gap: 10px; padding: 11px 4px; border-bottom: 1px solid #d9d9d3">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #555a63; width: 18px">08</span>
+          <code style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; letter-spacing: 0.06em">V4CJS-Y9PGK</code>
+        </li>
+      
+        <li style="display: flex; align-items: baseline; gap: 10px; padding: 11px 4px; border-bottom: 1px solid #d9d9d3">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #555a63; width: 18px">09</span>
+          <code style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; letter-spacing: 0.06em">B7TRE-M3LWN</code>
+        </li>
+      
+        <li style="display: flex; align-items: baseline; gap: 10px; padding: 11px 4px; border-bottom: 1px solid #d9d9d3">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #555a63; width: 18px">10</span>
+          <code style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; letter-spacing: 0.06em">Z6KAH-U8QDC</code>
+        </li>
+      
+    </ol>
+
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+      <button type="button" class="hd-alt" style="color: #14161a; border-color: #6b707a">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v11"></path><path d="M7 10l5 5 5-5"></path><path d="M5 20h14"></path></svg>
+        Download
+      </button>
+      <button type="button" class="hd-alt" style="color: #14161a; border-color: #6b707a">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="1"></rect><path d="M5 15V5a1 1 0 0 1 1-1h10"></path></svg>
+        Copy
+      </button>
+      <button type="button" class="hd-alt" style="color: #14161a; border-color: #6b707a">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 9V4h10v5"></path><rect x="4" y="9" width="16" height="8" rx="1"></rect><path d="M7 14h10v6H7z"></path></svg>
+        Print
+      </button>
+    </div>
+
+    <form style="display: flex; flex-direction: column; gap: 16px">
+      <label style="display: flex; gap: 12px; align-items: flex-start; font-size: 15px; line-height: 1.5">
+        <input type="checkbox" checked="" style="width: 20px; height: 20px; margin: 2px 0 0; flex-shrink: 0; accent-color: #1f4fd1">
+        <span>I saved these codes somewhere safe, away from my phone.</span>
+      </label>
+      <a href="Setup-Stay.html" style="height: 52px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; text-decoration: none; color: #ffffff; background: #1f4fd1; border-radius: 4px">Done</a>
+    </form>
+
+    <p style="margin: 0; padding-top: 16px; border-top: 1px solid #d9d9d3; font-size: 14px; line-height: 1.55; color: #555a63">Lost them? Make new codes in your account settings. The old codes then stop working.</p>
+  </main>
+  <footer class="hd-foot" style="color: #555a63">
+    <span>Development build. Not for production use.</span>
+    <span>Heimdall identity provider</span>
+  </footer>
+</div>
+</body>
+</html>

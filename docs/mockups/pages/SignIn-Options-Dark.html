@@ -1,0 +1,85 @@
+<!doctype html>
+<!-- Heimdall design mockup. Not production code. Exported from the design canvas; see README.md. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in — all options (dark)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.hd-page{min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:48px 24px}
+.hd-card{width:100%;max-width:448px;box-sizing:border-box;padding:36px 40px 32px;border:1px solid;border-radius:10px;display:flex;flex-direction:column;gap:24px}
+.hd-alt{height:48px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 16px;font:inherit;font-size:15px;font-weight:600;background:transparent;border:1.5px solid;border-radius:4px;cursor:pointer;text-decoration:none}
+.hd-foot{width:100%;max-width:448px;box-sizing:border-box;display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;font-size:12px}
+@media (max-width:520px){.hd-page{justify-content:flex-start;padding:0 0 24px;background-image:none !important}.hd-card{border:0 !important;border-radius:0;padding:20px;background:transparent !important}.hd-foot{padding:0 20px}}
+input:focus,button:focus,a:focus{outline:3px solid #f2b705;outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="hd-page" style="background-color: #0c0e11; background-image: radial-gradient(ellipse 34% 48% at 50% 50%, #0c0e11 55%, rgba(12,14,17,0) 100%), linear-gradient(#1d2128 1px, transparent 1px), linear-gradient(90deg, #1d2128 1px, transparent 1px), linear-gradient(#14171b 1px, transparent 1px), linear-gradient(90deg, #14171b 1px, transparent 1px); background-size: 100% 100%, 120px 120px, 120px 120px, 24px 24px, 24px 24px; background-position: center, center, center, center, center; color: #eceae4; font-family: 'IBM Plex Sans', system-ui, sans-serif">
+  <main class="hd-card" style="background: #16191e; border-color: #2c3038">
+    <div style="display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; letter-spacing: -0.01em">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#eceae4" stroke-width="2" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+      Heimdall
+    </div>
+
+    <div style="border-top: 2px solid #eceae4; padding-top: 12px; display: flex; flex-direction: column; gap: 4px">
+      <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #a3a8b2">You are on</div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 600; word-break: break-all">acme.localhost:7299</div>
+      <div style="font-size: 14px; line-height: 1.45; color: #c4c7ce">Check that your address bar shows the same host.</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <h1 style="margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -0.02em">Sign in</h1>
+      <p style="margin: 0; font-size: 16px; color: #c4c7ce">to continue to Huginn</p>
+    </div>
+
+    <form style="display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <label for="oe" style="font-size: 15px; font-weight: 600">Email address</label>
+        <input id="oe" type="email" autocomplete="username webauthn" style="height: 52px; box-sizing: border-box; padding: 0 14px; font: inherit; font-size: 16px; color: #eceae4; background: #101216; border: 1.5px solid #7d838f; border-radius: 4px">
+      </div>
+      <button type="submit" style="height: 52px; display: flex; justify-content: space-between; align-items: center; padding: 0 18px; font: inherit; font-size: 16px; font-weight: 600; color: #0b0e14; background: #8aa6ff; border: 0; border-radius: 4px; cursor: pointer">
+        <span>Continue</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0b0e14" stroke-width="2" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+      </button>
+    </form>
+
+    <div role="separator" aria-label="or" style="display: flex; align-items: center; gap: 12px; font-size: 13px; color: #a3a8b2">
+      <span style="flex-grow: 1; height: 1px; background: #2c3038"></span>or<span style="flex-grow: 1; height: 1px; background: #2c3038"></span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <button type="button" class="hd-alt" style="color: #eceae4; border-color: #7d838f">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="8" cy="9" r="4"></circle><path d="M11 12l9 9"></path><path d="M17 18l2-2"></path><path d="M15 16l2-2"></path></svg>
+        Sign in with a passkey
+      </button>
+      
+        <a href="Link-Account-Dark.html" class="hd-alt" style="color: #eceae4; border-color: #7d838f">
+          <span aria-hidden="true" style="width: 20px; height: 20px; border-radius: 3px; background: #1f2329; border: 1px solid #2c3038; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700">G</span>
+          Continue with Google
+        </a>
+      
+        <a href="Link-Account-Dark.html" class="hd-alt" style="color: #eceae4; border-color: #7d838f">
+          <span aria-hidden="true" style="width: 20px; height: 20px; border-radius: 3px; background: #1f2329; border: 1px solid #2c3038; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700">M</span>
+          Continue with Microsoft
+        </a>
+      
+        <a href="Link-Account-Dark.html" class="hd-alt" style="color: #eceae4; border-color: #7d838f">
+          <span aria-hidden="true" style="width: 20px; height: 20px; border-radius: 3px; background: #1f2329; border: 1px solid #2c3038; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700">GH</span>
+          Continue with GitHub
+        </a>
+      
+    </div>
+
+    <p style="margin: 0; padding-top: 16px; border-top: 1px solid #2c3038; font-size: 15px; color: #c4c7ce">No account yet? <a href="Signup-Create-Dark.html" style="font-weight: 600; color: #9db4ff">Create one</a></p>
+  </main>
+  <footer class="hd-foot" style="color: #a3a8b2">
+    <span>Development build. Not for production use.</span>
+    <span>Heimdall identity provider</span>
+  </footer>
+</div>
+</body>
+</html>

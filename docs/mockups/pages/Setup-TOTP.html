@@ -1,0 +1,103 @@
+<!doctype html>
+<!-- Heimdall design mockup. Not production code. Exported from the design canvas; see README.md. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Setup — Authenticator app</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.hd-page{min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:48px 24px}
+.hd-card{width:100%;max-width:448px;box-sizing:border-box;padding:36px 40px 32px;border:1px solid;border-radius:10px;display:flex;flex-direction:column;gap:24px}
+.hd-otp{position:relative;border-radius:6px}
+.hd-otp-input{position:absolute;inset:0;width:100%;height:100%;box-sizing:border-box;margin:0;padding:0;border:0;opacity:0;font-size:16px;caret-color:transparent;cursor:text}
+.hd-otp:focus-within{outline:3px solid #f2b705;outline-offset:4px}
+.hd-foot{width:100%;max-width:448px;box-sizing:border-box;display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;font-size:12px}
+@media (max-width:520px){.hd-page{justify-content:flex-start;padding:0 0 24px;background-image:none !important}.hd-card{border:0 !important;border-radius:0;padding:20px;background:transparent !important}.hd-foot{padding:0 20px}}
+input:focus,button:focus,a:focus,summary:focus{outline:3px solid #f2b705;outline-offset:2px}
+summary{cursor:pointer}
+</style>
+</head>
+<body>
+<div class="hd-page" style="background-color: #f6f6f3; background-image: radial-gradient(ellipse 34% 48% at 50% 50%, #f6f6f3 55%, rgba(246,246,243,0) 100%), linear-gradient(#dedfd8 1px, transparent 1px), linear-gradient(90deg, #dedfd8 1px, transparent 1px), linear-gradient(#ebebe5 1px, transparent 1px), linear-gradient(90deg, #ebebe5 1px, transparent 1px); background-size: 100% 100%, 120px 120px, 120px 120px, 24px 24px, 24px 24px; background-position: center, center, center, center, center; color: #14161a; font-family: 'IBM Plex Sans', system-ui, sans-serif">
+  <main class="hd-card" style="background: #ffffff; border-color: #d9d9d3">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; letter-spacing: -0.01em">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#14161a" stroke-width="2" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        Heimdall
+      </div>
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 4px 8px; border: 1px solid #d9d9d3; border-radius: 3px; color: #3a3f47">acme.localhost:7299</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <h1 style="margin: 0; font-size: 28px; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em">Set up an authenticator app</h1>
+      <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #3a3f47">for <strong style="font-weight: 600; color: #14161a">parth@acme.test</strong></p>
+    </div>
+
+    <ol style="list-style: none; margin: 0; padding: 0; border-top: 2px solid #14161a">
+      <li style="display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 8px; padding: 14px 0; border-bottom: 1px solid #d9d9d3">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #555a63; padding-top: 2px">01</span>
+        <span style="font-size: 15px; line-height: 1.5">Install an authenticator app on your phone, if you do not have one. Any app that supports standard 6-digit codes works.</span>
+      </li>
+      <li style="display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 8px; padding: 14px 0; border-bottom: 1px solid #d9d9d3">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #555a63; padding-top: 2px">02</span>
+        <div style="display: flex; flex-direction: column; gap: 14px">
+          <span style="font-size: 15px; line-height: 1.5">In the app, add an account and scan this code.</span>
+          <div style="display: flex; gap: 16px; align-items: center">
+            <div style="padding: 10px; background: #ffffff; border: 1px solid #d9d9d3; border-radius: 4px; flex-shrink: 0">
+              <svg role="img" aria-label="QR code that adds Heimdall (acme) to your authenticator app" width="132" height="132" viewBox="0 0 25 25" shape-rendering="crispEdges"><path fill="#14161a" d="M0 0h1v1h-1zM1 0h1v1h-1zM2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM9 0h1v1h-1zM16 0h1v1h-1zM18 0h1v1h-1zM19 0h1v1h-1zM20 0h1v1h-1zM21 0h1v1h-1zM22 0h1v1h-1zM23 0h1v1h-1zM24 0h1v1h-1zM0 1h1v1h-1zM6 1h1v1h-1zM9 1h1v1h-1zM10 1h1v1h-1zM12 1h1v1h-1zM13 1h1v1h-1zM14 1h1v1h-1zM15 1h1v1h-1zM18 1h1v1h-1zM24 1h1v1h-1zM0 2h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM6 2h1v1h-1zM11 2h1v1h-1zM13 2h1v1h-1zM14 2h1v1h-1zM16 2h1v1h-1zM18 2h1v1h-1zM20 2h1v1h-1zM21 2h1v1h-1zM22 2h1v1h-1zM24 2h1v1h-1zM0 3h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM6 3h1v1h-1zM9 3h1v1h-1zM10 3h1v1h-1zM18 3h1v1h-1zM20 3h1v1h-1zM21 3h1v1h-1zM22 3h1v1h-1zM24 3h1v1h-1zM0 4h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM6 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM10 4h1v1h-1zM12 4h1v1h-1zM13 4h1v1h-1zM15 4h1v1h-1zM18 4h1v1h-1zM20 4h1v1h-1zM21 4h1v1h-1zM22 4h1v1h-1zM24 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM12 5h1v1h-1zM13 5h1v1h-1zM16 5h1v1h-1zM18 5h1v1h-1zM24 5h1v1h-1zM0 6h1v1h-1zM1 6h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM13 6h1v1h-1zM16 6h1v1h-1zM18 6h1v1h-1zM19 6h1v1h-1zM20 6h1v1h-1zM21 6h1v1h-1zM22 6h1v1h-1zM23 6h1v1h-1zM24 6h1v1h-1zM8 7h1v1h-1zM9 7h1v1h-1zM10 7h1v1h-1zM12 7h1v1h-1zM13 7h1v1h-1zM1 8h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM9 8h1v1h-1zM10 8h1v1h-1zM13 8h1v1h-1zM14 8h1v1h-1zM16 8h1v1h-1zM17 8h1v1h-1zM19 8h1v1h-1zM21 8h1v1h-1zM24 8h1v1h-1zM0 9h1v1h-1zM2 9h1v1h-1zM3 9h1v1h-1zM4 9h1v1h-1zM6 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM9 9h1v1h-1zM11 9h1v1h-1zM17 9h1v1h-1zM18 9h1v1h-1zM19 9h1v1h-1zM20 9h1v1h-1zM2 10h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM10 10h1v1h-1zM11 10h1v1h-1zM12 10h1v1h-1zM13 10h1v1h-1zM14 10h1v1h-1zM17 10h1v1h-1zM19 10h1v1h-1zM20 10h1v1h-1zM0 11h1v1h-1zM2 11h1v1h-1zM4 11h1v1h-1zM5 11h1v1h-1zM7 11h1v1h-1zM9 11h1v1h-1zM10 11h1v1h-1zM12 11h1v1h-1zM15 11h1v1h-1zM17 11h1v1h-1zM20 11h1v1h-1zM24 11h1v1h-1zM1 12h1v1h-1zM2 12h1v1h-1zM5 12h1v1h-1zM7 12h1v1h-1zM8 12h1v1h-1zM9 12h1v1h-1zM10 12h1v1h-1zM14 12h1v1h-1zM15 12h1v1h-1zM17 12h1v1h-1zM18 12h1v1h-1zM19 12h1v1h-1zM20 12h1v1h-1zM23 12h1v1h-1zM0 13h1v1h-1zM2 13h1v1h-1zM4 13h1v1h-1zM5 13h1v1h-1zM6 13h1v1h-1zM8 13h1v1h-1zM10 13h1v1h-1zM11 13h1v1h-1zM12 13h1v1h-1zM13 13h1v1h-1zM14 13h1v1h-1zM15 13h1v1h-1zM17 13h1v1h-1zM18 13h1v1h-1zM19 13h1v1h-1zM20 13h1v1h-1zM21 13h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM5 14h1v1h-1zM6 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM11 14h1v1h-1zM12 14h1v1h-1zM13 14h1v1h-1zM20 14h1v1h-1zM4 15h1v1h-1zM6 15h1v1h-1zM12 15h1v1h-1zM14 15h1v1h-1zM16 15h1v1h-1zM18 15h1v1h-1zM21 15h1v1h-1zM22 15h1v1h-1zM23 15h1v1h-1zM0 16h1v1h-1zM1 16h1v1h-1zM2 16h1v1h-1zM3 16h1v1h-1zM7 16h1v1h-1zM11 16h1v1h-1zM14 16h1v1h-1zM15 16h1v1h-1zM16 16h1v1h-1zM17 16h1v1h-1zM18 16h1v1h-1zM19 16h1v1h-1zM12 17h1v1h-1zM13 17h1v1h-1zM14 17h1v1h-1zM17 17h1v1h-1zM18 17h1v1h-1zM23 17h1v1h-1zM24 17h1v1h-1zM0 18h1v1h-1zM1 18h1v1h-1zM2 18h1v1h-1zM3 18h1v1h-1zM4 18h1v1h-1zM5 18h1v1h-1zM6 18h1v1h-1zM8 18h1v1h-1zM11 18h1v1h-1zM13 18h1v1h-1zM14 18h1v1h-1zM15 18h1v1h-1zM18 18h1v1h-1zM19 18h1v1h-1zM20 18h1v1h-1zM23 18h1v1h-1zM24 18h1v1h-1zM0 19h1v1h-1zM6 19h1v1h-1zM8 19h1v1h-1zM10 19h1v1h-1zM13 19h1v1h-1zM0 20h1v1h-1zM2 20h1v1h-1zM3 20h1v1h-1zM4 20h1v1h-1zM6 20h1v1h-1zM8 20h1v1h-1zM9 20h1v1h-1zM14 20h1v1h-1zM16 20h1v1h-1zM19 20h1v1h-1zM22 20h1v1h-1zM24 20h1v1h-1zM0 21h1v1h-1zM2 21h1v1h-1zM3 21h1v1h-1zM4 21h1v1h-1zM6 21h1v1h-1zM8 21h1v1h-1zM9 21h1v1h-1zM12 21h1v1h-1zM16 21h1v1h-1zM17 21h1v1h-1zM18 21h1v1h-1zM19 21h1v1h-1zM21 21h1v1h-1zM22 21h1v1h-1zM23 21h1v1h-1zM0 22h1v1h-1zM2 22h1v1h-1zM3 22h1v1h-1zM4 22h1v1h-1zM6 22h1v1h-1zM12 22h1v1h-1zM14 22h1v1h-1zM15 22h1v1h-1zM16 22h1v1h-1zM18 22h1v1h-1zM19 22h1v1h-1zM20 22h1v1h-1zM21 22h1v1h-1zM0 23h1v1h-1zM6 23h1v1h-1zM8 23h1v1h-1zM10 23h1v1h-1zM11 23h1v1h-1zM12 23h1v1h-1zM14 23h1v1h-1zM19 23h1v1h-1zM20 23h1v1h-1zM21 23h1v1h-1zM22 23h1v1h-1zM23 23h1v1h-1zM24 23h1v1h-1zM0 24h1v1h-1zM1 24h1v1h-1zM2 24h1v1h-1zM3 24h1v1h-1zM4 24h1v1h-1zM5 24h1v1h-1zM6 24h1v1h-1zM9 24h1v1h-1zM10 24h1v1h-1zM11 24h1v1h-1zM13 24h1v1h-1zM14 24h1v1h-1zM15 24h1v1h-1zM18 24h1v1h-1zM19 24h1v1h-1zM21 24h1v1h-1zM22 24h1v1h-1z"></path></svg>
+            </div>
+            <span style="font-size: 13px; line-height: 1.5; color: #555a63">The app shows the account as <strong style="font-weight: 600; color: #14161a">Heimdall (acme)</strong>.</span>
+          </div>
+          <details>
+            <summary style="font-size: 14px; font-weight: 600; color: #1f4fd1; padding: 4px 0">I cannot scan the code</summary>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; padding: 12px 14px; background: #efefea; border-radius: 4px">
+              <code style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; letter-spacing: 0.08em; word-break: break-all">JBSW Y3DP EHPK 3PXP</code>
+              <button type="button" style="flex-shrink: 0; font: inherit; font-size: 14px; font-weight: 600; color: #1f4fd1; background: none; border: 0; padding: 8px 4px; cursor: pointer">Copy</button>
+            </div>
+          </details>
+        </div>
+      </li>
+      <li style="display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 8px; padding: 14px 0; border-bottom: 1px solid #d9d9d3">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #555a63; padding-top: 2px">03</span>
+        <form style="display: flex; flex-direction: column; gap: 10px">
+          <label for="sv" style="font-size: 15px; line-height: 1.5">Enter the 6-digit code that the app shows.</label>
+          <div class="hd-otp">
+            <input id="sv" class="hd-otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" value="">
+            <div aria-hidden="true" style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px">
+              
+                <span style="height: 52px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 600; background: #ffffff; border: 2px solid #1f4fd1; border-radius: 4px"></span>
+              
+                <span style="height: 52px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 600; background: #ffffff; border: 1.5px solid #6b707a; border-radius: 4px"></span>
+              
+                <span style="height: 52px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 600; background: #ffffff; border: 1.5px solid #6b707a; border-radius: 4px"></span>
+              
+                <span style="height: 52px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 600; background: #ffffff; border: 1.5px solid #6b707a; border-radius: 4px"></span>
+              
+                <span style="height: 52px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 600; background: #ffffff; border: 1.5px solid #6b707a; border-radius: 4px"></span>
+              
+                <span style="height: 52px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 600; background: #ffffff; border: 1.5px solid #6b707a; border-radius: 4px"></span>
+              
+            </div>
+          </div>
+        </form>
+      </li>
+    </ol>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <a href="Setup-Recovery.html" style="height: 52px; display: flex; justify-content: space-between; align-items: center; padding: 0 18px; font-size: 16px; font-weight: 600; text-decoration: none; color: #ffffff; background: #1f4fd1; border-radius: 4px">
+        <span>Turn on two-step sign-in</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+      </a>
+      <a href="Setup-Required.html" style="align-self: flex-start; font-size: 15px; font-weight: 600; color: #1f4fd1; padding: 6px 0">Use a passkey instead</a>
+    </div>
+  </main>
+  <footer class="hd-foot" style="color: #555a63">
+    <span>Development build. Not for production use.</span>
+    <span>Heimdall identity provider</span>
+  </footer>
+</div>
+</body>
+</html>

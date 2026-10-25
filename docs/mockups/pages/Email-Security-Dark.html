@@ -1,0 +1,69 @@
+<!doctype html>
+<!-- Heimdall design mockup. Not production code. Exported from the design canvas; see README.md. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Email — Security change (dark)</title>
+<style>
+body{margin:0}
+a:focus{outline:3px solid #f2b705;outline-offset:2px}
+</style>
+</head>
+<body>
+<div style="width: 760px; min-height: 1000px; box-sizing: border-box; padding: 32px 80px 48px; background: #0c0e11; color: #eceae4; font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; display: flex; flex-direction: column; gap: 20px">
+  <div aria-label="Inbox view" style="display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; background: #16191e; border: 1px solid #2c3038; border-radius: 6px; font-size: 13px; color: #a3a8b2">
+    <div><strong style="color: #eceae4; font-weight: 600">acme via Heimdall</strong> &lt;no-reply@acme.localhost&gt;</div>
+    <div style="font-size: 15px; font-weight: 600; color: #eceae4">Your acme password was changed</div>
+    <div>Changed from Chrome on Linux. If this was you, you do not need to do anything.</div>
+  </div>
+
+  <div style="width: 600px; box-sizing: border-box; background: #16191e; border: 1px solid #2c3038; border-radius: 6px; padding: 36px 40px; display: flex; flex-direction: column; gap: 22px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <div style="display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#eceae4" stroke-width="2" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        Heimdall
+      </div>
+      <span style="font-family: ui-monospace, 'SF Mono', Consolas, monospace; font-size: 12px; color: #a3a8b2">acme.localhost</span>
+    </div>
+    <div style="height: 2px; background: #eceae4"></div>
+
+    <h1 style="margin: 0; font-size: 26px; line-height: 1.2; font-weight: 700">Your password was changed</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.55; color: #c4c7ce"><strong style="color: #eceae4">parth@acme.test</strong> has a new password. Heimdall sends this notice for every change to how you sign in.</p>
+
+    <table role="presentation" style="width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5">
+      <tr style="border-top: 2px solid #eceae4">
+        <td style="padding: 10px 0; width: 140px; color: #a3a8b2; vertical-align: top">When</td>
+        <td style="padding: 10px 0">24 October 2026, 21:40 IST <span style="color: #a3a8b2">(16:10 UTC)</span></td>
+      </tr>
+      <tr style="border-top: 1px solid #2c3038">
+        <td style="padding: 10px 0; color: #a3a8b2; vertical-align: top">Device</td>
+        <td style="padding: 10px 0">Chrome on Linux</td>
+      </tr>
+      <tr style="border-top: 1px solid #2c3038">
+        <td style="padding: 10px 0; color: #a3a8b2; vertical-align: top">Near</td>
+        <td style="padding: 10px 0">Ahmedabad, India <span style="color: #a3a8b2">(from the network address, so only approximate)</span></td>
+      </tr>
+      <tr style="border-top: 1px solid #2c3038">
+        <td style="padding: 10px 0; color: #a3a8b2; vertical-align: top">Change</td>
+        <td style="padding: 10px 0">Password changed</td>
+      </tr>
+      <tr style="border-top: 1px solid #2c3038; border-bottom: 1px solid #2c3038">
+        <td style="padding: 10px 0; color: #a3a8b2; vertical-align: top">Also</td>
+        <td style="padding: 10px 0">Signed out of 3 other sessions</td>
+      </tr>
+    </table>
+
+    <p style="margin: 0; font-size: 16px; line-height: 1.55; color: #c4c7ce">If this was you, you do not need to do anything.</p>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; padding: 18px 20px; border: 1px solid #ff8a80; border-radius: 4px; background: #2a1414">
+      <span style="font-size: 15px; font-weight: 700; color: #ff8a80">Not you?</span>
+      <span style="font-size: 14px; line-height: 1.55; color: #eceae4">Someone else may control your account. Secure it now: Heimdall signs out every session and helps you reset your password and check your sign-in methods.</span>
+      <a href="#" style="align-self: flex-start; display: inline-block; padding: 12px 20px; font-size: 15px; font-weight: 600; text-decoration: none; color: #0b0e14; background: #8aa6ff; border-radius: 4px">Secure my account</a>
+    </div>
+
+    <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #a3a8b2">The button opens <span style="font-family: ui-monospace, 'SF Mono', Consolas, monospace">acme.localhost</span>. Heimdall never asks for your password by email. Sent by Heimdall for acme because you have an account there.</p>
+  </div>
+</div>
+</body>
+</html>

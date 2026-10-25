@@ -1,0 +1,56 @@
+<!doctype html>
+<!-- Heimdall design mockup. Not production code. Exported from the design canvas; see README.md. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Card — Signed out (dark)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.hd-page{min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:48px 24px}
+.hd-card{width:100%;max-width:448px;box-sizing:border-box;padding:36px 40px 32px;border:1px solid;border-radius:10px;display:flex;flex-direction:column;gap:24px}
+.hd-foot{width:100%;max-width:448px;box-sizing:border-box;display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;font-size:12px}
+@media (max-width:520px){.hd-page{justify-content:flex-start;padding:0 0 24px;background-image:none !important}.hd-card{border:0 !important;border-radius:0;padding:20px;background:transparent !important}.hd-foot{padding:0 20px}}
+input:focus,button:focus,a:focus{outline:3px solid #f2b705;outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="hd-page" style="background-color: #0c0e11; background-image: radial-gradient(ellipse 34% 48% at 50% 50%, #0c0e11 55%, rgba(12,14,17,0) 100%), linear-gradient(#1d2128 1px, transparent 1px), linear-gradient(90deg, #1d2128 1px, transparent 1px), linear-gradient(#14171b 1px, transparent 1px), linear-gradient(90deg, #14171b 1px, transparent 1px); background-size: 100% 100%, 120px 120px, 120px 120px, 24px 24px, 24px 24px; background-position: center, center, center, center, center; color: #eceae4; font-family: 'IBM Plex Sans', system-ui, sans-serif">
+  <main class="hd-card" style="background: #16191e; border-color: #2c3038">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; letter-spacing: -0.01em">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#eceae4" stroke-width="2" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        Heimdall
+      </div>
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 4px 8px; border: 1px solid #2c3038; border-radius: 3px; color: #c4c7ce">acme.localhost:7299</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <h1 style="margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -0.02em">You signed out</h1>
+      <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #c4c7ce">You signed out of Heimdall on acme. This browser no longer has a Heimdall session for <strong style="font-weight: 600; color: #eceae4">parth@acme.test</strong>.</p>
+    </div>
+
+    <dl style="margin: 0; border-top: 2px solid #eceae4">
+      <div style="display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid #2c3038; font-size: 14px; line-height: 1.5">
+        <dt style="color: #a3a8b2">Heimdall</dt>
+        <dd style="margin: 0">Signed out</dd>
+      </div>
+      <div style="display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid #2c3038; font-size: 14px; line-height: 1.5">
+        <dt style="color: #a3a8b2">Your apps</dt>
+        <dd style="margin: 0">An app can keep you signed in until you sign out of that app too.</dd>
+      </div>
+    </dl>
+
+    <p style="margin: 0; font-size: 15px; line-height: 1.55; color: #c4c7ce">To sign in again, go back to the app that you want to use, then choose its sign-in option.</p>
+
+    <p style="margin: 0; padding-top: 16px; border-top: 1px solid #2c3038; font-size: 14px; line-height: 1.55; color: #a3a8b2">On a shared computer, close the browser too.</p>
+  </main>
+  <footer class="hd-foot" style="color: #a3a8b2">
+    <span>Development build. Not for production use.</span>
+    <span>Heimdall identity provider</span>
+  </footer>
+</div>
+</body>
+</html>

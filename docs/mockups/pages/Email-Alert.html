@@ -1,0 +1,69 @@
+<!doctype html>
+<!-- Heimdall design mockup. Not production code. Exported from the design canvas; see README.md. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Email — New sign-in alert</title>
+<style>
+body{margin:0}
+a:focus{outline:3px solid #f2b705;outline-offset:2px}
+</style>
+</head>
+<body>
+<div style="width: 760px; min-height: 1000px; box-sizing: border-box; padding: 32px 80px 48px; background: #e9e9e4; color: #14161a; font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; display: flex; flex-direction: column; gap: 20px">
+  <div aria-label="Inbox view" style="display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; background: #ffffff; border: 1px solid #d9d9d3; border-radius: 6px; font-size: 13px; color: #555a63">
+    <div><strong style="color: #14161a; font-weight: 600">acme via Heimdall</strong> &lt;no-reply@acme.localhost&gt;</div>
+    <div style="font-size: 15px; font-weight: 600; color: #14161a">New sign-in to your acme account</div>
+    <div>Firefox on Windows, near Ahmedabad, India. If this was you, you do not need to do anything.</div>
+  </div>
+
+  <div style="width: 600px; box-sizing: border-box; background: #ffffff; border: 1px solid #d9d9d3; border-radius: 6px; padding: 36px 40px; display: flex; flex-direction: column; gap: 22px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <div style="display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#14161a" stroke-width="2" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        Heimdall
+      </div>
+      <span style="font-family: ui-monospace, 'SF Mono', Consolas, monospace; font-size: 12px; color: #555a63">acme.localhost</span>
+    </div>
+    <div style="height: 2px; background: #14161a"></div>
+
+    <h1 style="margin: 0; font-size: 26px; line-height: 1.2; font-weight: 700">New sign-in to your account</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.55; color: #3a3f47"><strong style="color: #14161a">parth@acme.test</strong> signed in on a device that Heimdall has not seen before.</p>
+
+    <table role="presentation" style="width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5">
+      <tr style="border-top: 2px solid #14161a">
+        <td style="padding: 10px 0; width: 140px; color: #555a63; vertical-align: top">When</td>
+        <td style="padding: 10px 0">24 October 2026, 21:40 IST <span style="color: #555a63">(16:10 UTC)</span></td>
+      </tr>
+      <tr style="border-top: 1px solid #d9d9d3">
+        <td style="padding: 10px 0; color: #555a63; vertical-align: top">Device</td>
+        <td style="padding: 10px 0">Firefox on Windows</td>
+      </tr>
+      <tr style="border-top: 1px solid #d9d9d3">
+        <td style="padding: 10px 0; color: #555a63; vertical-align: top">Near</td>
+        <td style="padding: 10px 0">Ahmedabad, India <span style="color: #555a63">(from the network address, so only approximate)</span></td>
+      </tr>
+      <tr style="border-top: 1px solid #d9d9d3">
+        <td style="padding: 10px 0; color: #555a63; vertical-align: top">Method</td>
+        <td style="padding: 10px 0">Password and authenticator code</td>
+      </tr>
+      <tr style="border-top: 1px solid #d9d9d3; border-bottom: 1px solid #d9d9d3">
+        <td style="padding: 10px 0; color: #555a63; vertical-align: top">App</td>
+        <td style="padding: 10px 0">Huginn</td>
+      </tr>
+    </table>
+
+    <p style="margin: 0; font-size: 16px; line-height: 1.55; color: #3a3f47">If this was you, you do not need to do anything.</p>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; padding: 18px 20px; border: 1px solid #b3261e; border-radius: 4px; background: #fdecea">
+      <span style="font-size: 15px; font-weight: 700; color: #b3261e">Not you?</span>
+      <span style="font-size: 14px; line-height: 1.55; color: #14161a">Someone may know your password. Secure your account now: Heimdall signs out every session and asks you for a new password.</span>
+      <a href="#" style="align-self: flex-start; display: inline-block; padding: 12px 20px; font-size: 15px; font-weight: 600; text-decoration: none; color: #ffffff; background: #1f4fd1; border-radius: 4px">Secure my account</a>
+    </div>
+
+    <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #555a63">The button opens <span style="font-family: ui-monospace, 'SF Mono', Consolas, monospace">acme.localhost</span>. Heimdall never asks for your password by email. Sent by Heimdall for acme because you have an account there.</p>
+  </div>
+</div>
+</body>
+</html>

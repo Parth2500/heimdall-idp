@@ -1,0 +1,142 @@
+<!doctype html>
+<!-- Heimdall design mockup. Not production code. Exported from the design canvas; see README.md. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Account portal — Devices</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.hd-nav a:hover{background:rgba(127,127,127,0.08)}
+.hd-btn{height:40px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 14px;font:inherit;font-size:14px;font-weight:600;background:transparent;border:1.5px solid;border-radius:4px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.hd-row{display:grid;grid-template-columns:minmax(120px,180px) minmax(0,1fr) auto;gap:16px;align-items:center;padding:14px 0;border-bottom:1px solid}
+@media (max-width:640px){.hd-row{grid-template-columns:minmax(0,1fr) auto}.hd-row>:first-child{grid-column:1/-1}}
+input:focus,button:focus,a:focus{outline:3px solid #f2b705;outline-offset:2px}
+</style>
+</head>
+<body>
+<div style="min-height: 1000px; box-sizing: border-box; background: #f6f6f3; color: #14161a; font-family: 'IBM Plex Sans', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 32px; background: #ffffff; border-bottom: 1px solid #d9d9d3">
+    <div style="display: flex; align-items: center; gap: 14px">
+      <div style="display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; letter-spacing: -0.01em">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#14161a" stroke-width="2" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        Heimdall
+      </div>
+      <span aria-hidden="true" style="width: 1px; height: 20px; background: #d9d9d3"></span>
+      <span style="font-size: 16px; font-weight: 500; color: #3a3f47">Account</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 14px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 4px 8px; border: 1px solid #d9d9d3; border-radius: 3px; color: #3a3f47">acme.localhost:7299</span>
+      <button type="button" aria-label="Account menu for parth@acme.test" style="width: 40px; height: 40px; border-radius: 50%; border: 0; background: #1f4fd1; color: #ffffff; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer">PM</button>
+    </div>
+  </header>
+
+  <div style="flex-grow: 1; width: 100%; max-width: 1200px; margin: 0 auto; box-sizing: border-box; padding: 32px 32px 48px; display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start">
+    <nav aria-label="Account sections" class="hd-nav" style="flex: 1 1 200px; max-width: 240px; display: flex; flex-direction: column; gap: 24px">
+      <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px">
+        
+          <li>
+            <a href="Portal-Overview.html" aria-current="false" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 4px; text-decoration: none; font-size: 15px; font-weight: 400; color: #3a3f47; background: transparent">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7M5 10v10h14V10"></path></svg>
+              Overview
+            </a>
+          </li>
+        
+          <li>
+            <a href="Portal-Security.html" aria-current="false" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 4px; text-decoration: none; font-size: 15px; font-weight: 400; color: #3a3f47; background: transparent">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"></path></svg>
+              Security
+            </a>
+          </li>
+        
+          <li>
+            <a href="Portal-Devices.html" aria-current="page" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 4px; text-decoration: none; font-size: 15px; font-weight: 600; color: #1f4fd1; background: #ebebe5">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v11H3zM8 20h8M12 16v4"></path></svg>
+              Devices
+            </a>
+          </li>
+        
+          <li>
+            <a href="Portal-Apps.html" aria-current="false" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 4px; text-decoration: none; font-size: 15px; font-weight: 400; color: #3a3f47; background: transparent">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"></path></svg>
+              Apps with access
+            </a>
+          </li>
+        
+          <li>
+            <a href="Portal-Activity.html" aria-current="false" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 4px; text-decoration: none; font-size: 15px; font-weight: 400; color: #3a3f47; background: transparent">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"></path></svg>
+              Recent activity
+            </a>
+          </li>
+        
+      </ul>
+      <div style="padding-top: 16px; border-top: 1px solid #d9d9d3; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #555a63">
+        <span>Signed in as</span>
+        <span style="font-size: 14px; font-weight: 500; color: #14161a; overflow: hidden; text-overflow: ellipsis">parth@acme.test</span>
+        <button type="button" class="hd-btn" style="align-self: flex-start; margin-top: 4px; color: #14161a; border-color: #6b707a">Sign out</button>
+      </div>
+    </nav>
+
+    <main style="flex: 999 1 560px; min-width: 0; max-width: 880px; display: flex; flex-direction: column; gap: 28px">
+<!--content-->
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <h1 style="margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -0.02em">Devices and sessions</h1>
+        <p style="margin: 0; font-size: 16px; color: #3a3f47">Where your account is signed in now. Sign out of anything that you do not recognize.</p>
+      </div>
+      <section aria-labelledby="dv" style="background: #ffffff; border: 1px solid #d9d9d3; border-radius: 8px; padding: 24px 28px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px">
+          <h2 id="dv" style="margin: 0; font-size: 20px; font-weight: 700">Signed in now</h2> <button type="button" class="hd-btn" style="color: #b3261e; border-color: #b3261e">Sign out of all other sessions</button>
+        </div>
+        <div style="border-top: 2px solid #14161a">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 14px 0; border-bottom: 1px solid #d9d9d3">
+            <span style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+              <span style="font-size: 15px; font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 8px">Chrome on Linux <span style="font-size: 12px; font-weight: 600; padding: 2px 6px; border: 1px solid #1f4fd1; border-radius: 3px; color: #1f4fd1">This device</span></span>
+              <span style="font-size: 14px; color: #555a63">Near Vadodara, India · Active now · Signed in with passkey</span>
+            </span>
+            <span style="display: flex; gap: 8px"></span>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 14px 0; border-bottom: 1px solid #d9d9d3">
+            <span style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+              <span style="font-size: 15px; font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 8px">Firefox on Windows</span>
+              <span style="font-size: 14px; color: #555a63">Near Ahmedabad, India · 2 hours ago · Password and authenticator code</span>
+            </span>
+            <span style="display: flex; gap: 8px"><button type="button" class="hd-btn" style="color: #14161a; border-color: #6b707a">Sign out</button></span>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 14px 0; border-bottom: 1px solid #d9d9d3">
+            <span style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+              <span style="font-size: 15px; font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 8px">Safari on iPhone</span>
+              <span style="font-size: 14px; color: #555a63">Near Vadodara, India · 5 days ago · Passkey</span>
+            </span>
+            <span style="display: flex; gap: 8px"><button type="button" class="hd-btn" style="color: #14161a; border-color: #6b707a">Sign out</button></span>
+          </div>
+        </div>
+      </section>
+      <section aria-labelledby="dd" style="background: #ffffff; border: 1px solid #d9d9d3; border-radius: 8px; padding: 24px 28px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px">
+          <h2 id="dd" style="margin: 0; font-size: 20px; font-weight: 700">Connected devices</h2>
+        </div>
+        <div style="border-top: 2px solid #14161a">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 14px 0; border-bottom: 1px solid #d9d9d3">
+            <span style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+              <span style="font-size: 15px; font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 8px">Huginn CLI</span>
+              <span style="font-size: 14px; color: #555a63">Connected with a device code on 24 October 2026 · Last used yesterday</span>
+            </span>
+            <span style="display: flex; gap: 8px"><button type="button" class="hd-btn" style="color: #14161a; border-color: #6b707a">Remove</button></span>
+          </div>
+        </div>
+        <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #555a63">Places come from the network address, so they are approximate. Sign out ends the Heimdall session on that device. Apps there may keep you signed in until their tokens expire.</p>
+      </section>
+<!--/content-->
+    </main>
+  </div>
+
+  <footer style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 16px 32px; border-top: 1px solid #d9d9d3; font-size: 12px; color: #555a63">
+    <span>Development build. Not for production use.</span>
+    <span>Heimdall identity provider</span>
+  </footer>
+</div>
+</body>
+</html>

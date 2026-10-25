@@ -1,0 +1,86 @@
+<!doctype html>
+<!-- Heimdall design mockup. Not production code. Exported from the design canvas; see README.md. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign-up — Email code</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.hd-page{min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:48px 24px}
+.hd-card{width:100%;max-width:448px;box-sizing:border-box;padding:36px 40px 32px;border:1px solid;border-radius:10px;display:flex;flex-direction:column;gap:24px}
+.hd-foot{width:100%;max-width:448px;box-sizing:border-box;display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;font-size:12px}
+@media (max-width:520px){.hd-page{justify-content:flex-start;padding:0 0 24px;background-image:none !important}.hd-card{border:0 !important;border-radius:0;padding:20px;background:transparent !important}.hd-foot{padding:0 20px}}
+input:focus,button:focus,a:focus{outline:3px solid #f2b705;outline-offset:2px}
+.hd-otp{position:relative;border-radius:6px}
+.hd-otp-input{position:absolute;inset:0;width:100%;height:100%;box-sizing:border-box;margin:0;padding:0;border:0;opacity:0;font-size:16px;caret-color:transparent;cursor:text}
+.hd-otp:focus-within{outline:3px solid #f2b705;outline-offset:4px}
+</style>
+</head>
+<body>
+<div class="hd-page" style="background-color: #f6f6f3; background-image: radial-gradient(ellipse 34% 48% at 50% 50%, #f6f6f3 55%, rgba(246,246,243,0) 100%), linear-gradient(#dedfd8 1px, transparent 1px), linear-gradient(90deg, #dedfd8 1px, transparent 1px), linear-gradient(#ebebe5 1px, transparent 1px), linear-gradient(90deg, #ebebe5 1px, transparent 1px); background-size: 100% 100%, 120px 120px, 120px 120px, 24px 24px, 24px 24px; background-position: center, center, center, center, center; color: #14161a; font-family: 'IBM Plex Sans', system-ui, sans-serif">
+  <main class="hd-card" style="background: #ffffff; border-color: #d9d9d3">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; letter-spacing: -0.01em">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#14161a" stroke-width="2" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        Heimdall
+      </div>
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 4px 8px; border: 1px solid #d9d9d3; border-radius: 3px; color: #3a3f47">acme.localhost:7299</span>
+    </div>
+
+    <ol aria-label="Steps to create an account" style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+      
+        <li aria-current="false" style="border-top: 3px solid #1f4fd1; padding-top: 8px; font-size: 13px; font-weight: 400; color: #14161a"><span style="font-family: 'IBM Plex Mono', monospace">01</span> Details</li>
+      
+        <li aria-current="step" style="border-top: 3px solid #1f4fd1; padding-top: 8px; font-size: 13px; font-weight: 600; color: #14161a"><span style="font-family: 'IBM Plex Mono', monospace">02</span> Email code</li>
+      
+        <li aria-current="false" style="border-top: 3px solid #d9d9d3; padding-top: 8px; font-size: 13px; font-weight: 400; color: #555a63"><span style="font-family: 'IBM Plex Mono', monospace">03</span> Password</li>
+      
+    </ol>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <h1 style="margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -0.02em">Check your email</h1>
+      <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #3a3f47">Enter the 6-digit code that we sent to <strong style="font-weight: 600; color: #14161a">p•••@acme.test</strong>. The code expires in 10 minutes.</p>
+    </div>
+
+    <form style="display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <label for="sc" style="font-size: 15px; font-weight: 600">Code</label>
+        <div class="hd-otp">
+          <input id="sc" class="hd-otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" value="4812" aria-describedby="sch">
+          <div aria-hidden="true" style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px">
+            
+              <span style="height: 60px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 600; color: #14161a; background: #ffffff; border: 1.5px solid #14161a; border-radius: 4px">4</span>
+            
+              <span style="height: 60px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 600; color: #14161a; background: #ffffff; border: 1.5px solid #14161a; border-radius: 4px">8</span>
+            
+              <span style="height: 60px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 600; color: #14161a; background: #ffffff; border: 1.5px solid #14161a; border-radius: 4px">1</span>
+            
+              <span style="height: 60px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 600; color: #14161a; background: #ffffff; border: 1.5px solid #14161a; border-radius: 4px">2</span>
+            
+              <span style="height: 60px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 600; color: #14161a; background: #ffffff; border: 2px solid #1f4fd1; border-radius: 4px"></span>
+            
+              <span style="height: 60px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 600; color: #14161a; background: #ffffff; border: 1.5px solid #6b707a; border-radius: 4px"></span>
+            
+          </div>
+        </div>
+        <span id="sch" style="font-size: 13px; color: #555a63">6 digits. You can paste the whole code at once.</span>
+      </div>
+      <button type="submit" style="height: 52px; font: inherit; font-size: 16px; font-weight: 600; color: #ffffff; background: #1f4fd1; border: 0; border-radius: 4px; cursor: pointer">Verify</button>
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 14px">
+        <button type="button" disabled="" style="font: inherit; font-size: 14px; color: #555a63; background: none; border: 0; padding: 6px 0">Send a new code in <span style="font-family: 'IBM Plex Mono', monospace">0:42</span></button>
+        <a href="Signup-Create.html" style="font-weight: 600; color: #1f4fd1; padding: 6px 0">Use another email</a>
+      </div>
+    </form>
+
+    <p style="margin: 0; padding-top: 16px; border-top: 1px solid #d9d9d3; font-size: 14px; line-height: 1.55; color: #555a63">No email? Check your spam folder. Heimdall never asks you to send this code to anyone.</p>
+  </main>
+  <footer class="hd-foot" style="color: #555a63">
+    <span>Development build. Not for production use.</span>
+    <span>Heimdall identity provider</span>
+  </footer>
+</div>
+</body>
+</html>

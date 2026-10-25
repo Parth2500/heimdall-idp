@@ -1,0 +1,131 @@
+<!doctype html>
+<!-- Heimdall design mockups. Not production code. See README.md. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Heimdall mockups</title>
+<style>
+:root{--bg:#f6f6f3;--card:#fff;--ink:#14161a;--muted:#555a63;--rule:#d9d9d3;--link:#1f4fd1}
+@media (prefers-color-scheme:dark){:root{--bg:#0c0e11;--card:#16191e;--ink:#eceae4;--muted:#a3a8b2;--rule:#2c3038;--link:#9db4ff}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif}
+main{max-width:880px;margin:0 auto;padding:48px 20px}
+h1{margin:0 0 8px;font-size:32px}
+p{margin:0 0 32px;color:var(--muted);line-height:1.5}
+section{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:20px 24px;margin-bottom:16px}
+h2{margin:0 0 8px;font-size:18px}
+ul{list-style:none;margin:0;padding:0;border-top:2px solid var(--ink)}
+li{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--rule)}
+li span{flex:1 1 240px}
+a{color:var(--link);font-weight:600}
+a:focus{outline:3px solid #f2b705;outline-offset:2px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Heimdall mockups</h1>
+  <p>Static design mockups of the account pages, the emails and the account portal. They are not production code. Links inside a page go to the next page in the flow.</p>
+  <section>
+    <h2>Sign in</h2>
+    <ul>
+      <li><span>Step 1: email</span><a href="pages/Card-Email.html">Light</a><a href="pages/Card-Email-Dark.html">Dark</a></li>
+      <li><span>Step 2: password</span><a href="pages/Card-Password.html">Light</a><a href="pages/Card-Password-Dark.html">Dark</a></li>
+      <li><span>Choose an account</span><a href="pages/Card-Picker.html">Light</a><a href="pages/Card-Picker-Dark.html">Dark</a></li>
+      <li><span>Consent</span><a href="pages/Card-Consent.html">Light</a><a href="pages/Card-Consent-Dark.html">Dark</a></li>
+      <li><span>Sign in, all options</span><a href="pages/SignIn-Options.html">Light</a><a href="pages/SignIn-Options-Dark.html">Dark</a></li>
+    </ul>
+  </section>
+  <section>
+    <h2>States</h2>
+    <ul>
+      <li><span>Signing in</span><a href="pages/Card-Busy.html">Light</a><a href="pages/Card-Busy-Dark.html">Dark</a></li>
+      <li><span>Wrong password</span><a href="pages/Card-Wrong.html">Light</a><a href="pages/Card-Wrong-Dark.html">Dark</a></li>
+      <li><span>Error page: request refused</span><a href="pages/Card-Error.html">Light</a><a href="pages/Card-Error-Dark.html">Dark</a></li>
+      <li><span>Signed out</span><a href="pages/Card-SignedOut.html">Light</a><a href="pages/Card-SignedOut-Dark.html">Dark</a></li>
+    </ul>
+  </section>
+  <section>
+    <h2>Two-step sign-in</h2>
+    <ul>
+      <li><span>Choose a method</span><a href="pages/MFA-Methods.html">Light</a><a href="pages/MFA-Methods-Dark.html">Dark</a></li>
+      <li><span>Authenticator code</span><a href="pages/MFA-TOTP.html">Light</a><a href="pages/MFA-TOTP-Dark.html">Dark</a></li>
+      <li><span>Passkey</span><a href="pages/MFA-Passkey.html">Light</a><a href="pages/MFA-Passkey-Dark.html">Dark</a></li>
+      <li><span>Recovery code</span><a href="pages/MFA-Recovery.html">Light</a><a href="pages/MFA-Recovery-Dark.html">Dark</a></li>
+    </ul>
+  </section>
+  <section>
+    <h2>Sign-up</h2>
+    <ul>
+      <li><span>Create account</span><a href="pages/Signup-Create.html">Light</a><a href="pages/Signup-Create-Dark.html">Dark</a></li>
+      <li><span>Email code</span><a href="pages/Signup-Code.html">Light</a><a href="pages/Signup-Code-Dark.html">Dark</a></li>
+      <li><span>Set a password</span><a href="pages/Signup-Password.html">Light</a><a href="pages/Signup-Password-Dark.html">Dark</a></li>
+      <li><span>Account ready</span><a href="pages/Signup-Done.html">Light</a><a href="pages/Signup-Done-Dark.html">Dark</a></li>
+    </ul>
+  </section>
+  <section>
+    <h2>Invitation and other providers</h2>
+    <ul>
+      <li><span>Accept invitation</span><a href="pages/Invite-Accept.html">Light</a><a href="pages/Invite-Accept-Dark.html">Dark</a></li>
+      <li><span>Invitation expired</span><a href="pages/Invite-Expired.html">Light</a><a href="pages/Invite-Expired-Dark.html">Dark</a></li>
+      <li><span>Link your account</span><a href="pages/Link-Account.html">Light</a><a href="pages/Link-Account-Dark.html">Dark</a></li>
+      <li><span>Finish setting up</span><a href="pages/Complete-Profile.html">Light</a><a href="pages/Complete-Profile-Dark.html">Dark</a></li>
+    </ul>
+  </section>
+  <section>
+    <h2>Recovery</h2>
+    <ul>
+      <li><span>Reset your password</span><a href="pages/Forgot-Password.html">Light</a><a href="pages/Forgot-Password-Dark.html">Dark</a></li>
+      <li><span>Choose a new password</span><a href="pages/Reset-Password.html">Light</a><a href="pages/Reset-Password-Dark.html">Dark</a></li>
+    </ul>
+  </section>
+  <section>
+    <h2>Security setup</h2>
+    <ul>
+      <li><span>Two-step sign-in required</span><a href="pages/Setup-Required.html">Light</a><a href="pages/Setup-Required-Dark.html">Dark</a></li>
+      <li><span>Set up an authenticator app</span><a href="pages/Setup-TOTP.html">Light</a><a href="pages/Setup-TOTP-Dark.html">Dark</a></li>
+      <li><span>Save recovery codes</span><a href="pages/Setup-Recovery.html">Light</a><a href="pages/Setup-Recovery-Dark.html">Dark</a></li>
+      <li><span>Name a passkey</span><a href="pages/Setup-Passkey-Name.html">Light</a><a href="pages/Setup-Passkey-Name-Dark.html">Dark</a></li>
+      <li><span>Stay signed in?</span><a href="pages/Setup-Stay.html">Light</a><a href="pages/Setup-Stay-Dark.html">Dark</a></li>
+    </ul>
+  </section>
+  <section>
+    <h2>Edge states</h2>
+    <ul>
+      <li><span>Request expired</span><a href="pages/Edge-Expired.html">Light</a><a href="pages/Edge-Expired-Dark.html">Dark</a></li>
+      <li><span>Confirm it is you</span><a href="pages/Edge-Reauth.html">Light</a><a href="pages/Edge-Reauth-Dark.html">Dark</a></li>
+      <li><span>New permissions</span><a href="pages/Edge-NewScopes.html">Light</a><a href="pages/Edge-NewScopes-Dark.html">Dark</a></li>
+      <li><span>Password changed</span><a href="pages/Edge-PwChanged.html">Light</a><a href="pages/Edge-PwChanged-Dark.html">Dark</a></li>
+      <li><span>JavaScript is off</span><a href="pages/Edge-NoJS.html">Light</a><a href="pages/Edge-NoJS-Dark.html">Dark</a></li>
+    </ul>
+  </section>
+  <section>
+    <h2>Device sign-in</h2>
+    <ul>
+      <li><span>Enter the code</span><a href="pages/Device-Code.html">Light</a><a href="pages/Device-Code-Dark.html">Dark</a></li>
+      <li><span>Approve the device</span><a href="pages/Device-Confirm.html">Light</a><a href="pages/Device-Confirm-Dark.html">Dark</a></li>
+      <li><span>Device connected</span><a href="pages/Device-Done.html">Light</a><a href="pages/Device-Done-Dark.html">Dark</a></li>
+    </ul>
+  </section>
+  <section>
+    <h2>Emails</h2>
+    <ul>
+      <li><span>Verification code</span><a href="pages/Email-Code.html">Light</a><a href="pages/Email-Code-Dark.html">Dark</a></li>
+      <li><span>Invitation</span><a href="pages/Email-Invite.html">Light</a><a href="pages/Email-Invite-Dark.html">Dark</a></li>
+      <li><span>Password reset code</span><a href="pages/Email-Reset.html">Light</a><a href="pages/Email-Reset-Dark.html">Dark</a></li>
+      <li><span>New sign-in alert</span><a href="pages/Email-Alert.html">Light</a><a href="pages/Email-Alert-Dark.html">Dark</a></li>
+      <li><span>Security change</span><a href="pages/Email-Security.html">Light</a><a href="pages/Email-Security-Dark.html">Dark</a></li>
+    </ul>
+  </section>
+  <section>
+    <h2>Account portal</h2>
+    <ul>
+      <li><span>Overview</span><a href="pages/Portal-Overview.html">Light</a><a href="pages/Portal-Overview-Dark.html">Dark</a></li>
+      <li><span>Security</span><a href="pages/Portal-Security.html">Light</a><a href="pages/Portal-Security-Dark.html">Dark</a></li>
+      <li><span>Devices</span><a href="pages/Portal-Devices.html">Light</a><a href="pages/Portal-Devices-Dark.html">Dark</a></li>
+      <li><span>Apps with access</span><a href="pages/Portal-Apps.html">Light</a><a href="pages/Portal-Apps-Dark.html">Dark</a></li>
+      <li><span>Recent activity</span><a href="pages/Portal-Activity.html">Light</a><a href="pages/Portal-Activity-Dark.html">Dark</a></li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>
