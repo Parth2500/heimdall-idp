@@ -302,7 +302,21 @@ JOIN   clients AS c ON c.tenant_id = f.tenant_id AND c.id = f.client_pk
 WHERE  c.backchannel_logout_uri IS NOT NULL
 RETURNING client_pk;
 ```
-The first statement is the lock. When two sign-outs of one session run together, the second waits on the row, then matches no row. Then it stops, so it revokes nothing and queues nothing twice. The insert also includes families that a reuse revoked earlier, because their client can still hold a session of its own. A redeemed code always has a family, so the insert needs no read of `authorization_codes`.
+**Deliver a back-channel logout** (`BackchannelLogoutDelivery`, D35). A pass takes the due rows in one statement:
+```sql
+UPDATE backchannel_logouts
+SET    attempts = attempts + 1, next_attempt_at = @now + @lease
+WHERE  id IN (
+    SELECT id FROM backchannel_logouts
+    WHERE  next_attempt_at <= @now
+    ORDER  BY next_attempt_at
+    LIMIT  @batch
+    FOR UPDATE SKIP LOCKED)
+RETURNING *;
+```
+The attempt counts before the call. The lease (4 call time limits) keeps the row away from other servers during the call. After a success, the pass deletes the row. After a failure, it sets `next_attempt_at` to `@now + 30 s × 2^(attempts − 1)`. After the fifth retry fails, it deletes the row and writes the audit event `backchannel_logout.dropped`. A server that stops during a call leaves the row, and the lease brings it back. So a client can get two logout tokens for one sign-out. Each has its own `jti` and names the same session.
+
+The first statement of "End a session" is the lock. When two sign-outs of one session run together, the second waits on the row, then matches no row. Then it stops, so it revokes nothing and queues nothing twice. The insert also includes families that a reuse revoked earlier, because their client can still hold a session of its own. A redeemed code always has a family, so the insert needs no read of `authorization_codes`.
 
 ## Indexes
 

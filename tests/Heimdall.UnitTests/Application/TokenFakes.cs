@@ -226,6 +226,19 @@ internal sealed class RecordingTokenSigner : ITokenSigner
         SignedIdTokens.Add((tenantId, claims));
         return Task.FromResult("id." + claims.Subject);
     }
+
+    public List<(Guid TenantId, LogoutTokenClaims Claims)> SignedLogoutTokens { get; } = [];
+
+    public Task<string> SignLogoutTokenAsync(Guid tenantId, LogoutTokenClaims claims, CancellationToken cancellationToken)
+    {
+        if (Unavailable)
+        {
+            throw new SigningKeyUnavailableException(tenantId);
+        }
+
+        SignedLogoutTokens.Add((tenantId, claims));
+        return Task.FromResult("logout." + claims.JwtId);
+    }
 }
 
 internal sealed class RecordingSecurityAlerts : ISecurityAlerts

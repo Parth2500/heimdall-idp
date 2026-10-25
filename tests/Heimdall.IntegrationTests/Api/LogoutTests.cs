@@ -2,12 +2,19 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Heimdall.Api.Endpoints;
+using Heimdall.Application.Audit;
+using Heimdall.Application.Tokens;
+using Heimdall.Domain.Audit;
 using Heimdall.Domain.Tokens;
+using Heimdall.Infrastructure.Logout;
 using Heimdall.Infrastructure.Persistence;
+using Heimdall.Infrastructure.Telemetry;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.IdentityModel.JsonWebTokens;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Heimdall.IntegrationTests.Api;
 
@@ -348,5 +355,215 @@ public sealed class LogoutTests
 
         Assert.All(responses, status => Assert.Equal(HttpStatusCode.Found, status));
         Assert.Single(await QueuedAsync(flow));
+    }
+
+    // ---- Back-channel delivery (D34, D35)
+
+    /// <summary>Stands in for the client's server. It records each call and answers with the next status.</summary>
+    private sealed class ClientServer : HttpMessageHandler
+    {
+        public List<(Uri Uri, string ContentType, Dictionary<string, string> Form)> Calls { get; } = [];
+
+        public Queue<HttpStatusCode> Answers { get; } = new();
+
+        public bool Unreachable { get; set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (Unreachable)
+            {
+                throw new HttpRequestException("connection refused");
+            }
+
+            var body = await request.Content!.ReadAsStringAsync(cancellationToken);
+            Calls.Add((request.RequestUri!, request.Content.Headers.ContentType!.MediaType!, QueryHelpers.ParseQuery(body).ToDictionary(p => p.Key, p => p.Value.ToString())));
+            return new HttpResponseMessage(Answers.Count > 0 ? Answers.Dequeue() : HttpStatusCode.OK);
+        }
+    }
+
+    private static BackchannelLogoutDelivery Delivery(Flow flow, ClientServer server, BackchannelLogoutOptions? options = null)
+    {
+        var services = flow.Api.Services;
+        return new BackchannelLogoutDelivery(
+            services.GetRequiredService<PlatformDbContextFactory>(),
+            services.GetRequiredService<ITokenSigner>(),
+            services.GetRequiredService<IIssuerResolver>(),
+            services.GetRequiredService<IAuditLog>(),
+            services.GetRequiredService<HeimdallMetrics>(),
+            options ?? new BackchannelLogoutOptions(),
+            flow.Api.Time,
+            NullLogger<BackchannelLogoutDelivery>.Instance,
+            server);
+    }
+
+    private static async Task<Tokens> SignInAndOutAsync(Flow flow)
+    {
+        // A pass covers every tenant. The tests of this collection run one at a time, so rows that other tests left
+        // are removed here, and each pass sees only this test's rows.
+        await using (var db = flow.Api.Services.GetRequiredService<PlatformDbContextFactory>().Create())
+        {
+            await db.Database.ExecuteSqlAsync($"DELETE FROM backchannel_logouts WHERE tenant_id <> {flow.Tenant.Tenant.Id}");
+        }
+
+        var tokens = await SignInToClientAsync(flow);
+        using var response = await LogoutAsync(flow, ("id_token_hint", tokens.IdToken));
+        Assert.Equal(HttpStatusCode.Found, response.StatusCode);
+        return tokens;
+    }
+
+    private static async Task<List<AuditEvent>> AuditAsync(Flow flow, string type)
+    {
+        await using var scope = flow.Api.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<HeimdallDbContext>().AuditEvents.AsNoTracking()
+            .Where(e => e.TenantId == flow.Tenant.Tenant.Id && e.Type == type).ToListAsync();
+    }
+
+    [DockerFact]
+    public async Task Discovery_says_that_backchannel_logout_carries_sid()
+    {
+        await using var flow = await SetUpAsync();
+
+        var document = JsonDocument.Parse(await flow.Http.GetStringAsync(".well-known/openid-configuration")).RootElement;
+
+        Assert.True(document.GetProperty("backchannel_logout_supported").GetBoolean());
+        Assert.True(document.GetProperty("backchannel_logout_session_supported").GetBoolean());
+    }
+
+    [DockerFact]
+    public async Task Delivery_posts_a_signed_logout_token_and_removes_the_row()
+    {
+        await using var flow = await SetUpAsync(backchannel: Backchannel);
+        var tokens = await SignInAndOutAsync(flow);
+        var server = new ClientServer();
+        using var delivery = Delivery(flow, server);
+
+        var result = await delivery.RunOnceAsync(CancellationToken.None);
+
+        Assert.Equal(new BackchannelPassResult(1, 0, 0), result);
+        Assert.Empty(await QueuedAsync(flow));
+        var call = Assert.Single(server.Calls);
+        Assert.Equal(Backchannel, call.Uri.ToString());
+        Assert.Equal("application/x-www-form-urlencoded", call.ContentType);
+
+        // D34, Back-Channel Logout 1.0, section 2.4. An independent library checks the token against the JWKS.
+        var jwks = new JsonWebKeySet(await flow.Http.GetStringAsync(".well-known/jwks.json"));
+        var validation = await new JsonWebTokenHandler().ValidateTokenAsync(call.Form["logout_token"], new TokenValidationParameters
+        {
+            ValidIssuer = flow.Tenant.Issuer,
+            ValidAudience = "web-app",
+            ValidAlgorithms = ["RS256"],
+            ValidTypes = ["logout+jwt"],
+            IssuerSigningKeys = jwks.GetSigningKeys(),
+            LifetimeValidator = (_, _, _, _) => true,
+        });
+        Assert.True(validation.IsValid, validation.Exception?.Message);
+        var jwt = (JsonWebToken)validation.SecurityToken;
+        Assert.Equal(new JsonWebToken(tokens.IdToken).Subject, jwt.Subject);
+        Assert.Equal(tokens.Sid, jwt.GetClaim("sid").Value);
+        Assert.Matches("^[0-9a-f]{32}$", jwt.Id);
+        Assert.Equal(120, jwt.GetPayloadValue<long>("exp") - jwt.GetPayloadValue<long>("iat"));
+        Assert.False(jwt.TryGetPayloadValue<string>("nonce", out _));
+        var events = JsonDocument.Parse(jwt.GetPayloadValue<JsonElement>("events").GetRawText()).RootElement;
+        Assert.Equal(JsonValueKind.Object, events.GetProperty("http://schemas.openid.net/event/backchannel-logout").ValueKind);
+    }
+
+    [DockerFact]
+    public async Task Failed_call_waits_and_retries_with_a_new_token()
+    {
+        await using var flow = await SetUpAsync(backchannel: Backchannel);
+        await SignInAndOutAsync(flow);
+        var server = new ClientServer();
+        server.Answers.Enqueue(HttpStatusCode.ServiceUnavailable);
+        using var delivery = Delivery(flow, server);
+
+        Assert.Equal(new BackchannelPassResult(0, 1, 0), await delivery.RunOnceAsync(CancellationToken.None));
+        var row = Assert.Single(await QueuedAsync(flow));
+        Assert.Equal(1, row.Attempts);
+        // PostgreSQL keeps microseconds, so the stored time can differ by less than one.
+        Assert.Equal(flow.Api.Time.GetUtcNow() + TimeSpan.FromSeconds(30), row.NextAttemptAt, TimeSpan.FromMilliseconds(1));
+
+        // Not due yet, so the next pass takes nothing.
+        Assert.Equal(new BackchannelPassResult(0, 0, 0), await delivery.RunOnceAsync(CancellationToken.None));
+
+        flow.Api.Time.Advance(TimeSpan.FromSeconds(30));
+        Assert.Equal(new BackchannelPassResult(1, 0, 0), await delivery.RunOnceAsync(CancellationToken.None));
+        Assert.Empty(await QueuedAsync(flow));
+        Assert.Equal(2, server.Calls.Count);
+        Assert.NotEqual(server.Calls[0].Form["logout_token"], server.Calls[1].Form["logout_token"]);
+    }
+
+    [DockerFact]
+    public async Task Waits_double_after_each_failure()
+    {
+        await using var flow = await SetUpAsync(backchannel: Backchannel);
+        await SignInAndOutAsync(flow);
+        var server = new ClientServer { Unreachable = true };
+        using var delivery = Delivery(flow, server);
+
+        foreach (var wait in new[] { 30, 60, 120 })
+        {
+            await delivery.RunOnceAsync(CancellationToken.None);
+            var row = Assert.Single(await QueuedAsync(flow));
+            Assert.Equal(flow.Api.Time.GetUtcNow() + TimeSpan.FromSeconds(wait), row.NextAttemptAt, TimeSpan.FromMilliseconds(1));
+            flow.Api.Time.Advance(TimeSpan.FromSeconds(wait));
+        }
+    }
+
+    [DockerFact]
+    public async Task Last_failed_retry_drops_the_row_and_audits_it()
+    {
+        await using var flow = await SetUpAsync(backchannel: Backchannel);
+        var tokens = await SignInAndOutAsync(flow);
+        var server = new ClientServer { Unreachable = true };
+        using var delivery = Delivery(flow, server, new BackchannelLogoutOptions { MaxRetries = 1 });
+
+        Assert.Equal(new BackchannelPassResult(0, 1, 0), await delivery.RunOnceAsync(CancellationToken.None));
+        flow.Api.Time.Advance(TimeSpan.FromSeconds(30));
+        Assert.Equal(new BackchannelPassResult(0, 0, 1), await delivery.RunOnceAsync(CancellationToken.None));
+
+        Assert.Empty(await QueuedAsync(flow));
+        var dropped = Assert.Single(await AuditAsync(flow, AuditEventTypes.BackchannelLogoutDropped));
+        Assert.Equal("web-app", dropped.Data["client_id"]);
+        Assert.Equal(tokens.Sid, dropped.Data["sid"]);
+        Assert.Equal("2", dropped.Data["attempts"]);
+    }
+
+    [DockerFact]
+    public async Task Taken_row_stays_with_its_pass_for_the_lease()
+    {
+        await using var flow = await SetUpAsync(backchannel: Backchannel);
+        await SignInAndOutAsync(flow);
+
+        // A server takes the row, then stops before the call ends: only the lease brings the row back.
+        await using (var db = flow.Api.Services.GetRequiredService<PlatformDbContextFactory>().Create())
+        {
+            var leaseUntil = flow.Api.Time.GetUtcNow() + new BackchannelLogoutOptions().Lease;
+            await db.Database.ExecuteSqlAsync($"UPDATE backchannel_logouts SET attempts = 1, next_attempt_at = {leaseUntil}");
+        }
+
+        var server = new ClientServer();
+        using var delivery = Delivery(flow, server);
+        Assert.Equal(new BackchannelPassResult(0, 0, 0), await delivery.RunOnceAsync(CancellationToken.None));
+
+        flow.Api.Time.Advance(new BackchannelLogoutOptions().Lease);
+        Assert.Equal(new BackchannelPassResult(1, 0, 0), await delivery.RunOnceAsync(CancellationToken.None));
+    }
+
+    [DockerFact]
+    public async Task Client_that_removed_its_uri_gets_no_call()
+    {
+        await using var flow = await SetUpAsync(backchannel: Backchannel);
+        await SignInAndOutAsync(flow);
+        await using (var db = flow.Api.Services.GetRequiredService<PlatformDbContextFactory>().Create())
+        {
+            await db.Database.ExecuteSqlAsync($"UPDATE clients SET backchannel_logout_uri = NULL");
+        }
+
+        var server = new ClientServer();
+        using var delivery = Delivery(flow, server);
+
+        Assert.Equal(new BackchannelPassResult(0, 0, 0), await delivery.RunOnceAsync(CancellationToken.None));
+        Assert.Empty(server.Calls);
+        Assert.Empty(await QueuedAsync(flow));
     }
 }

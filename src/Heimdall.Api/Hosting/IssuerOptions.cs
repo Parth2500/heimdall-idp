@@ -1,4 +1,6 @@
 using System.Globalization;
+using Heimdall.Infrastructure.Logout;
+using Microsoft.Extensions.Options;
 
 namespace Heimdall.Api.Hosting;
 
@@ -20,4 +22,17 @@ public sealed class IssuerOptions
             ? $"https://{tenantHost}"
             : string.Create(CultureInfo.InvariantCulture, $"https://{tenantHost}:{Port}");
     }
+}
+
+/// <summary>The issuer of a tenant for the background jobs, from the same <see cref="IssuerOptions"/> as a request.</summary>
+internal sealed class ConfiguredIssuerResolver : IIssuerResolver
+{
+    private readonly IOptions<IssuerOptions> _options;
+
+    public ConfiguredIssuerResolver(IOptions<IssuerOptions> options)
+    {
+        _options = options;
+    }
+
+    public string IssuerFor(string tenantHost) => _options.Value.IssuerFor(tenantHost);
 }

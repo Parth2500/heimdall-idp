@@ -332,6 +332,9 @@ public class ClientCredentialsGrantTests
 
         public Task<string> SignIdTokenAsync(Guid tenantId, IdTokenClaims claims, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
+
+        public Task<string> SignLogoutTokenAsync(Guid tenantId, LogoutTokenClaims claims, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
     }
 
     private sealed class FakeAuditLog : IAuditLog

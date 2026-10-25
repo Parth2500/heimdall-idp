@@ -9,6 +9,7 @@ using Heimdall.Domain.Keys;
 using Heimdall.Infrastructure;
 using Heimdall.Infrastructure.Development;
 using Heimdall.Infrastructure.Keys;
+using Heimdall.Infrastructure.Logout;
 using Heimdall.Infrastructure.Persistence;
 using Heimdall.Infrastructure.Purge;
 using Microsoft.EntityFrameworkCore;
@@ -123,6 +124,17 @@ builder.Services.AddOptions<PurgeOptions>()
     .ValidateOnStart();
 builder.Services.AddSingleton(provider => provider.GetRequiredService<IOptions<PurgeOptions>>().Value);
 builder.Services.AddHostedService<PurgeJob>();
+
+// D35: outside Development, a back-channel call never reaches a loopback, private, or link-local address.
+builder.Services.AddOptions<BackchannelLogoutOptions>()
+    .Bind(builder.Configuration.GetSection(BackchannelLogoutOptions.SectionName))
+    .PostConfigure(options => options.BlockPrivateAddresses = !builder.Environment.IsDevelopment())
+    .Validate(options => options.Validate().Count == 0, "Invalid settings in " + BackchannelLogoutOptions.SectionName + ".")
+    .ValidateOnStart();
+builder.Services.AddSingleton(provider => provider.GetRequiredService<IOptions<BackchannelLogoutOptions>>().Value);
+builder.Services.AddSingleton<IIssuerResolver, ConfiguredIssuerResolver>();
+builder.Services.AddSingleton<BackchannelLogoutDelivery>();
+builder.Services.AddHostedService<BackchannelLogoutJob>();
 
 var app = builder.Build();
 

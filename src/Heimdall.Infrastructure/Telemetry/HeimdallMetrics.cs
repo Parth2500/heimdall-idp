@@ -22,6 +22,7 @@ public sealed class HeimdallMetrics
     private readonly Counter<long> _hashRejected;
     private readonly Counter<long> _securityAlerts;
     private readonly Counter<long> _cacheLookups;
+    private readonly Counter<long> _backchannelLogouts;
     private readonly Histogram<int> _auditBatchSize;
 
     public HeimdallMetrics(IMeterFactory meterFactory)
@@ -34,6 +35,7 @@ public sealed class HeimdallMetrics
         _hashRejected = meter.CreateCounter<long>("heimdall.password_hash.rejected", "{request}", "Requests refused because every hash slot stayed busy.");
         _securityAlerts = meter.CreateCounter<long>("heimdall.security.alerts", "{alert}", "Security alerts, by type, such as code or refresh token reuse.");
         _cacheLookups = meter.CreateCounter<long>("heimdall.cache.lookups", "{lookup}", "In-memory cache lookups, by cache and result.");
+        _backchannelLogouts = meter.CreateCounter<long>("heimdall.backchannel_logout.deliveries", "{call}", "Back-channel logout calls, by outcome. Dropped rows reached the last retry.");
         _auditBatchSize = meter.CreateHistogram<int>("heimdall.audit.batch_size", "{event}", "Audit events in one committed transaction. Larger batches mean more load.");
     }
 
@@ -56,6 +58,9 @@ public sealed class HeimdallMetrics
     public void SecurityAlert(string type) => _securityAlerts.Add(1, new KeyValuePair<string, object?>("type", type));
 
     public void AuditBatch(int size) => _auditBatchSize.Record(size);
+
+    /// <param name="outcome">"sent", "failed", or "dropped".</param>
+    public void BackchannelLogout(string outcome) => _backchannelLogouts.Add(1, new KeyValuePair<string, object?>("outcome", outcome));
 
     /// <param name="cache">A fixed cache name: "tenants", "clients", or "signing_keys".</param>
     public void CacheLookup(string cache, bool hit) =>

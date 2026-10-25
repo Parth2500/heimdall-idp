@@ -21,6 +21,7 @@ public static class AuditEventTypes
     public const string LoginFailed = "login.failed";
     public const string SessionStarted = "session.started";
     public const string SessionRevoked = "session.revoked";
+    public const string BackchannelLogoutDropped = "backchannel_logout.dropped";
     public const string ConsentGranted = "consent.granted";
     public const string ConsentDenied = "consent.denied";
     public const string ConsentRevoked = "consent.revoked";

@@ -37,6 +37,19 @@ public sealed record IdTokenClaims(
     string? Nonce,
     string? Sid = null);
 
+/// <summary>
+/// The claims of a logout token (Back-Channel Logout 1.0, section 2.4, D34). The audience is the client. The signer adds
+/// the header (<c>alg</c> = RS256, <c>kid</c>, <c>typ</c> = <c>logout+jwt</c>) and the back-channel logout event.
+/// </summary>
+public sealed record LogoutTokenClaims(
+    string Issuer,
+    string Subject,
+    string ClientId,
+    DateTimeOffset IssuedAt,
+    DateTimeOffset ExpiresAt,
+    string JwtId,
+    string Sid);
+
 public interface ITokenSigner
 {
     /// <summary>Signs with the active key of the tenant (D8, D19). Returns the compact JWT.</summary>
@@ -44,4 +57,7 @@ public interface ITokenSigner
 
     /// <summary>Signs an ID token with the active key of the tenant. Returns the compact JWT.</summary>
     Task<string> SignIdTokenAsync(Guid tenantId, IdTokenClaims claims, CancellationToken cancellationToken);
+
+    /// <summary>Signs a logout token with the active key of the tenant (D34). Returns the compact JWT.</summary>
+    Task<string> SignLogoutTokenAsync(Guid tenantId, LogoutTokenClaims claims, CancellationToken cancellationToken);
 }

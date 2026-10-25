@@ -23,6 +23,11 @@ internal sealed class JwtTokenSigner : ITokenSigner
     // OpenID Connect Core: an ID token uses the plain JWT type, so it cannot pass as an access token (and the reverse).
     private const string IdTokenType = "JWT";
 
+    // Back-Channel Logout 1.0, section 2.4: an explicit type, so a client cannot take a logout token for an ID token.
+    private const string LogoutTokenType = "logout+jwt";
+
+    private const string BackchannelLogoutEvent = "http://schemas.openid.net/event/backchannel-logout";
+
     private readonly ISigningKeyCache _keys;
     private readonly IKeyMaterialStore _material;
 
@@ -52,6 +57,17 @@ internal sealed class JwtTokenSigner : ITokenSigner
         }
 
         return await SignAsync(tenantId, IdTokenType, WritePayload(claims), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<string> SignLogoutTokenAsync(Guid tenantId, LogoutTokenClaims claims, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(claims);
+        if (claims.ExpiresAt <= claims.IssuedAt)
+        {
+            throw new ArgumentException("The token must expire after it is issued.", nameof(claims));
+        }
+
+        return await SignAsync(tenantId, LogoutTokenType, WritePayload(claims), cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<string> SignAsync(Guid tenantId, string type, byte[] payload, CancellationToken cancellationToken)
@@ -131,6 +147,23 @@ internal sealed class JwtTokenSigner : ITokenSigner
         {
             writer.WriteString("sid", sid);
         }
+    });
+
+    // Back-Channel Logout 1.0, section 2.4: iss, aud, iat, exp, jti, and events are required. sub and sid name the user
+    // and the session. A logout token must not contain nonce, so no ID token can pass as one.
+    private static byte[] WritePayload(LogoutTokenClaims claims) => WriteJson(writer =>
+    {
+        writer.WriteString("iss", claims.Issuer);
+        writer.WriteString("sub", claims.Subject);
+        writer.WriteString("aud", claims.ClientId);
+        writer.WriteNumber("iat", claims.IssuedAt.ToUnixTimeSeconds());
+        writer.WriteNumber("exp", claims.ExpiresAt.ToUnixTimeSeconds());
+        writer.WriteString("jti", claims.JwtId);
+        writer.WriteString("sid", claims.Sid);
+        writer.WriteStartObject("events");
+        writer.WriteStartObject(BackchannelLogoutEvent);
+        writer.WriteEndObject();
+        writer.WriteEndObject();
     });
 
     private static byte[] WriteJson(Action<Utf8JsonWriter> writeProperties)

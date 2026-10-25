@@ -49,7 +49,10 @@ internal static class WellKnownEndpoints
             // RP-Initiated Logout 1.0, section 3 (D30).
             EndSessionEndpoint: issuer + LogoutEndpoint.Path,
             // Front-Channel Logout is out of scope: browsers block third-party cookies in iframes.
-            FrontchannelLogoutSupported: false);
+            FrontchannelLogoutSupported: false,
+            // Back-Channel Logout 1.0, section 2.1: every logout token carries sid (D34).
+            BackchannelLogoutSupported: true,
+            BackchannelLogoutSessionSupported: true);
 
         return WriteCacheableAsync(context, JsonSerializer.SerializeToUtf8Bytes(document, Json), keyOptions.JwksCacheLifetime);
     }
@@ -104,7 +107,9 @@ internal static class WellKnownEndpoints
         [property: JsonPropertyName("authorization_response_iss_parameter_supported")] bool AuthorizationResponseIssParameterSupported,
         [property: JsonPropertyName("dpop_signing_alg_values_supported")] string[] DpopSigningAlgValuesSupported,
         [property: JsonPropertyName("end_session_endpoint")] string EndSessionEndpoint,
-        [property: JsonPropertyName("frontchannel_logout_supported")] bool FrontchannelLogoutSupported);
+        [property: JsonPropertyName("frontchannel_logout_supported")] bool FrontchannelLogoutSupported,
+        [property: JsonPropertyName("backchannel_logout_supported")] bool BackchannelLogoutSupported,
+        [property: JsonPropertyName("backchannel_logout_session_supported")] bool BackchannelLogoutSessionSupported);
 
     private sealed record JwkSet([property: JsonPropertyName("keys")] IReadOnlyList<RsaPublicJwk> Keys);
 }

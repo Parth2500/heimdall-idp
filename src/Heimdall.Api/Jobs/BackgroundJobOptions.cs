@@ -5,6 +5,6 @@ public sealed class BackgroundJobOptions
 {
     public const string SectionName = "Heimdall:Jobs";
 
-    /// <summary>When false, the loops of <see cref="SigningKeyJob"/> and <see cref="PurgeJob"/> do not start.</summary>
+    /// <summary>When false, the loops of <see cref="SigningKeyJob"/>, <see cref="PurgeJob"/>, and <see cref="BackchannelLogoutJob"/> do not start.</summary>
     public bool Enabled { get; set; } = true;
 }
