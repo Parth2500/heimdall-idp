@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.AddScoped<AuthorizationCodeGrant>();
         services.AddScoped<RefreshTokenGrant>();
         services.AddScoped<TokenRevocation>();
+        services.AddScoped<TokenIntrospection>();
         services.AddScoped<UserInfoService>();
         services.AddScoped<SigningKeyService>();
         services.AddScoped<UserAuthenticator>();

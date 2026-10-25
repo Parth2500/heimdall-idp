@@ -66,7 +66,7 @@ Each recipe uses a client that signs in with Heimdall today, or it says that it 
 | RP-initiated logout (`end_session_endpoint`) | Supported, with a confirm page when the request has no ID token of the current session. See [Sign out](integration/sign-out.md). |
 | Back-channel logout | Supported. The `logout_token` carries `sid`. Front-channel logout is not supported, by design: browsers block third-party cookies in frames. |
 | Dynamic client registration | Not supported. The operator registers clients. |
-| Token introspection (RFC 7662) | Not supported yet. It is planned. |
+| Token introspection (RFC 7662) | Supported for confidential clients. A sign-out or a revocation shows at once. See [Validate access tokens](integration/validate-access-tokens.md#revocation-and-logout). |
 | Silent renew in a hidden iframe | Not supported, by design. Heimdall pages refuse to load in a frame. Use refresh tokens. |
 
 Heimdall puts only what it supports in the discovery document. If a feature is not in discovery, do not use it.

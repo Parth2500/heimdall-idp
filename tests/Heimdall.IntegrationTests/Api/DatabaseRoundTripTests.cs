@@ -110,6 +110,7 @@ public sealed class DatabaseRoundTripTests
         var tenant = await api.AddTenantAsync();
         await api.AddWebClientAsync(tenant);
         await api.AddUserAsync(tenant, Email, Password);
+        await api.SetResourceAudiencesAsync(tenant, tenant.Issuer + "/oauth/v1/userinfo");
         using var http = api.ClientFor(tenant.Host);
         using var counter = new DbCounter();
         var results = new ConcurrentDictionary<string, (int Opens, int Commands, int AuditCommits)>();
@@ -233,6 +234,18 @@ public sealed class DatabaseRoundTripTests
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         });
 
+        await Measure("POST /introspect (user token)", async () =>
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, "oauth/v1/introspect")
+            {
+                Content = new FormUrlEncodedContent([new("token", access)]),
+            };
+            request.Headers.Authorization = HeimdallApiFactory.Basic(tenant.ClientId, tenant.ClientSecret);
+            using var response = await http.SendAsync(request);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Contains("\"active\":true", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+        });
+
         await Measure("POST /revoke", async () =>
         {
             using var response = await http.PostAsync("oauth/v1/revoke", new FormUrlEncodedContent(
@@ -256,6 +269,9 @@ public sealed class DatabaseRoundTripTests
             ["POST /token authorization_code"] = 1,
             ["POST /token refresh_token"] = 1,
             ["GET /userinfo"] = 1,
+
+            // D38: one primary-key read of the family. Client authentication reads the client cache.
+            ["POST /introspect (user token)"] = 1,
             ["GET /authorize (signed in)"] = 2,
             ["POST /revoke"] = 3,
             ["POST /session/v1/login"] = 5,

@@ -31,6 +31,9 @@ internal sealed class ClientConfiguration : IEntityTypeConfiguration<Client>
                 "ck_clients_client_credentials_audience",
                 "NOT ('client_credentials' = ANY (allowed_grant_types)) OR cardinality(allowed_audiences) > 0");
             t.HasCheckConstraint(
+                "ck_clients_resource_audiences_confidential",
+                "cardinality(resource_audiences) = 0 OR type = 'confidential'");
+            t.HasCheckConstraint(
                 "ck_clients_lifetimes",
                 $"(access_token_seconds IS NULL OR access_token_seconds {bound}) " +
                 $"AND (refresh_idle_seconds IS NULL OR refresh_idle_seconds {bound}) " +
@@ -73,6 +76,9 @@ internal sealed class ClientConfiguration : IEntityTypeConfiguration<Client>
             .HasField("_postLogoutRedirectUris")
             .UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.Property(c => c.BackchannelLogoutUri).HasMaxLength(2048);
+        builder.PrimitiveCollection(c => c.ResourceAudiences)
+            .HasField("_resourceAudiences")
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.Ignore(c => c.RefreshEnabled);
 

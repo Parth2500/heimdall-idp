@@ -42,6 +42,7 @@ The database enforces the most important rules a second time (unique indexes, ch
 | A user's grant (`ResolveUserAudience`) can also name the tenant's userinfo endpoint. A client with no audience gets the userinfo endpoint as its default. | D22 |
 | A post-logout redirect URI and a back-channel logout URI meet the redirect URI rules. A refused update changes nothing. | D32, D35 |
 | A post-logout redirect URI matches by exact ordinal string, as a redirect URI does. | D32 |
+| Only a confidential client can serve resource audiences. Each one meets the audience rules. A client may introspect an access token whose audience it serves, or that was issued to it, by exact string. | D36, D37 |
 
 ## Codes and tokens
 

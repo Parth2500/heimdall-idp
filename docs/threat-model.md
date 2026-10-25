@@ -112,7 +112,7 @@ Today a session has no public identifier, and a token family does not record the
 | Repudiation | A user says they did not sign out. | Heimdall writes `session.revoked` with the reason (`rp_initiated` or `user_confirmed`), the `client_id` of the hint, and the correlation ID. |
 | Denial of service | An attacker with an old ID token of the victim signs the victim out. | A hint counts only when its `sid` is the current session (D31). An old hint needs the user's click. |
 | Elevation of privilege | Refresh tokens of the session keep working after sign-out. | The same transaction revokes every family with the session's `sid` (D33). |
-| Elevation of privilege | An access token keeps working after sign-out. | It works until `exp`, at most 5 minutes (D8). Heimdall cannot recall a JWT. A resource server that needs instant revocation uses introspection (issue #19). |
+| Elevation of privilege | An access token keeps working after sign-out. | It works until `exp`, at most 5 minutes (D8), for a resource server that validates offline. Heimdall cannot recall a JWT. A resource server that needs instant revocation uses introspection, which sees the revoked family at once (D38). |
 
 ### Back-channel logout (Heimdall calls the client)
 
@@ -236,7 +236,31 @@ Boundary: B2. The endpoint revokes a refresh token with its family, or an access
 | Information disclosure | The response shows whether a token existed or was valid. | Heimdall returns `200` for an unknown, expired, revoked, or foreign token (RFC 7009, section 2.2). Only a malformed request or failed client authentication gets an error. |
 | Denial of service | An attacker sends many revocations to flood or lock rows. | Rate limit for each IP and each `client_id`. Revocation is one indexed update on `TokenFamilyId`. |
 | Elevation of privilege | A revoked refresh token family continues to work. | Heimdall revokes the whole family with one statement. This includes the newest refresh token. Any token of the family revokes it, also a used one. This is not reuse, because revocation only removes access. |
-| Elevation of privilege | A revoked access token still works until it expires. | Accepted risk. Access tokens are stateless JWTs with a lifetime of 5 minutes (D8). Version 1 has no denylist. Phase 2 adds introspection (RFC 7662) for resource servers that need immediate revocation. |
+| Elevation of privilege | A revoked access token still works until it expires. | Accepted risk for offline validation. Access tokens are stateless JWTs with a lifetime of 5 minutes (D8). A resource server that needs immediate revocation uses introspection (D38). |
+
+## `POST /oauth/v1/introspect` (RFC 7662, issue #19)
+
+Status: decided by Claude on 2026-10-26, under the owner's go-ahead for the Phase 2 group. Built on 2026-10-26. The owner can review D36 to D39.
+
+Boundary: B2. A resource server asks if a token is active now. Offline validation with the JWKS stays the normal path, because it needs no call. Introspection is for a resource server that must see a sign-out or a reuse before `exp`.
+
+| ID | Decision | Reason |
+|---|---|---|
+| D36 | `POST /oauth/v1/introspect` takes the form rules of `/token` and `/revoke`. Only a confidential client can call it, with `client_secret_basic`. A public client gets `invalid_client`. | RFC 7662, section 2.1: the endpoint must be protected. A public client cannot keep a secret, so it cannot prove that it is a resource server. |
+| D37 | A caller sees a token only when it may. An access token counts when its `aud` is one of the caller's `resource_audiences`, or its `client_id` is the caller. A refresh token counts only for the client of its family. Every other token gets `{"active": false}`, the same answer as an unknown token. | RFC 7662, section 4: the endpoint must not be an oracle for tokens of other clients. `resource_audiences` is a new registration list. It names the audiences that the client serves as a resource server (D22 names the audiences that a client may ask for). |
+| D38 | An access token is active when its format, header, and signature are valid with the in-memory keys, `iss` is the tenant, and `exp` is in the future. A token from a user grant also needs its family (`fid`, D29) to exist and to have no `revoked_at`: one primary-key read. A `client_credentials` token has no family, so it is active until `exp`. A refresh token is active when it is unused, and its family is unrevoked and inside both limits. | The family carries every revocation: a sign-out (D33), a reuse, and `/revoke`. So one read sees all of them. A purged family is long past any access token, so a missing family means inactive. |
+| D39 | An active answer has `active`, `scope`, `client_id`, `sub`, `aud`, `iss`, `exp`, `iat`, and `token_type` (`Bearer` or `DPoP`), and `cnf.jkt` for a bound token (RFC 9449, section 6.2). A refresh token answer has no `aud` and no `token_type`. Each answer has `Cache-Control: no-store`. Heimdall writes no audit event for a lookup, only for a failed client authentication (`introspection.refused`). | A resource server needs the claims to decide, and it must not keep an old answer. An audit row for each lookup would put a database write on a call that resource servers make often. |
+
+| STRIDE | Threat | Mitigation |
+|---|---|---|
+| Spoofing | An attacker guesses client secrets at `/introspect`. | Heimdall audits each failed client authentication as `introspection.refused`. The per-IP failure limit of `/token` and `/revoke` applies (D36). |
+| Spoofing | A public client, or a stolen `client_id`, asks about tokens. | Only a confidential client with its secret can call (D36). |
+| Tampering | A request repeats a parameter or sends the token in the query string. | The form rules of `/token` apply. A query string is refused. |
+| Repudiation | A resource server says that Heimdall called a revoked token active. | The family row keeps `revoked_at` and the reason, and the audit log has `family.revoked`. The answer depends only on that row and the token. |
+| Information disclosure | A client learns the claims of another client's token, or learns that a stolen token is still valid. | A token that the caller may not see gets `{"active": false}`, the same as an unknown token (D37). |
+| Information disclosure | A proxy or the resource server keeps an old answer. | `Cache-Control: no-store` on each answer (D39). |
+| Denial of service | Many introspections load the database. | An access token costs one primary-key read, and a `client_credentials` token costs none. Client authentication reads the in-memory client cache. The per-IP failure limit applies. Resource servers should validate offline first. |
+| Elevation of privilege | A token stays active after a sign-out or a reuse. | The family read sees every revocation at once (D38). |
 
 ## `GET /oauth/v1/userinfo`
 

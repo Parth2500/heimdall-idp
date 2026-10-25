@@ -52,7 +52,10 @@ internal static class WellKnownEndpoints
             FrontchannelLogoutSupported: false,
             // Back-Channel Logout 1.0, section 2.1: every logout token carries sid (D34).
             BackchannelLogoutSupported: true,
-            BackchannelLogoutSessionSupported: true);
+            BackchannelLogoutSessionSupported: true,
+            // RFC 8414, section 2: the introspection endpoint and its one client method (D36).
+            IntrospectionEndpoint: issuer + Endpoints.IntrospectionEndpoint.Path,
+            IntrospectionEndpointAuthMethodsSupported: ["client_secret_basic"]);
 
         return WriteCacheableAsync(context, JsonSerializer.SerializeToUtf8Bytes(document, Json), keyOptions.JwksCacheLifetime);
     }
@@ -109,7 +112,9 @@ internal static class WellKnownEndpoints
         [property: JsonPropertyName("end_session_endpoint")] string EndSessionEndpoint,
         [property: JsonPropertyName("frontchannel_logout_supported")] bool FrontchannelLogoutSupported,
         [property: JsonPropertyName("backchannel_logout_supported")] bool BackchannelLogoutSupported,
-        [property: JsonPropertyName("backchannel_logout_session_supported")] bool BackchannelLogoutSessionSupported);
+        [property: JsonPropertyName("backchannel_logout_session_supported")] bool BackchannelLogoutSessionSupported,
+        [property: JsonPropertyName("introspection_endpoint")] string IntrospectionEndpoint,
+        [property: JsonPropertyName("introspection_endpoint_auth_methods_supported")] string[] IntrospectionEndpointAuthMethodsSupported);
 
     private sealed record JwkSet([property: JsonPropertyName("keys")] IReadOnlyList<RsaPublicJwk> Keys);
 }

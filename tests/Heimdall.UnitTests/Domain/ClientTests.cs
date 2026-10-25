@@ -381,4 +381,45 @@ public class ClientTests
         Assert.Empty(client.PostLogoutRedirectUris);
         Assert.Null(client.BackchannelLogoutUri);
     }
+
+    // ---- Resource audiences (D37)
+
+    [Fact]
+    public void Confidential_client_serves_its_resource_audiences()
+    {
+        var client = CreateClient();
+
+        client.UpdateResourceAudiences(["https://api.example.com", "https://api.example.com"]);
+
+        Assert.Equal(["https://api.example.com"], client.ResourceAudiences);
+        Assert.True(client.MayIntrospect("https://api.example.com", "someone-else"));
+        Assert.False(client.MayIntrospect("https://api.example.com/", "someone-else"));
+        Assert.False(client.MayIntrospect("https://other.example.com", "someone-else"));
+    }
+
+    [Fact]
+    public void Client_may_introspect_its_own_tokens()
+    {
+        var client = CreateClient();
+
+        Assert.True(client.MayIntrospect("https://other.example.com", "web-app"));
+        Assert.False(client.MayIntrospect("https://other.example.com", "WEB-APP"));
+    }
+
+    [Fact]
+    public void Public_client_cannot_serve_audiences()
+    {
+        var client = CreateClient(ClientType.Public);
+
+        Assert.Throws<DomainException>(() => client.UpdateResourceAudiences(["https://api.example.com"]));
+        Assert.Empty(client.ResourceAudiences);
+        client.UpdateResourceAudiences([]);
+    }
+
+    [Theory]
+    [InlineData("http://api.example.com")]
+    [InlineData("https://api.example.com/#x")]
+    [InlineData("api")]
+    public void Resource_audience_meets_the_audience_rules(string audience) =>
+        Assert.Throws<DomainException>(() => CreateClient().UpdateResourceAudiences([audience]));
 }

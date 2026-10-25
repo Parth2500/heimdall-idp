@@ -91,7 +91,43 @@ If an operation must run for a user, refuse tokens that have no `auth_time`.
 
 ## Revocation and logout
 
-An access token is valid until `exp`. Heimdall cannot revoke it, and it has no introspection endpoint yet. The short lifetime (5 minutes by default) limits the risk. If you need a faster cutoff, ask the operator for a shorter access token lifetime for the client.
+With the checks above, an access token is valid until `exp`. A sign-out, a reuse, or `/revoke` ends the token's family at Heimdall, but a JWT that you check offline does not show it. The short lifetime (5 minutes by default) limits the risk.
+
+If an operation must see a revocation at once, ask Heimdall with introspection (RFC 7662). Use it only for those operations. Every call costs a round trip.
+
+1. Register your resource server as a confidential client. The operator adds your audience, for example `https://api.orders.example.com`, to its `resource_audiences`.
+2. Call the endpoint with your client secret:
+
+```http
+POST /oauth/v1/introspect HTTP/1.1
+Host: acme.example.com
+Authorization: Basic b3JkZXJzLWFwaTpzM2NyZXQ=
+Content-Type: application/x-www-form-urlencoded
+
+token=eyJhbGciOiJSUzI1NiIs...
+```
+
+An active token:
+
+```json
+{
+  "active": true,
+  "scope": "openid orders.read",
+  "client_id": "orders-web",
+  "sub": "0190f1e2-3a4b-7c5d-8e9f-a0b1c2d3e4f5",
+  "aud": "https://api.orders.example.com",
+  "iss": "https://acme.example.com",
+  "exp": 1792603778,
+  "iat": 1792603478,
+  "token_type": "Bearer"
+}
+```
+
+A DPoP-bound token has `"token_type": "DPoP"` and `"cnf": {"jkt": "..."}`. Check the proof as usual.
+
+Every other token gets `{"active": false}`: invalid, expired, revoked, from a signed-out session, unknown, or a token that you may not see. You may see an access token when its `aud` is one of your `resource_audiences`, or when it was issued to your own client. Do not cache an answer: the response has `Cache-Control: no-store`, and a sign-out can come at any second.
+
+A public client cannot call introspection. It gets `401` with `invalid_client`.
 
 ## Examples
 

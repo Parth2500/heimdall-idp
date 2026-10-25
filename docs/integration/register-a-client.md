@@ -18,6 +18,7 @@ Heimdall has no self-service registration yet. The Heimdall operator registers e
 | DPoP | Optional or required | With `dpop_bound_access_tokens`, `/token` refuses a request without a DPoP proof. See [DPoP](dpop.md). |
 | Consent | On or off | With consent on, the user approves each sign-in request on a Heimdall page. First-party apps usually turn it off. |
 | Post-logout redirect URIs | `https://orders.example.com/signed-out` | Where Heimdall may send the browser after a sign-out. The redirect URI rules apply. See [Sign out](sign-out.md). |
+| Resource audiences | `https://api.orders.example.com` | Confidential clients only. The audiences that your server serves. It may introspect access tokens for them. |
 | Back-channel logout URI | `https://orders.example.com/backchannel-logout` | Optional. Your server endpoint for a `logout_token`. It must use `https` on a public address. |
 
 ## What you get back

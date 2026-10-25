@@ -52,7 +52,7 @@ Why the confirmation: another site can send a browser to this endpoint. Without 
 
 - The Heimdall session. The next sign-in asks for the password.
 - Every refresh token family of that session, for every app, also with `offline_access`. A refresh then gets `invalid_grant`. This is stricter than Back-Channel Logout 1.0, section 2.7, which keeps `offline_access` tokens.
-- Access tokens stay valid until `exp` (5 minutes by default). Heimdall cannot recall a JWT.
+- Access tokens stay valid until `exp` (5 minutes by default) for a resource server that checks them offline. Heimdall cannot recall a JWT. A resource server that uses introspection sees the sign-out at once (see [Validate access tokens](validate-access-tokens.md#revocation-and-logout)).
 
 ## Step 3 (optional): Revoke the refresh token first
 

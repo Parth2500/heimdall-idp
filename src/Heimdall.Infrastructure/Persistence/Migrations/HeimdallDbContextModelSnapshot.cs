@@ -147,6 +147,11 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("require_dpop");
 
+                    b.PrimitiveCollection<string[]>("ResourceAudiences")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("resource_audiences");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -207,6 +212,8 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_clients_grant_types", "cardinality(allowed_grant_types) > 0 AND allowed_grant_types <@ ARRAY['authorization_code', 'client_credentials', 'refresh_token']::text[]");
 
                             t.HasCheckConstraint("ck_clients_lifetimes", "(access_token_seconds IS NULL OR access_token_seconds BETWEEN 1 AND 34560000) AND (refresh_idle_seconds IS NULL OR refresh_idle_seconds BETWEEN 1 AND 34560000) AND (refresh_absolute_seconds IS NULL OR refresh_absolute_seconds BETWEEN 1 AND 34560000)");
+
+                            t.HasCheckConstraint("ck_clients_resource_audiences_confidential", "cardinality(resource_audiences) = 0 OR type = 'confidential'");
 
                             t.HasCheckConstraint("ck_clients_status", "status IN ('pending', 'active', 'disabled')");
 

@@ -138,6 +138,18 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
         scope.ServiceProvider.GetRequiredService<IClientStore>().Invalidate(tenant.Tenant.Id);
     }
 
+    /// <summary>Sets the audiences that the tenant's confidential client serves (D37), as an admin change does.</summary>
+    public async Task SetResourceAudiencesAsync(TestTenant tenant, params string[] audiences)
+    {
+        await using var scope = Services.CreateAsyncScope();
+        scope.ServiceProvider.GetRequiredService<TenantScope>().Set(tenant.Tenant.Id);
+        var db = scope.ServiceProvider.GetRequiredService<HeimdallDbContext>();
+        var client = await db.Clients.SingleAsync(c => c.ClientId == tenant.ClientId);
+        client.UpdateResourceAudiences(audiences);
+        await db.SaveChangesAsync();
+        scope.ServiceProvider.GetRequiredService<IClientStore>().Invalidate(tenant.Tenant.Id);
+    }
+
     /// <summary>Adds a user to the tenant with the real hasher.</summary>
     public async Task<User> AddUserAsync(TestTenant tenant, string email, string password)
     {

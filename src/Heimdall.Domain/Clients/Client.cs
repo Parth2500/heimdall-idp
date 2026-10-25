@@ -42,6 +42,7 @@ public sealed class Client
     private List<string> _redirectUris = [];
     private List<string> _allowedAudiences = [];
     private List<string> _postLogoutRedirectUris = [];
+    private List<string> _resourceAudiences = [];
 
 #pragma warning disable CS8618 // EF Core sets the properties after it calls this constructor.
     private Client()
@@ -117,6 +118,12 @@ public sealed class Client
     /// rules of a redirect URI (D35).
     /// </summary>
     public string? BackchannelLogoutUri { get; private set; }
+
+    /// <summary>
+    /// The audiences that this client serves as a resource server (D37). It may introspect access tokens for them. This is
+    /// not <see cref="AllowedAudiences"/>, which names the audiences that the client may ask tokens for.
+    /// </summary>
+    public IReadOnlyList<string> ResourceAudiences => _resourceAudiences;
 
     public bool RequireConsent { get; private set; }
 
@@ -216,6 +223,30 @@ public sealed class Client
     /// </summary>
     public bool IsRedirectUriAllowed(string? redirectUri) =>
         redirectUri is not null && _redirectUris.Contains(redirectUri, StringComparer.Ordinal);
+
+    /// <summary>
+    /// D37: the client may see an access token at introspection when the token's audience is one that it serves, or the
+    /// token was issued to it. Both compare by exact string.
+    /// </summary>
+    public bool MayIntrospect(string tokenAudience, string tokenClientId) =>
+        _resourceAudiences.Contains(tokenAudience, StringComparer.Ordinal) || string.Equals(ClientId, tokenClientId, StringComparison.Ordinal);
+
+    /// <summary>
+    /// Sets the audiences that the client serves (D37). Only a confidential client can have them, because only it can
+    /// call introspection (D36). Each one meets the audience rules of D22.
+    /// </summary>
+    public void UpdateResourceAudiences(IEnumerable<string> audiences)
+    {
+        ArgumentNullException.ThrowIfNull(audiences);
+
+        var values = audiences.Select(AudienceRules.Validate).Distinct(StringComparer.Ordinal).ToList();
+        if (values.Count > 0 && Type != ClientType.Confidential)
+        {
+            throw new DomainException("Only a confidential client can serve audiences: introspection needs a client secret.");
+        }
+
+        _resourceAudiences = values;
+    }
 
     /// <summary>Exact string match against the registered list, as for redirect URIs (D32).</summary>
     public bool IsPostLogoutRedirectUriAllowed(string? uri) =>

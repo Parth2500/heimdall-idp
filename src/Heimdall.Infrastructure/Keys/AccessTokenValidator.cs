@@ -72,9 +72,18 @@ internal sealed class AccessTokenValidator : IAccessTokenValidator
             familyId = parsed;
         }
 
+        // Heimdall always writes iat. Only introspection reports it, and no validity rule depends on it, so a value that
+        // is not a number gives no iat instead of an invalid token.
+        DateTimeOffset? issuedAt = null;
+
         try
         {
-            return new VerifiedAccessToken(iss, sub, aud, clientId, scopes, DateTimeOffset.FromUnixTimeSeconds(expSeconds), keyThumbprint, familyId);
+            if (payload.TryGetProperty("iat", out var iat) && iat.ValueKind == JsonValueKind.Number && iat.TryGetInt64(out var iatSeconds))
+            {
+                issuedAt = DateTimeOffset.FromUnixTimeSeconds(iatSeconds);
+            }
+
+            return new VerifiedAccessToken(iss, sub, aud, clientId, scopes, DateTimeOffset.FromUnixTimeSeconds(expSeconds), keyThumbprint, familyId, issuedAt);
         }
         catch (ArgumentOutOfRangeException)
         {

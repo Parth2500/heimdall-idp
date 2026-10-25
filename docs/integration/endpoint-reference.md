@@ -12,6 +12,7 @@ All paths are relative to the tenant's issuer, for example `https://acme.example
 | `/oauth/v1/token` | `POST` | Issues tokens. |
 | `/oauth/v1/userinfo` | `GET`, `POST` | Returns the user's claims. |
 | `/oauth/v1/revoke` | `POST` | Revokes a refresh token family. |
+| `/oauth/v1/introspect` | `POST` | Says if a token is active now (RFC 7662). Confidential clients only. |
 | `/oauth/v1/logout` | `GET`, `POST` | Ends the Heimdall session (RP-Initiated Logout 1.0). |
 
 ## `GET /.well-known/openid-configuration`
@@ -39,7 +40,9 @@ Returns the discovery document (OpenID Connect Discovery 1.0). It lists only wha
   "end_session_endpoint": "https://acme.example.com/oauth/v1/logout",
   "frontchannel_logout_supported": false,
   "backchannel_logout_supported": true,
-  "backchannel_logout_session_supported": true
+  "backchannel_logout_session_supported": true,
+  "introspection_endpoint": "https://acme.example.com/oauth/v1/introspect",
+  "introspection_endpoint_auth_methods_supported": ["client_secret_basic"]
 }
 ```
 
@@ -183,6 +186,22 @@ Revokes a refresh token family (RFC 7009). The form and client authentication ru
 Response: `200` with an empty body, for any token, after successful client authentication. An error only for a malformed request (`400`) or failed client authentication (`401`).
 
 CORS: client origins of public clients only.
+
+## `POST /oauth/v1/introspect`
+
+Says if a token is active now (RFC 7662). The form rules are the same as at `/token`. Only a confidential client can call it, with HTTP Basic. See [Validate access tokens](validate-access-tokens.md#revocation-and-logout).
+
+| Parameter | Required | Notes |
+|---|---|---|
+| `token` | Yes | An access token or a refresh token. |
+| `token_type_hint` | No | Ignored. Heimdall knows the kind from the format. |
+
+Response: `200` with `{"active": true, ...}` or `{"active": false}`, and `Cache-Control: no-store`. An error only for a malformed request (`400`) or failed client authentication, a public client included (`401`).
+
+- An access token: `active`, `scope`, `client_id`, `sub`, `aud`, `iss`, `exp`, `iat`, `token_type`, and `cnf` for a DPoP-bound token. You see it when its `aud` is one of your `resource_audiences`, or it was issued to you.
+- A refresh token: `active`, `scope`, `client_id`, `sub`, `iss`, `exp` (the idle limit), and `iat`. You see only your own.
+
+CORS: none. Call it from your server.
 
 ## `GET` or `POST /oauth/v1/logout`
 

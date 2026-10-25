@@ -12,3 +12,4 @@ The diagrams show the design in `docs/threat-model.md` and `docs/schema-design.m
 | [05-keys-and-jwks.md](05-keys-and-jwks.md) | Signing key lifecycle, rotation, order of rotation steps, JWKS request path |
 | [06-login-and-session.md](06-login-and-session.md) | Login checks, session cookie, abuse control layers, consent and CSRF |
 | [07-sign-out.md](07-sign-out.md) | RP-initiated logout, the confirm page, the sign-out transaction, back-channel delivery |
+| [08-introspection.md](08-introspection.md) | Introspection decisions for an access token and a refresh token |
