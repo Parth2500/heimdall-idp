@@ -40,6 +40,8 @@ The database enforces the most important rules a second time (unique indexes, ch
 | A client with the `client_credentials` grant needs at least one audience. | D22 |
 | A requested resource must match an allowed audience by exact string. With no request, the only audience is the default. With two or more audiences, the client must name one. | D22 |
 | A user's grant (`ResolveUserAudience`) can also name the tenant's userinfo endpoint. A client with no audience gets the userinfo endpoint as its default. | D22 |
+| A post-logout redirect URI and a back-channel logout URI meet the redirect URI rules. A refused update changes nothing. | D32, D35 |
+| A post-logout redirect URI matches by exact ordinal string, as a redirect URI does. | D32 |
 
 ## Codes and tokens
 

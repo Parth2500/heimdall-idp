@@ -41,6 +41,7 @@ public sealed class Client
     private List<string> _allowedScopes = [];
     private List<string> _redirectUris = [];
     private List<string> _allowedAudiences = [];
+    private List<string> _postLogoutRedirectUris = [];
 
 #pragma warning disable CS8618 // EF Core sets the properties after it calls this constructor.
     private Client()
@@ -104,6 +105,18 @@ public sealed class Client
 
     /// <summary>The resource servers this client may get tokens for. Each one is a value for the <c>aud</c> claim (D22).</summary>
     public IReadOnlyList<string> AllowedAudiences => _allowedAudiences;
+
+    /// <summary>
+    /// Where Heimdall may send the browser after a sign-out (RP-Initiated Logout 1.0). Compared by exact match, with the
+    /// same registration rules as redirect URIs (D32, RFC 9700).
+    /// </summary>
+    public IReadOnlyList<string> PostLogoutRedirectUris => _postLogoutRedirectUris;
+
+    /// <summary>
+    /// The client's server endpoint for a <c>logout_token</c> (Back-Channel Logout 1.0, D34), or null. Registered with the
+    /// rules of a redirect URI (D35).
+    /// </summary>
+    public string? BackchannelLogoutUri { get; private set; }
 
     public bool RequireConsent { get; private set; }
 
@@ -203,6 +216,25 @@ public sealed class Client
     /// </summary>
     public bool IsRedirectUriAllowed(string? redirectUri) =>
         redirectUri is not null && _redirectUris.Contains(redirectUri, StringComparer.Ordinal);
+
+    /// <summary>Exact string match against the registered list, as for redirect URIs (D32).</summary>
+    public bool IsPostLogoutRedirectUriAllowed(string? uri) =>
+        uri is not null && _postLogoutRedirectUris.Contains(uri, StringComparer.Ordinal);
+
+    /// <summary>
+    /// Sets the sign-out URIs (D32, D35). Each one must meet the redirect URI rules: absolute, https (http only for a
+    /// loopback address), no fragment, no user information, no wildcard.
+    /// </summary>
+    public void UpdateLogoutUris(IEnumerable<string> postLogoutRedirectUris, string? backchannelLogoutUri)
+    {
+        ArgumentNullException.ThrowIfNull(postLogoutRedirectUris);
+
+        var uris = postLogoutRedirectUris.Select(RedirectUriRules.Validate).Distinct(StringComparer.Ordinal).ToList();
+        var backchannel = backchannelLogoutUri is null ? null : RedirectUriRules.Validate(backchannelLogoutUri);
+
+        _postLogoutRedirectUris = uris;
+        BackchannelLogoutUri = backchannel;
+    }
 
     public bool IsGrantAllowed(GrantType grantType) => _allowedGrantTypes.Contains(grantType);
 

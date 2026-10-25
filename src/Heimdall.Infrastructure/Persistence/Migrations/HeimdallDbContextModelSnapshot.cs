@@ -108,6 +108,11 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .HasColumnType("text[]")
                         .HasColumnName("allowed_scopes");
 
+                    b.Property<string>("BackchannelLogoutUri")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("backchannel_logout_uri");
+
                     b.Property<string>("ClientId")
                         .IsRequired()
                         .HasMaxLength(128)
@@ -123,6 +128,11 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("name");
+
+                    b.PrimitiveCollection<string[]>("PostLogoutRedirectUris")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("post_logout_redirect_uris");
 
                     b.PrimitiveCollection<string[]>("RedirectUris")
                         .IsRequired()

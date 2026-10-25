@@ -69,6 +69,10 @@ internal sealed class ClientConfiguration : IEntityTypeConfiguration<Client>
         builder.PrimitiveCollection(c => c.AllowedAudiences)
             .HasField("_allowedAudiences")
             .UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.PrimitiveCollection(c => c.PostLogoutRedirectUris)
+            .HasField("_postLogoutRedirectUris")
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.Property(c => c.BackchannelLogoutUri).HasMaxLength(2048);
 
         builder.Ignore(c => c.RefreshEnabled);
 

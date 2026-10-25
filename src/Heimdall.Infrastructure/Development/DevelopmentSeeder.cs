@@ -53,12 +53,24 @@ public sealed class DevelopmentSeeder
     public const string SpaClientId = "demo-spa";
     public const string SpaRedirectUri = "https://demo.localhost:4300/callback";
 
+    /// <summary>Where the demo SPA gets the browser back after a sign-out at Heimdall (D32).</summary>
+    public const string SpaPostLogoutRedirectUri = "https://demo.localhost:4300/";
+
     /// <summary>
     /// Huginn, the chat app, signs in through its server (a backend-for-frontend). The redirect URI is the Angular dev
     /// server, which proxies <c>/api</c> to the Huginn API. Loopback <c>http</c> is allowed for development only.
     /// </summary>
     public const string HuginnClientId = "huginn";
     public const string HuginnRedirectUri = "http://localhost:4200/api/auth/heimdall/callback";
+
+    /// <summary>Huginn's sign-in page, where the browser returns after a sign-out at Heimdall (D32).</summary>
+    public const string HuginnPostLogoutRedirectUri = "http://localhost:4200/login";
+
+    /// <summary>
+    /// The Huginn API itself, not the dev proxy: Heimdall's server calls it (D34). Loopback is allowed only in
+    /// Development (D35).
+    /// </summary>
+    public const string HuginnBackchannelLogoutUri = "http://localhost:3000/api/auth/heimdall/backchannel-logout";
     private const string CorrelationId = "seed-dev";
 
     private readonly HeimdallDbContext _db;
@@ -159,8 +171,11 @@ public sealed class DevelopmentSeeder
     /// </summary>
     private async Task<bool> EnsureSpaClientAsync(Guid tenantId, CancellationToken cancellationToken)
     {
-        if (await _db.Clients.AnyAsync(c => c.TenantId == tenantId && c.ClientId == SpaClientId, cancellationToken).ConfigureAwait(false))
+        if (await _db.Clients.SingleOrDefaultAsync(c => c.TenantId == tenantId && c.ClientId == SpaClientId, cancellationToken).ConfigureAwait(false) is { } existing)
         {
+            // A database from an older seed gets the sign-out URIs too.
+            existing.UpdateLogoutUris([SpaPostLogoutRedirectUri], null);
+            await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return false;
         }
 
@@ -179,6 +194,7 @@ public sealed class DevelopmentSeeder
             requireConsent: false,
             overrides: null,
             _time.GetUtcNow());
+        client.UpdateLogoutUris([SpaPostLogoutRedirectUri], null);
         client.Approve();
 
         _db.Clients.Add(client);
@@ -191,8 +207,10 @@ public sealed class DevelopmentSeeder
     /// </summary>
     private async Task<string?> EnsureHuginnClientAsync(Guid tenantId, CancellationToken cancellationToken)
     {
-        if (await _db.Clients.AnyAsync(c => c.TenantId == tenantId && c.ClientId == HuginnClientId, cancellationToken).ConfigureAwait(false))
+        if (await _db.Clients.SingleOrDefaultAsync(c => c.TenantId == tenantId && c.ClientId == HuginnClientId, cancellationToken).ConfigureAwait(false) is { } existing)
         {
+            existing.UpdateLogoutUris([HuginnPostLogoutRedirectUri], HuginnBackchannelLogoutUri);
+            await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return null;
         }
 
@@ -212,6 +230,7 @@ public sealed class DevelopmentSeeder
             requireConsent: false,
             overrides: null,
             now);
+        client.UpdateLogoutUris([HuginnPostLogoutRedirectUri], HuginnBackchannelLogoutUri);
         client.Approve();
 
         var secret = Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(32));

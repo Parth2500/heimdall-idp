@@ -299,4 +299,86 @@ public class ClientTests
         Assert.Empty(pending.BrowserOrigins());
         Assert.Empty(disabled.BrowserOrigins());
     }
+
+    // ---- Sign-out URIs (D32, D35)
+
+    [Fact]
+    public void New_client_has_no_sign_out_uris()
+    {
+        var client = CreateClient();
+
+        Assert.Empty(client.PostLogoutRedirectUris);
+        Assert.Null(client.BackchannelLogoutUri);
+        Assert.False(client.IsPostLogoutRedirectUriAllowed("https://app.example.com/"));
+    }
+
+    [Fact]
+    public void Sign_out_uris_are_kept_once_and_unchanged()
+    {
+        var client = CreateClient();
+
+        client.UpdateLogoutUris(["https://app.example.com/bye", "https://app.example.com/bye", "http://127.0.0.1:8080/"], "https://app.example.com/backchannel");
+
+        Assert.Equal(["https://app.example.com/bye", "http://127.0.0.1:8080/"], client.PostLogoutRedirectUris);
+        Assert.Equal("https://app.example.com/backchannel", client.BackchannelLogoutUri);
+    }
+
+    [Theory]
+    [InlineData("https://app.example.com/bye", true)]
+    [InlineData("https://app.example.com/bye/", false)]
+    [InlineData("https://APP.example.com/bye", false)]
+    [InlineData("https://app.example.com/bye?x=1", false)]
+    [InlineData("https://app.example.com/by", false)]
+    [InlineData(null, false)]
+    public void Post_logout_redirect_uri_matches_by_exact_string(string? uri, bool allowed)
+    {
+        var client = CreateClient();
+        client.UpdateLogoutUris(["https://app.example.com/bye"], null);
+
+        Assert.Equal(allowed, client.IsPostLogoutRedirectUriAllowed(uri));
+    }
+
+    [Theory]
+    [InlineData("http://app.example.com/bye")]
+    [InlineData("https://*.example.com/bye")]
+    [InlineData("https://app.example.com/bye#top")]
+    [InlineData("https://user@app.example.com/bye")]
+    [InlineData("/bye")]
+    [InlineData(" ")]
+    public void Post_logout_redirect_uri_meets_the_redirect_uri_rules(string uri)
+    {
+        var client = CreateClient();
+
+        Assert.Throws<DomainException>(() => client.UpdateLogoutUris([uri], null));
+        Assert.Empty(client.PostLogoutRedirectUris);
+    }
+
+    [Theory]
+    [InlineData("http://internal.example.com/logout")]
+    [InlineData("https://app.example.com/logout#x")]
+    [InlineData("https://*.example.com/logout")]
+    [InlineData("logout")]
+    public void Backchannel_logout_uri_meets_the_redirect_uri_rules(string uri)
+    {
+        var client = CreateClient();
+        client.UpdateLogoutUris(["https://app.example.com/bye"], "https://app.example.com/backchannel");
+
+        Assert.Throws<DomainException>(() => client.UpdateLogoutUris(["https://app.example.com/other"], uri));
+
+        // A refused update changes nothing.
+        Assert.Equal(["https://app.example.com/bye"], client.PostLogoutRedirectUris);
+        Assert.Equal("https://app.example.com/backchannel", client.BackchannelLogoutUri);
+    }
+
+    [Fact]
+    public void Sign_out_uris_can_be_cleared()
+    {
+        var client = CreateClient();
+        client.UpdateLogoutUris(["https://app.example.com/bye"], "https://app.example.com/backchannel");
+
+        client.UpdateLogoutUris([], null);
+
+        Assert.Empty(client.PostLogoutRedirectUris);
+        Assert.Null(client.BackchannelLogoutUri);
+    }
 }

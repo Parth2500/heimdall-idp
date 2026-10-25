@@ -116,6 +116,8 @@ public sealed class AuditAndSeedTests
             Assert.NotNull(spa);
             Assert.Equal(ClientType.Public, spa.Type);
             Assert.Equal([DevelopmentSeeder.SpaRedirectUri], spa.RedirectUris);
+            Assert.Equal([DevelopmentSeeder.SpaPostLogoutRedirectUri], spa.PostLogoutRedirectUris);
+            Assert.Null(spa.BackchannelLogoutUri);
             Assert.True(await store.IsBrowserOriginAllowedAsync(tenant.Id, "https://demo.localhost:4300", CancellationToken.None));
 
             // Huginn: a confidential client. Its secret works, and its pages never call Heimdall from the browser.
@@ -123,6 +125,8 @@ public sealed class AuditAndSeedTests
             Assert.NotNull(huginn);
             Assert.Equal(ClientType.Confidential, huginn.Type);
             Assert.Equal([DevelopmentSeeder.HuginnRedirectUri], huginn.RedirectUris);
+            Assert.Equal([DevelopmentSeeder.HuginnPostLogoutRedirectUri], huginn.PostLogoutRedirectUris);
+            Assert.Equal(DevelopmentSeeder.HuginnBackchannelLogoutUri, huginn.BackchannelLogoutUri);
             Assert.True((await authenticator.AuthenticateAsync(tenant.Id, DevelopmentSeeder.HuginnClientId, first.HuginnClientSecret, CancellationToken.None)).IsSuccess);
             Assert.False(await store.IsBrowserOriginAllowedAsync(tenant.Id, "http://localhost:4200", CancellationToken.None));
         }

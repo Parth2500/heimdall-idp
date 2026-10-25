@@ -78,6 +78,8 @@ One `INSERT ... ON CONFLICT DO NOTHING` statement records a proof. One affected 
 | `allowed_scopes` | text[] | |
 | `redirect_uris` | text[] | Stored exactly. Matching is by exact string, in the application, after the client is loaded. The Domain removes duplicates. |
 | `allowed_audiences` | text[] | D22. Absolute URIs, https except loopback, no query or fragment. Check: not empty when `allowed_grant_types` has `client_credentials`. |
+| `post_logout_redirect_uris` | text[] | D32. The redirect URI rules apply. Matching is by exact string. Empty means that Heimdall never redirects after a sign-out of this client. |
+| `backchannel_logout_uri` | text, null | D34, D35. The redirect URI rules apply. Null means that the client gets no back-channel logout. |
 | `require_consent` | bool | |
 | `status` | text | `pending`, `active`, `disabled`. A client is `pending` until an admin approves it. |
 | `access_token_seconds`, `refresh_idle_seconds`, `refresh_absolute_seconds` | int, null | Null means: use the tenant value (D15). Check constraints give the hard bounds. |
