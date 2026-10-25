@@ -37,13 +37,13 @@ describe('LoginPage', () => {
     expect(text(root)).toContain('No sign-in in progress');
   });
 
-  it('shows the gate plaque with the host and the address bar check', async () => {
+  it('shows the host and the address bar check', async () => {
     const { root } = await render({ request_id: REQUEST_ID });
 
-    const plaque = root.querySelector('.plaque')!;
-    expect(plaque.textContent).toContain('You are at the gate of');
-    expect(plaque.querySelector('.plaque__host')?.textContent).toBe('acme.localhost:7200');
-    expect(plaque.textContent).toContain('Check that your address bar shows the same host.');
+    const host = root.querySelector('.host')!;
+    expect(host.textContent).toContain('You are on');
+    expect(host.querySelector('.host__name')?.textContent).toBe('acme.localhost:7200');
+    expect(host.textContent).toContain('Check that your address bar shows the same host.');
   });
 
   it('shows the password with an eye toggle inside the field', async () => {
@@ -62,7 +62,7 @@ describe('LoginPage', () => {
   it('names the action Sign in, in the heading and on the button', async () => {
     const { root } = await render({ request_id: REQUEST_ID });
 
-    expect(root.querySelector('h1')?.textContent?.trim()).toBe('Sign in.');
+    expect(root.querySelector('h1')?.textContent?.trim()).toBe('Sign in');
     expect(root.querySelector('button[type=submit]')?.textContent?.trim()).toBe('Sign in');
   });
 
@@ -76,7 +76,7 @@ describe('LoginPage', () => {
     expect(root.querySelector('[role=alert]')?.textContent).toContain('Enter your email address.');
     expect(root.querySelector('#email')?.getAttribute('aria-invalid')).toBe('true');
     // A missing field is not a refusal: Heimdall did not answer anything yet.
-    expect(root.querySelector('hd-gate')?.getAttribute('data-bridge')).toBe('idle');
+    expect(root.querySelector('hd-card')?.getAttribute('data-state')).toBe('idle');
   });
 
   it('sends the browser only to the resume path after sign-in', async () => {
@@ -93,7 +93,7 @@ describe('LoginPage', () => {
     expect(navigation.assign).toHaveBeenCalledWith(
       `/oauth/v1/authorize/resume?request_id=${REQUEST_ID}`,
     );
-    expect(root.querySelector('hd-gate')?.getAttribute('data-bridge')).toBe('crossing');
+    expect(root.querySelector('hd-card')?.getAttribute('data-state')).toBe('crossing');
   });
 
   it('shows one generic text for wrong credentials and clears the password', async () => {
@@ -110,7 +110,7 @@ describe('LoginPage', () => {
       'The email or the password is not correct.',
     );
     expect(root.querySelector<HTMLInputElement>('#password')!.value).toBe('');
-    expect(root.querySelector('hd-gate')?.getAttribute('data-bridge')).toBe('refused');
+    expect(root.querySelector('hd-card')?.getAttribute('data-state')).toBe('refused');
   });
 
   it('shows no guard fire when Heimdall did not answer', async () => {
@@ -124,7 +124,7 @@ describe('LoginPage', () => {
     await fixture.whenStable();
 
     expect(root.querySelector('[role=alert]')).not.toBeNull();
-    expect(root.querySelector('hd-gate')?.getAttribute('data-bridge')).toBe('idle');
+    expect(root.querySelector('hd-card')?.getAttribute('data-state')).toBe('idle');
   });
 });
 

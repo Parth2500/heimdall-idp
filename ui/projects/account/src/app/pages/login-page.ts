@@ -1,5 +1,5 @@
 import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
-import { BridgeState, HdIcon } from 'ui-kit';
+import { CardState, HdIcon } from 'ui-kit';
 import { ActivatedRoute } from '@angular/router';
 import { SessionApi, SessionApiError } from '../session/session-api';
 import { BrowserNavigation, requestIdOrNull, resumePath } from '../session/flow';
@@ -12,7 +12,7 @@ interface Problem {
   readonly message: string;
   /** The field that the message is about, or null for the whole form. */
   readonly field: Field | null;
-  /** True when Heimdall refused the attempt. The bridge then shows guard fire. */
+  /** True when Heimdall refused the attempt. The card then shows the refused state. */
   readonly refused?: boolean;
 }
 
@@ -24,10 +24,11 @@ interface Problem {
   selector: 'acct-login-page',
   imports: [PageFrame, NoSignInStatement, NoSignInText, HdIcon],
   template: `
-    <acct-page [bridge]="bridge()">
+    <acct-page [state]="cardState()">
       <div hdStatement>
         @if (requestId) {
-          <h1 class="hd-display">Sign in<span class="hd-display__fire">.</span></h1>
+          <h1 class="hd-title">Sign in</h1>
+          <p class="hd-subtitle">to continue to the app that asked</p>
         } @else {
           <acct-no-sign-in-statement />
         }
@@ -107,17 +108,12 @@ interface Problem {
             </div>
           </div>
 
-          <button
-            class="hd-button hd-button--block hd-button--go"
-            type="submit"
-            [attr.aria-disabled]="busy()"
-          >
+          <button class="hd-button hd-button--block" type="submit" [attr.aria-disabled]="busy()">
             {{ busy() ? 'Signing in' : 'Sign in' }}
-            <hd-icon class="hd-button__arrow" name="arrow" />
           </button>
         </form>
 
-        <p class="hd-small hd-muted">
+        <p class="hd-note">
           After you sign in, Heimdall sends you back to the app that asked. Heimdall never asks for
           your password on another site.
         </p>
@@ -143,8 +139,8 @@ export class LoginPage {
   protected readonly problem = signal<Problem | null>(null);
   private readonly crossing = signal(false);
 
-  /** The bridge shows the attempt: checking, refused, or crossing to the app. */
-  protected readonly bridge = computed<BridgeState>(() => {
+  /** The card shows the attempt: checking, refused, or crossing to the app. */
+  protected readonly cardState = computed<CardState>(() => {
     if (this.crossing()) {
       return 'crossing';
     }

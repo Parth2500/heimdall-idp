@@ -1,85 +1,85 @@
 /*
- * Heimdall ui-kit: Burning Bridge (U15). Heimdall guards Bifröst, and each account page is the
- * gate at its foot. Tokens first. Tenant branding (Phase 3) changes tokens, never components.
- * Fonts are self-hosted files (U8: no third-party origin). Both are under the SIL OFL 1.1.
+ * Heimdall ui-kit: Ledger card (U16). Each account page is one centered card that names the host,
+ * the account and the state in plain text. Tokens first. Tenant branding (Phase 3) changes tokens,
+ * never components. Fonts are self-hosted files (U8: no third-party origin), under the SIL OFL 1.1.
  *
  * Colors have one meaning each, everywhere:
- *   frost  the bridge, and Heimdall's actions
- *   ember  the bridge's fire at rest, and keyboard focus
- *   fire   a refusal, and nothing else
+ *   blue    Heimdall and its actions
+ *   red     a refusal, and nothing else
+ *   blue    also the keyboard focus ring, so a focused control is easy to find
  */
 @font-face {
-  font-family: 'Archivo';
-  src: url('../fonts/archivo-latin-wdth.woff2') format('woff2');
-  font-weight: 100 900;
-  font-stretch: 62% 125%;
+  font-family: 'IBM Plex Sans';
+  src: url('../fonts/ibm-plex-sans-latin-wght.woff2') format('woff2');
+  font-weight: 100 700;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'JetBrains Mono';
-  src: url('../fonts/jetbrains-mono-latin-wght.woff2') format('woff2');
-  font-weight: 100 800;
+  font-family: 'IBM Plex Mono';
+  src: url('../fonts/ibm-plex-mono-latin-400.woff2') format('woff2');
+  font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
-/* Day: a dawn sky. The bridge is a deeper lapis than at night; the panel is white. */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('../fonts/ibm-plex-mono-latin-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('../fonts/ibm-plex-mono-latin-600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Day. */
 :root {
   color-scheme: light dark;
 
-  --hd-ground: #e7ebf5;
-  --hd-star: transparent;
-  --hd-panel: #ffffff;
-  --hd-raised: #eef1f8;
+  --hd-ground: #f6f6f3;
+  --hd-grid-major: #dedfd8;
+  --hd-grid-minor: #ebebe5;
+  --hd-card: #ffffff;
+  --hd-raised: #efefea;
   --hd-field: #ffffff;
-  --hd-line: #c9d0e2;
-  --hd-line-field: #5d6686;
+  --hd-line: #d9d9d3;
+  --hd-line-field: #6b707a;
 
-  --hd-ink: #0b0d18;
-  --hd-ink-muted: #4a5168;
-  --hd-display: #0b0d18;
+  --hd-ink: #14161a;
+  --hd-ink-soft: #3a3f47;
+  --hd-ink-muted: #555a63;
 
-  --hd-act: #3352e0;
-  --hd-act-strong: #2640b8;
+  --hd-act: #1f4fd1;
+  --hd-act-strong: #1a42ae;
   --hd-on-act: #ffffff;
-  --hd-link: #2640b8;
+  --hd-link: #1f4fd1;
 
-  --hd-bridge-1: #3352e0;
-  --hd-bridge-2: #23338a;
-  --hd-bridge-3: #182566;
-  --hd-bridge-4: #0f1846;
-  --hd-bridge-unlit-1: #b4bdd6;
-  --hd-bridge-unlit-2: #a6b0cc;
-  --hd-bridge-unlit-3: #98a3c2;
-  --hd-bridge-unlit-4: #8a96b8;
-  --hd-burn-1: #e5372b;
-  --hd-burn-2: #c42c22;
-  --hd-burn-3: #a1241b;
-  --hd-burn-4: #7e1c15;
-  --hd-bridge-gap: var(--hd-ground);
-  --hd-bridge-light: #ffffff;
-
-  --hd-ember: #c2410c;
-  --hd-ember-bright: #ff7a45;
-  --hd-ember-banked: #f2b49a;
-  --hd-fire: #e5372b;
-  --hd-fire-text: #b3261e;
+  --hd-fire: #b3261e;
   --hd-fire-tint: #fdecea;
 
-  --hd-focus: #c2410c;
+  /* Focus is one blue ring with a gap. It is 6.9:1 on the card in day and 7:1 in night, well
+     above the 3:1 that WCAG 2.2 asks for (1.4.11). */
+  --hd-focus: #1f4fd1;
 
-  --hd-font: 'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --hd-font: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   --hd-mono:
-    'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', 'DejaVu Sans Mono', Menlo, Consolas,
+    'IBM Plex Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', 'DejaVu Sans Mono', Menlo, Consolas,
     monospace;
 
-  --hd-text-xs: 0.8125rem;
-  --hd-text-s: 0.9375rem;
-  --hd-text-m: 1.0625rem;
-  --hd-text-l: 1.375rem;
-  --hd-text-host: clamp(1.25rem, 0.9rem + 1.2vw, 2rem);
+  --hd-text-xs: 0.75rem;
+  --hd-text-s: 0.875rem;
+  --hd-text-body: 0.9375rem;
+  --hd-text-m: 1rem;
+  --hd-text-host: 1.375rem;
+  --hd-text-title: 1.875rem;
 
   /* A 4px rhythm. */
   --hd-1: 0.25rem;
@@ -89,59 +89,42 @@
   --hd-5: 1.25rem;
   --hd-6: 1.5rem;
   --hd-8: 2rem;
-  --hd-10: 2.5rem;
-  --hd-12: 3rem;
 
-  --hd-control: 3.5rem;
-  --hd-panel-width: 27.5rem;
+  --hd-control: 3.25rem;
+  --hd-radius: 0.25rem;
+  --hd-radius-card: 0.625rem;
+  --hd-card-width: 28rem;
   --hd-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --hd-ease-back: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Night: the default scene. Stars, a near-black sky, a dark gatehouse. */
+/* Night. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --hd-ground: #07080d;
-    --hd-star: #e8ecff;
-    --hd-panel: #10121c;
-    --hd-raised: #181b2a;
-    --hd-field: #07080d;
-    --hd-line: #262a3d;
-    --hd-line-field: #6a7396;
+    --hd-ground: #0c0e11;
+    --hd-grid-major: #1d2128;
+    --hd-grid-minor: #14171b;
+    --hd-card: #16191e;
+    --hd-raised: #1f2329;
+    --hd-field: #101216;
+    --hd-line: #2c3038;
+    --hd-line-field: #7d838f;
 
-    --hd-ink: #f2f4fa;
-    --hd-ink-muted: #9aa3b8;
-    --hd-display: #f2f4fa;
+    --hd-ink: #eceae4;
+    --hd-ink-soft: #c4c7ce;
+    --hd-ink-muted: #a3a8b2;
 
-    --hd-act: #4c6fff;
-    --hd-act-strong: #7390ff;
-    --hd-on-act: #07080d;
-    --hd-link: #a9bbff;
+    --hd-act: #8aa6ff;
+    --hd-act-strong: #a5bbff;
+    --hd-on-act: #0b0e14;
+    --hd-link: #9db4ff;
 
-    --hd-bridge-1: #4c6fff;
-    --hd-bridge-2: #2b3f99;
-    --hd-bridge-3: #1e2f7a;
-    --hd-bridge-4: #14205a;
-    --hd-bridge-light: #dfe6ff;
-    --hd-bridge-unlit-1: #2c3552;
-    --hd-bridge-unlit-2: #242c46;
-    --hd-bridge-unlit-3: #1e253b;
-    --hd-bridge-unlit-4: #191f32;
-    --hd-burn-1: #e5372b;
-    --hd-burn-2: #b52a20;
-    --hd-burn-3: #8a2019;
-    --hd-burn-4: #631712;
+    --hd-fire: #ff8a80;
+    --hd-fire-tint: #2a1414;
 
-    --hd-ember: #ff7a45;
-    --hd-ember-banked: #5a2414;
-    --hd-fire-text: #ff8a80;
-    --hd-fire-tint: #24100f;
-
-    --hd-focus: #ff7a45;
+    --hd-focus: #8aa6ff;
   }
 }
 
-/* Browser surfaces carry the design too. */
 ::selection {
   background: var(--hd-act);
   color: var(--hd-on-act);
@@ -165,7 +148,6 @@ body {
   color: var(--hd-ink);
   font: var(--hd-text-m) / 1.5 var(--hd-font);
   caret-color: var(--hd-act);
-  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -181,6 +163,7 @@ dd {
 
 a {
   color: var(--hd-link);
+  font-weight: 600;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.2em;
 }
@@ -196,7 +179,7 @@ code,
   overflow-wrap: anywhere;
 }
 
-/* Focus: an ember ring with a gap, readable on the panel, the field, and the frost button. */
+/* Focus: a blue ring with a gap. */
 :focus {
   outline: none;
 }
@@ -215,49 +198,35 @@ code,
   white-space: nowrap;
 }
 
-/* ---------- Display: the statement at the gate ---------- */
+/* ---------- Text ---------- */
 
-.hd-display {
-  color: var(--hd-display);
-  font-size: var(--hd-display-size, clamp(4rem, 2rem + 8vw, 10rem));
-  font-weight: 900;
-  font-stretch: 86%;
-  line-height: 0.86;
-  letter-spacing: -0.045em;
-  max-width: var(--hd-display-measure, none);
+.hd-title {
+  font-size: var(--hd-text-title);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
   text-wrap: balance;
   overflow-wrap: anywhere;
 }
 
-/* The full stop is the gate's fire: ember at rest, guard fire when the gate refuses. */
-.hd-display__fire {
-  color: var(--hd-ember);
-  transition: color 400ms var(--hd-ease-out);
-}
-
-.hd-subline {
-  margin-top: clamp(var(--hd-4), 2vw, var(--hd-8));
-  color: var(--hd-display);
-  font-size: clamp(1.375rem, 1rem + 1.2vw, 2rem);
-  font-weight: 800;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  text-wrap: balance;
-  max-width: 22em;
-}
-
-/* ---------- Text ---------- */
-
-.hd-heading {
+.hd-subtitle {
+  margin-top: var(--hd-1);
+  color: var(--hd-ink-soft);
   font-size: var(--hd-text-m);
-  font-weight: 700;
-  line-height: 1.3;
+  text-wrap: pretty;
 }
 
 .hd-lead {
-  font-size: var(--hd-text-l);
-  line-height: 1.4;
+  color: var(--hd-ink-soft);
+  font-size: var(--hd-text-m);
+  line-height: 1.5;
   text-wrap: pretty;
+}
+
+.hd-heading {
+  color: var(--hd-ink-muted);
+  font-size: var(--hd-text-s);
+  font-weight: 400;
 }
 
 .hd-muted {
@@ -266,18 +235,24 @@ code,
 
 .hd-small {
   font-size: var(--hd-text-s);
-  line-height: 1.45;
+  line-height: 1.55;
 }
 
-.hd-stack > * + * {
-  margin-top: var(--hd-6);
+/* The small caps label above a value, such as "Account" or "You are on". */
+.hd-kicker {
+  color: var(--hd-ink-muted);
+  font-size: var(--hd-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.hd-stack-tight > * + * {
-  margin-top: var(--hd-3);
+.hd-stack {
+  display: grid;
+  gap: var(--hd-5);
 }
 
-/* ---------- Form controls: square, 56px tall ---------- */
+/* ---------- Form controls ---------- */
 
 .hd-field {
   display: grid;
@@ -285,62 +260,40 @@ code,
 }
 
 .hd-label {
-  font-weight: 700;
+  font-size: var(--hd-text-body);
+  font-weight: 600;
 }
 
 .hd-field-error {
-  color: var(--hd-fire-text);
+  color: var(--hd-fire);
+  font-size: var(--hd-text-body);
   font-weight: 700;
-  font-size: var(--hd-text-s);
 }
 
 .hd-input {
   width: 100%;
   min-height: var(--hd-control);
-  padding: var(--hd-2) var(--hd-4);
-  border: 1px solid var(--hd-line-field);
-  border-radius: 0;
+  padding: 0 var(--hd-4);
+  border: 1.5px solid var(--hd-line-field);
+  border-radius: var(--hd-radius);
   background: var(--hd-field);
   color: var(--hd-ink);
   font: inherit;
-  font-family: var(--hd-mono);
-  font-size: 1rem;
-  transition: border-color 160ms var(--hd-ease-out);
+  font-size: var(--hd-text-m);
 }
 
 .hd-input:hover {
   border-color: var(--hd-ink-muted);
 }
 
-.hd-input:focus-visible {
-  outline-offset: 0;
-  border-color: var(--hd-focus);
-}
-
 .hd-input[aria-invalid='true'] {
   border-color: var(--hd-fire);
-  box-shadow: inset 0 0 0 1px var(--hd-fire);
 }
 
-.hd-input-row {
-  display: flex;
-}
-
-.hd-input-row .hd-input {
-  flex: 1;
-  min-width: 0;
-}
-
-.hd-input-row .hd-button {
-  flex: none;
-  margin-left: -1px;
-  border-color: var(--hd-line-field);
-}
-
-/* A control that lives inside its field, such as the password eye. The input keeps the full
-   width; its right padding leaves room for the toggle. */
+/* A control that lives inside its field, such as the password eye. */
 .hd-input-wrap {
   position: relative;
+  display: flex;
 }
 
 .hd-input-wrap .hd-input {
@@ -349,69 +302,49 @@ code,
 
 .hd-input-toggle {
   position: absolute;
-  top: 1px;
-  right: 1px;
-  bottom: 1px;
+  top: 0.25rem;
+  right: 0.25rem;
   display: grid;
   place-items: center;
-  width: calc(var(--hd-control) - 2px);
+  width: 2.75rem;
+  height: 2.75rem;
   border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--hd-ink-muted);
+  border-radius: 0.1875rem;
+  background: none;
+  color: var(--hd-ink-soft);
   cursor: pointer;
-  transition: color 160ms var(--hd-ease-out);
 }
 
 .hd-input-toggle:hover,
 .hd-input-toggle[aria-pressed='true'] {
   color: var(--hd-ink);
-}
-
-.hd-input-toggle:focus-visible {
-  outline-offset: -3px;
+  background: var(--hd-raised);
 }
 
 .hd-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--hd-3);
-  min-height: calc(var(--hd-control) + 0.25rem);
-  padding: var(--hd-2) var(--hd-6);
-  border: 1px solid var(--hd-act);
-  border-radius: 0;
+  gap: var(--hd-2);
+  min-height: var(--hd-control);
+  padding: 0 var(--hd-5);
+  border: 1.5px solid var(--hd-act);
+  border-radius: var(--hd-radius);
   background: var(--hd-act);
   color: var(--hd-on-act);
   font: inherit;
-  font-weight: 800;
+  font-size: var(--hd-text-m);
+  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
   transition:
-    background-color 160ms var(--hd-ease-out),
-    border-color 160ms var(--hd-ease-out);
+    background-color 120ms var(--hd-ease-out),
+    border-color 120ms var(--hd-ease-out);
 }
 
 .hd-button:hover {
   background: var(--hd-act-strong);
   border-color: var(--hd-act-strong);
-}
-
-/* The primary action leads with its words and ends with its direction. */
-.hd-button--go {
-  justify-content: space-between;
-  text-align: start;
-}
-
-.hd-button__arrow {
-  width: 1.25rem;
-  height: 1.25rem;
-  flex: none;
-  transition: transform 240ms var(--hd-ease-out);
-}
-
-.hd-button--go:hover .hd-button__arrow {
-  transform: translateX(0.25rem);
 }
 
 .hd-button--block {
@@ -421,7 +354,7 @@ code,
 .hd-button--secondary {
   background: transparent;
   color: var(--hd-ink);
-  border-color: var(--hd-ink-muted);
+  border-color: var(--hd-line-field);
 }
 
 .hd-button--secondary:hover {
@@ -429,57 +362,46 @@ code,
   border-color: var(--hd-ink);
 }
 
-.hd-button--quiet {
-  min-height: auto;
-  padding: var(--hd-1) var(--hd-3);
-  background: transparent;
-  color: inherit;
-  border-color: var(--hd-line-field);
-  font-weight: 600;
-}
-
-.hd-button--quiet:hover {
-  background: var(--hd-raised);
-  border-color: var(--hd-ink-muted);
-}
-
 .hd-button[disabled],
 .hd-button[aria-disabled='true'] {
   cursor: progress;
 }
 
-/* A busy button keeps full contrast. Its words ("Signing in") and the bridge say it is busy. */
-.hd-button[aria-disabled='true'] .hd-button__arrow {
-  opacity: 0.5;
-}
-
 .hd-actions {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--hd-3);
 }
 
-/* ---------- Messages ---------- */
+.hd-actions .hd-button {
+  flex: 1 1 8.75rem;
+}
+
+/* ---------- Messages and facts ---------- */
 
 .hd-problem {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: var(--hd-1) var(--hd-3);
-  padding: var(--hd-4) var(--hd-5);
+  padding: 0.875rem var(--hd-4);
   border: 1px solid var(--hd-fire);
+  border-radius: var(--hd-radius);
   background: var(--hd-fire-tint);
+  font-size: var(--hd-text-body);
+  line-height: 1.45;
 }
 
 .hd-problem__icon {
   grid-row: span 2;
-  width: 1.5rem;
-  height: 1.5rem;
-  color: var(--hd-fire-text);
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.0625rem;
+  color: var(--hd-fire);
 }
 
 .hd-problem__title {
-  color: var(--hd-fire-text);
-  font-weight: 800;
+  color: var(--hd-fire);
+  font-weight: 700;
 }
 
 .hd-problem a {
@@ -490,130 +412,35 @@ code,
   padding-top: var(--hd-4);
   border-top: 1px solid var(--hd-line);
   color: var(--hd-ink-muted);
-  font-size: var(--hd-text-xs);
+  font-size: var(--hd-text-s);
+  line-height: 1.55;
   text-wrap: pretty;
 }
 
-/* A fact the user can check, such as a host or a code: label above, value in mono. */
+/* A fact the user can check, such as the host the browser goes to. */
 .hd-fact {
-  padding: var(--hd-4) var(--hd-5);
-  border: 1px solid var(--hd-line);
-  background: var(--hd-field);
+  display: grid;
+  gap: var(--hd-1);
+  padding: 0.875rem var(--hd-4);
+  border-radius: 0.375rem;
+  background: var(--hd-raised);
 }
 
 .hd-fact__label {
   color: var(--hd-ink-muted);
-  font-size: var(--hd-text-xs);
+  font-size: 0.8125rem;
 }
 
 .hd-fact__value {
   font-family: var(--hd-mono);
-  font-size: var(--hd-text-l);
-  font-weight: 700;
-  line-height: 1.3;
+  font-size: 1.125rem;
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 
 .hd-fact__meta {
-  margin-top: var(--hd-1);
   color: var(--hd-ink-muted);
   font-size: var(--hd-text-xs);
-}
-
-/* ---------- Lists ---------- */
-
-.hd-rule-list {
-  list-style: none;
-  padding: 0;
-}
-
-.hd-rule-list > li + li {
-  border-top: 1px solid var(--hd-line);
-}
-
-/* ---------- Moments: each one plays only while motion is on (HdMotion sets data-motion) ---------- */
-
-@keyframes hd-rise {
-  from {
-    transform: translateY(0.35em);
-    opacity: 0;
-  }
-}
-
-@keyframes hd-ignite {
-  0% {
-    transform: scale(0);
-  }
-  60% {
-    transform: scale(1.3);
-  }
-}
-
-@keyframes hd-drop {
-  from {
-    transform: translateY(-0.5em) rotate(-4deg);
-    opacity: 0;
-  }
-}
-
-@keyframes hd-reveal {
-  from {
-    transform: translateY(-8px);
-    opacity: 0;
-  }
-}
-
-@keyframes hd-busy {
-  from {
-    transform: translateX(-110%);
-  }
-  to {
-    transform: translateX(260%);
-  }
-}
-
-/* The statement rises, then its fire mark ignites. The form never waits on a moment. */
-:root[data-motion='on'] .hd-display {
-  animation: hd-rise 600ms var(--hd-ease-out) both;
-}
-
-:root[data-motion='on'] .hd-display__fire {
-  display: inline-block;
-  animation: hd-ignite 500ms var(--hd-ease-back) 500ms both;
-}
-
-/* A refused request: the statement drops in letter by letter (the page sets each delay). */
-.hd-drop {
-  display: inline-block;
-}
-
-:root[data-motion='on'] .hd-drop {
-  animation: hd-drop 500ms var(--hd-ease-back) both;
-}
-
-:root[data-motion='on'] .hd-display:has(.hd-drop) {
-  animation: none;
-}
-
-:root[data-motion='on'] .hd-problem {
-  animation: hd-reveal 240ms var(--hd-ease-out) both;
-}
-
-/* A busy button carries a line that runs along its foot. */
-.hd-button {
-  position: relative;
-  overflow: hidden;
-}
-
-:root[data-motion='on'] .hd-button[aria-disabled='true']::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 40%;
-  height: 3px;
-  background: currentColor;
-  animation: hd-busy 1.1s var(--hd-ease-out) infinite;
 }
 
 /* Windows High Contrast and other forced palettes: keep every edge and state visible. */
@@ -629,12 +456,8 @@ code,
     border-color: ButtonText;
   }
 
-  .hd-problem__title {
-    color: CanvasText;
-  }
-
   :focus-visible {
-    outline-color: Highlight;
+    outline: 3px solid Highlight;
   }
 }
 

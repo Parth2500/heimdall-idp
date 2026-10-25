@@ -1,13 +1,11 @@
 import { Component } from '@angular/core';
 
-/** The statement for a page with no stored request (U4). Sign-in without a client is not a flow yet. */
+/** The title for a page with no stored request (U4). Sign-in without a client is not a flow yet. */
 @Component({
   selector: 'acct-no-sign-in-statement',
   template: `
-    <p class="hd-display" aria-hidden="true">
-      Start at the app<span class="hd-display__fire">.</span>
-    </p>
-    <h1 class="hd-subline">No sign-in in progress</h1>
+    <h1 class="hd-title">No sign-in in progress</h1>
+    <p class="hd-subtitle">Start at the app.</p>
   `,
 })
 export class NoSignInStatement {}

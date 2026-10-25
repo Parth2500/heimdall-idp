@@ -189,7 +189,7 @@ internal sealed record TestTenant(Tenant Tenant, string ClientId, string ClientS
 internal static class AccountFixture
 {
     public const string Bundle = "main-ABCD1234.js";
-    public const string Font = "media/archivo-latin-wdth-ABCD1234.woff2";
+    public const string Font = "media/ibm-plex-sans-latin-wght-ABCD1234.woff2";
 
     private static readonly Lazy<string> Root = new(() =>
     {
