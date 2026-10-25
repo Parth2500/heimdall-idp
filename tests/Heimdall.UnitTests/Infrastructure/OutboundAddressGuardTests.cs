@@ -37,6 +37,12 @@ public class OutboundAddressGuardTests
     [InlineData("2001:0:4136:e378::1")] // Teredo.
     [InlineData("2001:db8::1")]
     [InlineData("100::1")]
+    [InlineData("64:ff9b:1::a00:1")] // Local-use NAT64 (RFC 8215).
+    [InlineData("::ffff:0:a00:1")] // IPv4-translated (SIIT) form of 10.0.0.1.
+    [InlineData("2001:2::1")] // Benchmarking.
+    [InlineData("2001:10::1")] // ORCHID.
+    [InlineData("3fff::1")]
+    [InlineData("4000::1")] // Outside global unicast.
     [InlineData("192.0.0.8")]
     [InlineData("192.0.2.1")]
     [InlineData("198.18.0.1")]
@@ -57,7 +63,8 @@ public class OutboundAddressGuardTests
     [InlineData("11.0.0.0")]
     [InlineData("223.255.255.255")]
     [InlineData("2606:4700::1111")]
-    [InlineData("2001:4860::8888")] // Outside Teredo (2001::/32).
+    [InlineData("2001:4860::8888")] // Outside the IETF block (2001::/23).
+    [InlineData("2a00:1450::1")]
     [InlineData("2003::1")]
     [InlineData("198.17.255.255")]
     [InlineData("198.20.0.0")]

@@ -30,20 +30,18 @@ public static class OutboundAddressGuard
         (IPAddress.Parse("240.0.0.0"), 4), // Reserved, with the broadcast address.
     ];
 
-    // The IPv6 forms that can carry an IPv4 address are blocked whole: IPv4-compatible (::/96), 6to4 (2002::/16,
-    // deprecated by RFC 7526), Teredo (2001::/32), and NAT64. A relay or a gateway could turn them into an internal IPv4
-    // address, and no public client endpoint needs them.
+    // IPv6 is an allow-list: only global unicast (2000::/3, RFC 4291) counts. Every other range is out by default:
+    // ::/96, IPv4-translated ::ffff:0:0:0/96, NAT64 (64:ff9b::/96 and 64:ff9b:1::/48), 100::/64, fc00::/7, fe80::/10,
+    // and ff00::/8. A relay or a gateway could turn an IPv4-carrying form into an internal IPv4 address.
+    private static readonly IPNetwork GlobalUnicastV6 = new(IPAddress.Parse("2000::"), 3);
+
+    // The special ranges inside 2000::/3 (IANA IPv6 special-purpose registry).
     private static readonly (IPAddress Network, int PrefixLength)[] BlockedV6 =
     [
-        (IPAddress.IPv6None, 96), // ::/96: the unspecified address, ::1, and the IPv4-compatible form.
-        (IPAddress.Parse("100::"), 64), // Discard only.
-        (IPAddress.Parse("2001::"), 32), // Teredo.
+        (IPAddress.Parse("2001::"), 23), // IETF protocol assignments, with Teredo, benchmarking, and ORCHID.
         (IPAddress.Parse("2001:db8::"), 32), // Documentation.
-        (IPAddress.Parse("2002::"), 16), // 6to4.
-        (IPAddress.Parse("fc00::"), 7),
-        (IPAddress.Parse("fe80::"), 10),
-        (IPAddress.Parse("ff00::"), 8), // Multicast.
-        (IPAddress.Parse("64:ff9b::"), 96), // NAT64: a gateway would turn it into any IPv4 address, internal ones too.
+        (IPAddress.Parse("2002::"), 16), // 6to4, deprecated by RFC 7526.
+        (IPAddress.Parse("3fff::"), 20), // Documentation (RFC 9637).
     ];
 
     /// <summary>True when Heimdall may connect to the address outside Development.</summary>
@@ -56,8 +54,14 @@ public static class OutboundAddressGuard
             address = address.MapToIPv4();
         }
 
-        var blocked = address.AddressFamily == AddressFamily.InterNetwork ? BlockedV4 : BlockedV6;
-        return !blocked.Any(range => new IPNetwork(range.Network, range.PrefixLength).Contains(address));
+        if (address.AddressFamily == AddressFamily.InterNetwork)
+        {
+            return !BlockedV4.Any(range => new IPNetwork(range.Network, range.PrefixLength).Contains(address));
+        }
+
+        return address.AddressFamily == AddressFamily.InterNetworkV6
+            && GlobalUnicastV6.Contains(address)
+            && !BlockedV6.Any(range => new IPNetwork(range.Network, range.PrefixLength).Contains(address));
     }
 
     /// <summary>
