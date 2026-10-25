@@ -30,6 +30,19 @@ public class OutboundAddressGuardTests
     [InlineData("::ffff:127.0.0.1")] // IPv4-mapped forms of blocked IPv4 addresses.
     [InlineData("::ffff:10.0.0.1")]
     [InlineData("::ffff:169.254.169.254")]
+    [InlineData("::10.0.0.1")] // IPv4-compatible.
+    [InlineData("::127.0.0.1")]
+    [InlineData("2002:a00:1::1")] // 6to4 of 10.0.0.1.
+    [InlineData("2002:5db8:d822::1")] // 6to4 of a public address: blocked too, the whole range is.
+    [InlineData("2001:0:4136:e378::1")] // Teredo.
+    [InlineData("2001:db8::1")]
+    [InlineData("100::1")]
+    [InlineData("192.0.0.8")]
+    [InlineData("192.0.2.1")]
+    [InlineData("198.18.0.1")]
+    [InlineData("198.19.255.255")]
+    [InlineData("198.51.100.7")]
+    [InlineData("203.0.113.7")]
     public void Internal_address_is_blocked(string address) =>
         Assert.False(OutboundAddressGuard.IsAllowed(IPAddress.Parse(address)));
 
@@ -44,6 +57,10 @@ public class OutboundAddressGuardTests
     [InlineData("11.0.0.0")]
     [InlineData("223.255.255.255")]
     [InlineData("2606:4700::1111")]
+    [InlineData("2001:4860::8888")] // Outside Teredo (2001::/32).
+    [InlineData("2003::1")]
+    [InlineData("198.17.255.255")]
+    [InlineData("198.20.0.0")]
     [InlineData("::ffff:93.184.216.34")]
     public void Public_address_is_allowed(string address) =>
         Assert.True(OutboundAddressGuard.IsAllowed(IPAddress.Parse(address)));

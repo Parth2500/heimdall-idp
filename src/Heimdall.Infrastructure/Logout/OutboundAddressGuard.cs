@@ -20,15 +20,26 @@ public static class OutboundAddressGuard
         (IPAddress.Parse("127.0.0.0"), 8),
         (IPAddress.Parse("169.254.0.0"), 16), // Link-local, with the cloud metadata address 169.254.169.254.
         (IPAddress.Parse("172.16.0.0"), 12),
+        (IPAddress.Parse("192.0.0.0"), 24), // IETF protocol assignments.
+        (IPAddress.Parse("192.0.2.0"), 24), // Documentation (TEST-NET-1).
         (IPAddress.Parse("192.168.0.0"), 16),
+        (IPAddress.Parse("198.18.0.0"), 15), // Benchmarking.
+        (IPAddress.Parse("198.51.100.0"), 24), // Documentation (TEST-NET-2).
+        (IPAddress.Parse("203.0.113.0"), 24), // Documentation (TEST-NET-3).
         (IPAddress.Parse("224.0.0.0"), 4), // Multicast.
         (IPAddress.Parse("240.0.0.0"), 4), // Reserved, with the broadcast address.
     ];
 
+    // The IPv6 forms that can carry an IPv4 address are blocked whole: IPv4-compatible (::/96), 6to4 (2002::/16,
+    // deprecated by RFC 7526), Teredo (2001::/32), and NAT64. A relay or a gateway could turn them into an internal IPv4
+    // address, and no public client endpoint needs them.
     private static readonly (IPAddress Network, int PrefixLength)[] BlockedV6 =
     [
-        (IPAddress.IPv6Loopback, 128),
-        (IPAddress.IPv6None, 128), // ::, the unspecified address.
+        (IPAddress.IPv6None, 96), // ::/96: the unspecified address, ::1, and the IPv4-compatible form.
+        (IPAddress.Parse("100::"), 64), // Discard only.
+        (IPAddress.Parse("2001::"), 32), // Teredo.
+        (IPAddress.Parse("2001:db8::"), 32), // Documentation.
+        (IPAddress.Parse("2002::"), 16), // 6to4.
         (IPAddress.Parse("fc00::"), 7),
         (IPAddress.Parse("fe80::"), 10),
         (IPAddress.Parse("ff00::"), 8), // Multicast.
