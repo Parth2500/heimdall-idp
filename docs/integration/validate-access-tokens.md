@@ -125,7 +125,7 @@ An active token:
 
 A DPoP-bound token has `"token_type": "DPoP"` and `"cnf": {"jkt": "..."}`. Check the proof as usual.
 
-Every other token gets `{"active": false}`: invalid, expired, revoked, from a signed-out session, unknown, or a token that you may not see. You may see an access token when its `aud` is one of your `resource_audiences`, or when it was issued to your own client. Do not cache an answer: the response has `Cache-Control: no-store`, and a sign-out can come at any second.
+Every other token gets `{"active": false}`: invalid, expired, revoked, from a signed-out session, of a disabled user or client, unknown, or a token that you may not see. You may see an access token when its `aud` is one of your `resource_audiences`, or when it was issued to your own client. Do not cache an answer: the response has `Cache-Control: no-store`, and a sign-out can come at any second.
 
 A public client cannot call introspection. It gets `401` with `invalid_client`.
 

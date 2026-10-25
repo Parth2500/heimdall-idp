@@ -3,6 +3,7 @@ using Heimdall.Application.Keys;
 using Heimdall.Application.Tokens;
 using Heimdall.Domain.Common;
 using Heimdall.Domain.Tokens;
+using Heimdall.Domain.Users;
 
 namespace Heimdall.UnitTests.Application;
 
@@ -110,6 +111,22 @@ internal sealed class InMemoryTokenStore : ITokenStore
 
     public Task<TokenFamily?> FindFamilyAsync(Guid tenantId, Guid familyId, CancellationToken cancellationToken) =>
         Task.FromResult(Families.SingleOrDefault(f => f.TenantId == tenantId && f.Id == familyId));
+
+    /// <summary>The users to join with, as the real store joins the users table.</summary>
+    public List<User> Users { get; } = [];
+
+    public int FamilyReads { get; private set; }
+
+    public Task<(TokenFamily Family, User User)?> FindFamilyWithUserAsync(Guid tenantId, Guid familyId, CancellationToken cancellationToken)
+    {
+        FamilyReads++;
+        var found =
+            from f in Families
+            where f.TenantId == tenantId && f.Id == familyId
+            join u in Users on new { f.TenantId, Id = f.UserId } equals new { u.TenantId, u.Id }
+            select ((TokenFamily Family, User User)?)(f, u);
+        return Task.FromResult(found.SingleOrDefault());
+    }
 
     public Task CompleteRotationAsync(
         RefreshToken used,

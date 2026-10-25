@@ -1,5 +1,6 @@
 using Heimdall.Domain.Common;
 using Heimdall.Domain.Tokens;
+using Heimdall.Domain.Users;
 
 namespace Heimdall.Application.Tokens;
 
@@ -72,6 +73,12 @@ public interface ITokenStore
 
     /// <summary>Reads a family, without a change.</summary>
     Task<TokenFamily?> FindFamilyAsync(Guid tenantId, Guid familyId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Reads a family and its user in one query, without a change, or null when either is missing. Introspection needs
+    /// both on each call (D38), so it costs one round trip, not two.
+    /// </summary>
+    Task<(TokenFamily Family, User User)?> FindFamilyWithUserAsync(Guid tenantId, Guid familyId, CancellationToken cancellationToken);
 
     /// <summary>
     /// In the rotation transaction: inserts the new token, links the used token to it (<c>replaced_by_id</c>), and moves

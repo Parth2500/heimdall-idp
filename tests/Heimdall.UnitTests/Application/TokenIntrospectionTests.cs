@@ -8,6 +8,7 @@ using Heimdall.Domain.Clients;
 using Heimdall.Domain.Common;
 using Heimdall.Domain.Tenants;
 using Heimdall.Domain.Tokens;
+using Heimdall.Domain.Users;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Heimdall.UnitTests.Application;
@@ -33,11 +34,15 @@ public class TokenIntrospectionTests
     private readonly TokenIntrospection _service;
     private readonly Client _resourceServer;
     private readonly Client _spa;
-    private readonly Guid _userId = Guid.CreateVersion7();
+    private readonly User _user;
+    private readonly Guid _userId;
 
     public TokenIntrospectionTests()
     {
-        _service = new TokenIntrospection(new ClientAuthenticator(_clients, _time), _validator, _tokens, _audit, _time);
+        _service = new TokenIntrospection(new ClientAuthenticator(_clients, _time), _clients, _validator, _tokens, _audit, _time);
+        _user = User.Create(Guid.CreateVersion7(), _tenant.Id, "alice@example.com", "hash", Now.AddDays(-1));
+        _userId = _user.Id;
+        _tokens.Users.Add(_user);
         _resourceServer = Client.Create(
             Guid.CreateVersion7(), _tenant.Id, "orders-api", "Orders API", ClientType.Confidential,
             [GrantType.ClientCredentials], [], [], false, null, Now, ["https://billing.example.com"]);
@@ -236,6 +241,45 @@ public class TokenIntrospectionTests
     }
 
     [Fact]
+    public async Task Token_of_a_disabled_user_is_inactive_before_its_exp()
+    {
+        // As at /userinfo: a disabled user gets nothing with a valid token.
+        var family = AddFamily(_spa);
+        _user.Disable();
+        _validator.Result = Token(familyId: family.Id);
+
+        AssertInactive(await Introspect());
+        Assert.Equal(1, _tokens.FamilyReads);
+    }
+
+    [Fact]
+    public async Task Token_of_a_disabled_client_is_inactive()
+    {
+        _spa.Disable();
+        _validator.Result = Token();
+
+        AssertInactive(await Introspect());
+        Assert.Equal(0, _tokens.FamilyReads);
+    }
+
+    [Fact]
+    public async Task Token_of_an_unknown_client_is_inactive()
+    {
+        _validator.Result = Token(clientId: "deleted-app");
+
+        AssertInactive(await Introspect());
+    }
+
+    [Fact]
+    public async Task Client_credentials_token_needs_no_read()
+    {
+        _validator.Result = Token();
+
+        Assert.True((await Introspect()).Value.Active);
+        Assert.Equal(0, _tokens.FamilyReads);
+    }
+
+    [Fact]
     public async Task Token_of_a_purged_family_is_inactive()
     {
         _validator.Result = Token(familyId: Guid.CreateVersion7());
@@ -293,6 +337,15 @@ public class TokenIntrospectionTests
         var family = AddFamily(_resourceServer);
         AddRefreshToken(family);
         family.Revoke(FamilyRevocationReason.UserLogout, Now.AddSeconds(-1));
+
+        AssertInactive(await Introspect(RefreshValue));
+    }
+
+    [Fact]
+    public async Task Refresh_token_of_a_disabled_user_is_inactive()
+    {
+        AddRefreshToken(AddFamily(_resourceServer));
+        _user.Disable();
 
         AssertInactive(await Introspect(RefreshValue));
     }

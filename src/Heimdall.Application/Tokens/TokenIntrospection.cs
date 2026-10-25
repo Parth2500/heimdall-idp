@@ -5,6 +5,7 @@ using Heimdall.Application.UserInfo;
 using Heimdall.Domain.Audit;
 using Heimdall.Domain.Clients;
 using Heimdall.Domain.Common;
+using Heimdall.Domain.Users;
 
 namespace Heimdall.Application.Tokens;
 
@@ -46,6 +47,7 @@ public sealed record IntrospectionResult(
 public sealed class TokenIntrospection
 {
     private readonly ClientAuthenticator _authenticator;
+    private readonly IClientStore _clients;
     private readonly IAccessTokenValidator _validator;
     private readonly ITokenStore _tokens;
     private readonly IAuditLog _audit;
@@ -53,12 +55,14 @@ public sealed class TokenIntrospection
 
     public TokenIntrospection(
         ClientAuthenticator authenticator,
+        IClientStore clients,
         IAccessTokenValidator validator,
         ITokenStore tokens,
         IAuditLog audit,
         TimeProvider time)
     {
         _authenticator = authenticator;
+        _clients = clients;
         _validator = validator;
         _tokens = tokens;
         _audit = audit;
@@ -117,7 +121,10 @@ public sealed class TokenIntrospection
         return Result.Success(result);
     }
 
-    /// <summary>D38: signature, issuer, expiry, the caller's right to see it (D37), then one read of its family.</summary>
+    /// <summary>
+    /// D38: signature, issuer, expiry, and the caller's right to see it (D37). The token's client must still be active
+    /// (the in-memory client cache). A user grant's token then needs one read: its family unrevoked, its user active.
+    /// </summary>
     private async Task<IntrospectionResult> AccessTokenAsync(
         RequestContext context,
         Client caller,
@@ -134,11 +141,19 @@ public sealed class TokenIntrospection
             return IntrospectionResult.Inactive;
         }
 
-        // A client_credentials token has no family. A user grant's token is as active as its family.
+        // An admin can disable the client after it got the token. /token refuses that client, so its tokens end here too.
+        var client = await _clients.FindAsync(context.Tenant.Id, verified.ClientId, cancellationToken).ConfigureAwait(false);
+        if (client is not { Status: ClientStatus.Active })
+        {
+            return IntrospectionResult.Inactive;
+        }
+
+        // A client_credentials token has no family. A user grant's token is as active as its family and its user, as at
+        // /userinfo: a disabled user gets nothing with a valid token.
         if (verified.FamilyId is { } familyId)
         {
-            var family = await _tokens.FindFamilyAsync(context.Tenant.Id, familyId, cancellationToken).ConfigureAwait(false);
-            if (family is not { RevokedAt: null })
+            var found = await _tokens.FindFamilyWithUserAsync(context.Tenant.Id, familyId, cancellationToken).ConfigureAwait(false);
+            if (found is not ({ RevokedAt: null }, { Status: UserStatus.Active }))
             {
                 return IntrospectionResult.Inactive;
             }
@@ -171,8 +186,8 @@ public sealed class TokenIntrospection
             return IntrospectionResult.Inactive;
         }
 
-        var family = await _tokens.FindFamilyAsync(context.Tenant.Id, refresh.FamilyId, cancellationToken).ConfigureAwait(false);
-        if (family is null || family.ClientPk != caller.Id || !family.IsActive(now))
+        var found = await _tokens.FindFamilyWithUserAsync(context.Tenant.Id, refresh.FamilyId, cancellationToken).ConfigureAwait(false);
+        if (found is not var (family, user) || family.ClientPk != caller.Id || !family.IsActive(now) || user.Status != UserStatus.Active)
         {
             return IntrospectionResult.Inactive;
         }

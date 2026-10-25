@@ -1,6 +1,7 @@
 using Heimdall.Application.Tokens;
 using Heimdall.Domain.Common;
 using Heimdall.Domain.Tokens;
+using Heimdall.Domain.Users;
 using Heimdall.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -88,6 +89,19 @@ internal sealed class EfTokenStore : ITokenStore
     public Task<TokenFamily?> FindFamilyAsync(Guid tenantId, Guid familyId, CancellationToken cancellationToken) =>
         _db.TokenFamilies.AsNoTracking()
             .SingleOrDefaultAsync(f => f.TenantId == tenantId && f.Id == familyId, cancellationToken);
+
+    public async Task<(TokenFamily Family, User User)?> FindFamilyWithUserAsync(Guid tenantId, Guid familyId, CancellationToken cancellationToken)
+    {
+        // Both tables carry the tenant filter and row-level security. The join also requires the same tenant.
+        var found = await (
+                from f in _db.TokenFamilies.AsNoTracking()
+                where f.TenantId == tenantId && f.Id == familyId
+                join u in _db.Users.AsNoTracking() on new { f.TenantId, Id = f.UserId } equals new { u.TenantId, u.Id }
+                select new { Family = f, User = u })
+            .SingleOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return found is null ? null : (found.Family, found.User);
+    }
 
     public async Task CompleteRotationAsync(
         RefreshToken used,

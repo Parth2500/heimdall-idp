@@ -537,6 +537,9 @@ public class RefreshTokenGrantTests
             return found;
         }
 
+        public Task<(TokenFamily Family, Heimdall.Domain.Users.User User)?> FindFamilyWithUserAsync(Guid tenantId, Guid familyId, CancellationToken cancellationToken) =>
+            inner.FindFamilyWithUserAsync(tenantId, familyId, cancellationToken);
+
         public Task CompleteRotationAsync(RefreshToken used, RefreshToken replacement, TimeSpan idleTimeout, DateTimeOffset now, CancellationToken cancellationToken) =>
             inner.CompleteRotationAsync(used, replacement, idleTimeout, now, cancellationToken);
 

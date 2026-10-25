@@ -25,7 +25,7 @@ public sealed class IntrospectionTests
         _postgres = postgres;
     }
 
-    private sealed record Flow(HeimdallApiFactory Api, TestTenant Tenant, BrowserSession Browser, HttpClient Http) : IAsyncDisposable
+    private sealed record Flow(HeimdallApiFactory Api, TestTenant Tenant, BrowserSession Browser, HttpClient Http, Guid WebAppPk) : IAsyncDisposable
     {
         public async ValueTask DisposeAsync()
         {
@@ -39,13 +39,13 @@ public sealed class IntrospectionTests
     {
         var api = new HeimdallApiFactory(_postgres);
         var tenant = await api.AddTenantAsync();
-        await api.AddWebClientAsync(tenant, audiences: [Api]);
+        var webApp = await api.AddWebClientAsync(tenant, audiences: [Api]);
         await api.AddUserAsync(tenant, Email, Password);
         await api.SetResourceAudiencesAsync(tenant, resourceAudiences.Length > 0 ? resourceAudiences : [Api]);
         var browser = new BrowserSession(api, tenant.Host);
         using var login = await browser.LoginAsync(Email, Password);
         Assert.Equal(HttpStatusCode.NoContent, login.StatusCode);
-        return new Flow(api, tenant, browser, api.ClientFor(tenant.Host));
+        return new Flow(api, tenant, browser, api.ClientFor(tenant.Host), webApp.Id);
     }
 
     private static async Task<JsonElement> SignInAsync(Flow flow)
@@ -159,6 +159,18 @@ public sealed class IntrospectionTests
         var (_, body, _) = await IntrospectAsync(flow, tokens.GetProperty("access_token").GetString()!);
 
         Assert.False(body.GetProperty("active").GetBoolean());
+    }
+
+    [DockerFact]
+    public async Task Token_of_a_client_that_an_admin_disabled_is_inactive()
+    {
+        await using var flow = await SetUpAsync();
+        var tokens = await SignInAsync(flow);
+        await flow.Api.DisableClientAsync(flow.Tenant, flow.WebAppPk);
+
+        var (_, body, _) = await IntrospectAsync(flow, tokens.GetProperty("access_token").GetString()!);
+
+        Assert.Equal("""{"active":false}""", body.GetRawText());
     }
 
     [DockerFact]
