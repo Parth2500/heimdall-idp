@@ -24,6 +24,7 @@ The handler's defaults do not match Heimdall in three places. Each one makes the
 | Default | Problem | Fix |
 |---|---|---|
 | `ResponseMode = "form_post"` | Heimdall supports `query` only. It refuses `form_post` with `invalid_request`. | Set `ResponseMode = "query"`. |
+| `PushedAuthorizationBehavior` (.NET 9 and later) | The default, `UseIfAvailable`, pushes the request to `/oauth/v1/par`, because discovery lists it. This works, and the interop tests cover it. | Keep the default. Use `Require` when the operator sets `require_pushed_authorization_requests`. |
 | The client secret goes in the form body (`client_secret_post`) | Heimdall supports `client_secret_basic` only. It refuses a secret in the body with `invalid_request`. | Remove the secret from the body, and send it in the `Authorization` header from a backchannel handler. |
 | `MapInboundClaims = true` | The handler renames `sub` and other claims. | Set `MapInboundClaims = false`. |
 

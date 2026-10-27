@@ -87,6 +87,19 @@ When Stryker logs "Safe Mode", it skipped every mutant of a method, because one 
 The configuration also excludes `DependencyInjection.cs`. The integration tests cover the service wiring.
 The unit tests use in-memory fakes for the stores. `InMemoryTokenStore` has the same conditions as each SQL statement in `EfTokenStore`, and a rollback undoes its changes. The integration tests check the SQL itself.
 
+### Interop tests
+
+Certified client libraries sign in, refresh, revoke, and sign out against Heimdall (issue #21).
+
+- ASP.NET Core OpenID Connect handler: `tests/Heimdall.IntegrationTests/Interop`. It runs with the integration tests, so CI runs it. The handler uses PAR, because discovery lists the endpoint.
+- `oidc-client-ts`: `ui/interop`. It needs a running Heimdall (`seed-dev`, then `dotnet run --launch-profile https`), a user, and the exported development certificate:
+```
+dotnet dev-certs https --export-path .local/heimdall-dev-ca.pem --format PEM --no-password
+cd ui
+HEIMDALL_INTEROP_EMAIL=<email> HEIMDALL_INTEROP_PASSWORD=<password> HEIMDALL_CA_FILE=../.local/heimdall-dev-ca.pem npm run interop
+```
+Delete the `.key` file that the export also writes. Without the variables, the tests are skipped. CI does not run them yet.
+
 ## Run locally
 
 You need Docker for PostgreSQL.

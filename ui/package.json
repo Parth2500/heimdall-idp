@@ -7,7 +7,8 @@
     "build": "ng build demo && ng build account",
     "test": "ng test ui-kit --watch=false && ng test account --watch=false && ng test demo --watch=false",
     "lint:format": "prettier --check projects",
-    "watch:account": "ng build account --configuration development --watch"
+    "watch:account": "ng build account --configuration development --watch",
+    "interop": "node --test interop/oidc-client-ts.interop.mjs"
   },
   "private": true,
   "packageManager": "npm@11.19.1",
@@ -27,8 +28,10 @@
     "@angular/cli": "^22.2.3",
     "@angular/compiler-cli": "^22.2.0",
     "jsdom": "^30.0.0",
+    "oidc-client-ts": "3.5.0",
     "prettier": "^3.8.1",
     "typescript": "~6.0.2",
+    "undici": "8.11.2",
     "vitest": "^5.0.0"
   },
   "engines": {
