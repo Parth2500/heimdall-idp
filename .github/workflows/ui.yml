@@ -1,0 +1,56 @@
+name: UI
+
+# The Angular workspace in ui/. It runs only when ui/ changes. The .NET build is in ci.yml.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ui/**"
+      - ".github/workflows/ui.yml"
+  pull_request:
+    paths:
+      - "ui/**"
+      - ".github/workflows/ui.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+# Actions are pinned to full commit SHAs, so a moved or hijacked tag cannot change the code that runs.
+jobs:
+  # The Angular workspace in ui/ (frontend-design.md, U8).
+  ui:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The npm download cache, keyed on the lock file. npm ci still installs exactly what the lock file names.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: ui/.nvmrc
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      # Install scripts are the most common way a malicious package runs code. None run here.
+      - name: Install
+        run: npm ci --ignore-scripts
+
+      - name: Audit
+        run: npm audit --audit-level=low
+
+      - name: Check formatting
+        run: npm run lint:format
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build

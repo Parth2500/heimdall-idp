@@ -1,11 +1,31 @@
 name: CodeQL
 
+# The C# analysis runs when C# code or its build changes. The weekly run scans everything, so a new query in a
+# CodeQL release also reaches code that did not change.
 on:
   push:
     branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "Heimdall.slnx"
+      - "global.json"
+      - "Directory.Build.props"
+      - ".github/workflows/codeql.yml"
   pull_request:
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "Heimdall.slnx"
+      - "global.json"
+      - "Directory.Build.props"
+      - ".github/workflows/codeql.yml"
   schedule:
     - cron: "17 3 * * 1"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read

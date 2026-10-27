@@ -1,7 +1,21 @@
 name: Dependency review
 
+# Only a change to a file that names a dependency can add one.
 on:
   pull_request:
+    paths:
+      - "**/*.csproj"
+      - "Directory.Build.props"
+      - "dotnet-tools.json"
+      - "global.json"
+      - "ui/package.json"
+      - "ui/package-lock.json"
+      - "Dockerfile"
+      - ".github/workflows/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

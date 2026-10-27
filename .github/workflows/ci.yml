@@ -1,9 +1,35 @@
 name: CI
 
+# Runs only when .NET code or its build files change. The UI has its own workflow (ui.yml), and a docs-only change
+# runs neither. No status check is required on main, so a skipped workflow blocks nothing.
 on:
   push:
     branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "Heimdall.slnx"
+      - "global.json"
+      - "Directory.Build.props"
+      - "dotnet-tools.json"
+      - ".editorconfig"
+      - ".github/workflows/ci.yml"
   pull_request:
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "Heimdall.slnx"
+      - "global.json"
+      - "Directory.Build.props"
+      - "dotnet-tools.json"
+      - ".editorconfig"
+      - ".github/workflows/ci.yml"
+
+# A new push to a pull request (also a Dependabot rebase) cancels its older run. A run on main is never cancelled,
+# because it tests the merged commit.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -22,6 +48,13 @@ jobs:
         with:
           global-json-file: global.json
 
+      # The package cache, keyed on every file that names a package version. A change to any of them misses the
+      # cache, so a restore never uses an old package.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props', 'global.json', 'dotnet-tools.json') }}
+
       # NuGet audit (Directory.Build.props) fails the restore on a known-vulnerable package.
       - name: Restore
         run: dotnet restore Heimdall.slnx
@@ -36,34 +69,3 @@ jobs:
 
       - name: Test
         run: dotnet test Heimdall.slnx --configuration Release --no-build --verbosity normal
-
-  # The Angular workspace in ui/ (frontend-design.md, U8).
-  ui:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ui
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: ui/.nvmrc
-
-      # Install scripts are the most common way a malicious package runs code. None run here.
-      - name: Install
-        run: npm ci --ignore-scripts
-
-      - name: Audit
-        run: npm audit --audit-level=low
-
-      - name: Check formatting
-        run: npm run lint:format
-
-      - name: Test
-        run: npm test
-
-      - name: Build
-        run: npm run build
