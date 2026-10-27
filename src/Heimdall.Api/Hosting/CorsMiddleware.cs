@@ -31,6 +31,9 @@ internal sealed class CorsMiddleware
         [TokenEndpoint.Path] = new([HttpMethods.Post], [TokenEndpoint.DpopHeader], []),
         [RevokeEndpoint.Path] = new([HttpMethods.Post], [], []),
 
+        // RFC 9126: a browser app pushes its request with a form POST, and a DPoP proof binds the code (RFC 9449, 10.1).
+        [PushedAuthorizationEndpoint.Path] = new([HttpMethods.Post], [TokenEndpoint.DpopHeader], []),
+
         // The access token goes in the Authorization header, and a bound token's proof in the DPoP header (D28), so the
         // browser sends a preflight. The client may read WWW-Authenticate, which names the error (RFC 6750, section 3).
         [UserInfoEndpoint.Path] = new(

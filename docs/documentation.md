@@ -26,6 +26,7 @@ Heimdall follows the standards. You do not need a Heimdall library. Use a certif
 - [Concepts](integration/concepts.md): tenants, issuers, client types, and the tokens that Heimdall issues.
 - [Register a client](integration/register-a-client.md): what to give the operator, and the rules for redirect URIs.
 - [Sign in users](integration/sign-in-users.md): the authorization code flow with PKCE, step by step.
+- [Pushed authorization requests](integration/par.md): send the sign-in parameters to Heimdall first, so the browser carries only a reference.
 - [Refresh tokens](integration/refresh-tokens.md): rotation, reuse detection, and how to store refresh tokens.
 - [DPoP](integration/dpop.md): bind tokens to a key that your client holds (RFC 9449). Supported at `/authorize`, `/token`, and `/userinfo`.
 - [Service-to-service tokens](integration/service-to-service.md): the `client_credentials` grant.
@@ -62,7 +63,8 @@ Each recipe uses a client that signs in with Heimdall today, or it says that it 
 | Implicit flow, hybrid flow, password grant | Not supported, by design (OAuth 2.1, RFC 9700). |
 | `response_mode=form_post` or `fragment` | Not supported. Heimdall returns the code in the query. |
 | `client_secret_post`, `private_key_jwt` | Not supported. |
-| Request objects (`request`) and PAR (`request_uri`) | Not supported yet. PAR is planned. |
+| Pushed authorization requests (RFC 9126) | Supported for every client, with an optional DPoP proof. A client can require it for itself. See [Pushed authorization requests](integration/par.md). |
+| Request objects (`request`, JAR) | Not supported. |
 | RP-initiated logout (`end_session_endpoint`) | Supported, with a confirm page when the request has no ID token of the current session. See [Sign out](integration/sign-out.md). |
 | Back-channel logout | Supported. The `logout_token` carries `sid`. Front-channel logout is not supported, by design: browsers block third-party cookies in frames. |
 | Dynamic client registration | Not supported. The operator registers clients. |

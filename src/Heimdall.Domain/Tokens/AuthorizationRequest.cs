@@ -13,6 +13,12 @@ public sealed class AuthorizationRequest
 {
     public static readonly TimeSpan Lifetime = TimeSpan.FromMinutes(10);
 
+    /// <summary>
+    /// D41: a pushed request (RFC 9126) waits at most this long for its <c>/authorize</c> call. RFC 9126, section 2.2
+    /// asks for a short lifetime, because the <c>request_uri</c> travels through the browser.
+    /// </summary>
+    public static readonly TimeSpan PushedLifetime = TimeSpan.FromSeconds(60);
+
     /// <summary>The longest <c>state</c> or <c>nonce</c> value. Both are client values that Heimdall stores and echoes.</summary>
     public const int MaxClientValueLength = 512;
 
@@ -34,9 +40,13 @@ public sealed class AuthorizationRequest
         bool forceLogin,
         TimeSpan? maxAge,
         DateTimeOffset createdAt,
-        string? dpopKeyThumbprint)
+        string? dpopKeyThumbprint,
+        bool promptNone,
+        TokenHash? requestUriHash)
     {
         Id = id;
+        PromptNone = promptNone;
+        RequestUriHash = requestUriHash;
         TenantId = tenantId;
         ClientPk = clientPk;
         RedirectUri = redirectUri;
@@ -47,7 +57,7 @@ public sealed class AuthorizationRequest
         ForceLogin = forceLogin;
         MaxAge = maxAge;
         CreatedAt = createdAt;
-        ExpiresAt = createdAt + Lifetime;
+        ExpiresAt = createdAt + (requestUriHash is null ? Lifetime : PushedLifetime);
         DpopKeyThumbprint = dpopKeyThumbprint;
     }
 
@@ -77,7 +87,20 @@ public sealed class AuthorizationRequest
 
     public DateTimeOffset CreatedAt { get; }
 
+    /// <summary>
+    /// The end of the request. A pushed request starts with <see cref="PushedLifetime"/>. When <c>/authorize</c> takes it,
+    /// one statement moves this to <see cref="Lifetime"/> after that time, for the sign-in pages.
+    /// </summary>
     public DateTimeOffset ExpiresAt { get; }
+
+    /// <summary><c>prompt=none</c>: Heimdall shows no page and answers with an error instead.</summary>
+    public bool PromptNone { get; }
+
+    /// <summary>
+    /// The SHA-256 of the <c>request_uri</c> of a pushed request (D41), or null. It is null for a request from
+    /// <c>/authorize</c>, and for a pushed request after <c>/authorize</c> took it once (D42).
+    /// </summary>
+    public TokenHash? RequestUriHash { get; }
 
     /// <summary>
     /// The <c>dpop_jkt</c> of the request (RFC 9449, section 10), or null. The code that this request gives can then be
@@ -103,11 +126,19 @@ public sealed class AuthorizationRequest
         bool forceLogin,
         TimeSpan? maxAge,
         DateTimeOffset now,
-        string? dpopKeyThumbprint = null)
+        string? dpopKeyThumbprint = null,
+        bool promptNone = false,
+        TokenHash? requestUriHash = null)
     {
         Guard.NotEmpty(id, nameof(id));
         Guard.NotEmpty(tenantId, nameof(tenantId));
         Guard.NotEmpty(clientPk, nameof(clientPk));
+
+        if (promptNone && forceLogin)
+        {
+            // OpenID Connect Core, section 3.1.2.1: none with any other value is an error.
+            throw new DomainException("prompt=none cannot be combined with prompt=login.");
+        }
 
         if (!Pkce.IsValidChallenge(codeChallenge))
         {
@@ -136,7 +167,9 @@ public sealed class AuthorizationRequest
             forceLogin,
             maxAge,
             now,
-            dpopKeyThumbprint is null ? null : KeyThumbprint.Require(dpopKeyThumbprint, nameof(dpopKeyThumbprint)));
+            dpopKeyThumbprint is null ? null : KeyThumbprint.Require(dpopKeyThumbprint, nameof(dpopKeyThumbprint)),
+            promptNone,
+            requestUriHash);
     }
 
     public bool IsExpired(DateTimeOffset now) => now >= ExpiresAt;

@@ -17,6 +17,7 @@ public static class AuditEventTypes
     public const string FamilyRevoked = "family.revoked";
     public const string RevocationRefused = "revocation.refused";
     public const string IntrospectionRefused = "introspection.refused";
+    public const string PushRefused = "par.refused";
     public const string UserInfoRead = "userinfo.read";
     public const string LoginSucceeded = "login.succeeded";
     public const string LoginFailed = "login.failed";

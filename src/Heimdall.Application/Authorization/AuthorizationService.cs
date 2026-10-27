@@ -13,17 +13,25 @@ using Heimdall.Domain.Tokens;
 
 namespace Heimdall.Application.Authorization;
 
+/// <summary>A stored pushed request (RFC 9126, section 2.2): the reference for <c>/authorize</c> and its lifetime.</summary>
+public sealed record PushedRequest(string RequestUri, int ExpiresIn);
+
 /// <summary>
-/// The authorization endpoint: authorization code with PKCE (RFC 6749 section 4.1, RFC 7636, OAuth 2.1, RFC 9700).
-/// It checks the request, stores it, and issues a code when a valid session exists.
+/// The authorization endpoint: authorization code with PKCE (RFC 6749 section 4.1, RFC 7636, OAuth 2.1, RFC 9700),
+/// and pushed authorization requests (RFC 9126, D40 to D43). It checks the request, stores it, and issues a code when
+/// a valid session exists.
 /// </summary>
 /// <remarks>
 /// The order of checks matters. Until <c>client_id</c> and <c>redirect_uri</c> are proven valid, an error is shown by
 /// Heimdall and never redirected: a redirect to an unchecked URI is an open redirect. After that, errors go to the
-/// client's registered redirect URI.
+/// client's registered redirect URI. <c>/authorize</c> and <c>/par</c> run the same checks, so a pushed request can
+/// never pass a rule that a browser request fails.
 /// </remarks>
 public sealed class AuthorizationService
 {
+    /// <summary>RFC 9126, section 2.2: the URN form of a <c>request_uri</c>. 256 random bits follow it.</summary>
+    public const string RequestUriPrefix = "urn:ietf:params:oauth:request_uri:";
+
     private static readonly string[] SupportedPrompts = ["none", "login"];
 
     private readonly IClientStore _clients;
@@ -59,7 +67,7 @@ public sealed class AuthorizationService
 
         string? Get(string name) => parameters.TryGetValue(name, out var value) && value.Length > 0 ? value : null;
 
-        // 1. The client and the redirect URI. Errors here are never redirected.
+        // 1. The client. Errors here are never redirected.
         if (context.Tenant.Status != TenantStatus.Active)
         {
             return new AuthorizeErrorPage(OAuthError.InvalidRequestCode, "tenant suspended");
@@ -76,141 +84,88 @@ public sealed class AuthorizationService
             return new AuthorizeErrorPage(OAuthError.InvalidClientCode, client is null ? "unknown client" : $"client status {client.Status}");
         }
 
-        string redirectUri;
-        if (Get("redirect_uri") is { } requested)
+        // D42: a pushed request carries every other parameter. RFC 9126, section 4: the server uses only the pushed
+        // values, so the parameters in the browser's address change nothing.
+        if (Get("request_uri") is { } requestUri)
         {
-            if (!client.IsRedirectUriAllowed(requested))
-            {
-                return new AuthorizeErrorPage(OAuthError.InvalidRequestCode, "redirect_uri not registered (exact match)");
-            }
-
-            redirectUri = requested;
-        }
-        else if (client.RedirectUris.Count == 1)
-        {
-            // RFC 6749, section 3.1.2.3: with one registered URI, the parameter may be left out.
-            redirectUri = client.RedirectUris[0];
-        }
-        else
-        {
-            return new AuthorizeErrorPage(OAuthError.InvalidRequestCode, "redirect_uri missing");
+            return await ContinuePushedAsync(context, client, requestUri, sessionId, cancellationToken).ConfigureAwait(false);
         }
 
-        // 2. From here on, errors go back to the client's registered redirect URI.
-        var state = Get("state");
-        AuthorizeRedirect Fail(string error, string reason) => ErrorRedirect(context, redirectUri, state, error, reason);
-
-        if (state?.Length > AuthorizationRequest.MaxClientValueLength)
+        var checkedRequest = Check(context, client, Get, null);
+        if (checkedRequest.Outcome is { } refused)
         {
-            // Do not echo an oversized state back.
-            return ErrorRedirect(context, redirectUri, null, OAuthError.InvalidRequestCode, "state too long");
+            return refused;
         }
 
-        if (Get("response_type") != "code")
+        var (request, promptNone) = (checkedRequest.Request!, checkedRequest.Request!.PromptNone);
+
+        // D43: this client sends its requests only through PAR.
+        if (client.RequirePushedAuthorizationRequests)
         {
-            return Fail("unsupported_response_type", "response_type is not code");
+            return ErrorRedirect(context, request.RedirectUri, request.State, OAuthError.InvalidRequestCode, "client requires pushed authorization requests");
         }
-
-        if (Get("response_mode") is { } responseMode && responseMode != "query")
-        {
-            return Fail(OAuthError.InvalidRequestCode, "response_mode not supported");
-        }
-
-        if (Get("request") is not null)
-        {
-            return Fail("request_not_supported", "request object");
-        }
-
-        if (Get("request_uri") is not null)
-        {
-            // PAR (RFC 9126) is a Phase 2 item.
-            return Fail("request_uri_not_supported", "request_uri");
-        }
-
-        if (!client.IsGrantAllowed(GrantType.AuthorizationCode))
-        {
-            return Fail(OAuthError.UnauthorizedClientCode, "authorization_code not allowed");
-        }
-
-        // D2: S256 for every client. A missing method would mean "plain" (RFC 7636), so it is refused too.
-        if (Get("code_challenge_method") != "S256")
-        {
-            return Fail(OAuthError.InvalidRequestCode, "code_challenge_method is not S256");
-        }
-
-        var codeChallenge = Get("code_challenge");
-        if (!Pkce.IsValidChallenge(codeChallenge))
-        {
-            return Fail(OAuthError.InvalidRequestCode, "code_challenge malformed or missing");
-        }
-
-        var scopes = ScopeParser.Parse(Get("scope"));
-        if (scopes is null || scopes.Count == 0)
-        {
-            return Fail(OAuthError.InvalidScopeCode, "scope malformed or missing");
-        }
-
-        // Refuse, do not reduce: a client that asks for too much has a configuration error.
-        if (client.FilterAllowedScopes(scopes).Count != scopes.Count)
-        {
-            return Fail(OAuthError.InvalidScopeCode, "scope not allowed for client");
-        }
-
-        if (scopes.Contains("offline_access", StringComparer.Ordinal) && !client.RefreshEnabled)
-        {
-            return Fail(OAuthError.InvalidScopeCode, "offline_access without the refresh_token grant");
-        }
-
-        var prompts = (Get("prompt") ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (prompts.Any(p => !SupportedPrompts.Contains(p, StringComparer.Ordinal)) || prompts.Length > 1)
-        {
-            // OpenID Connect: "none" with any other value is an error. Other values are not supported yet.
-            return Fail(OAuthError.InvalidRequestCode, "prompt not supported");
-        }
-
-        TimeSpan? maxAge = null;
-        if (Get("max_age") is { } maxAgeText)
-        {
-            if (!int.TryParse(maxAgeText, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds))
-            {
-                return Fail(OAuthError.InvalidRequestCode, "max_age malformed");
-            }
-
-            maxAge = TimeSpan.FromSeconds(seconds);
-        }
-
-        var nonce = Get("nonce");
-        if (nonce?.Length > AuthorizationRequest.MaxClientValueLength)
-        {
-            return Fail(OAuthError.InvalidRequestCode, "nonce too long");
-        }
-
-        // D27, RFC 9449 section 10: the thumbprint of the key that must redeem the code.
-        var dpopKeyThumbprint = Get("dpop_jkt");
-        if (dpopKeyThumbprint is not null && !KeyThumbprint.IsValid(dpopKeyThumbprint))
-        {
-            return Fail(OAuthError.InvalidRequestCode, "dpop_jkt malformed");
-        }
-
-        var now = _time.GetUtcNow();
-        var request = AuthorizationRequest.Create(
-            Guid.CreateVersion7(),
-            context.Tenant.Id,
-            client.Id,
-            redirectUri,
-            string.Join(' ', scopes),
-            state,
-            nonce,
-            codeChallenge!,
-            forceLogin: prompts.Contains("login"),
-            maxAge,
-            now,
-            dpopKeyThumbprint);
 
         // The request is stored only when Heimdall must show a page (sign-in or consent). A signed-in user gets the code
         // at once, and prompt=none never shows a page, so both need no stored request.
-        return await ContinueAsync(context, client, request, stored: false, sessionId, prompts.Contains("none"), cancellationToken)
+        return await ContinueAsync(context, client, request, stored: false, sessionId, promptNone, cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// <c>POST /oauth/v1/par</c> (RFC 9126, D40, D41). The caller is the authenticated client. Heimdall runs every check
+    /// of <c>/authorize</c>, stores the request for <see cref="AuthorizationRequest.PushedLifetime"/>, and returns a
+    /// reference that only this client can use, once.
+    /// </summary>
+    /// <param name="parameters">The form parameters. The endpoint already refused repeated parameters.</param>
+    /// <param name="proofKeyThumbprint">The key of the request's checked DPoP proof (RFC 9449, section 10.1), or null.</param>
+    public async Task<Result<PushedRequest>> PushAsync(
+        RequestContext context,
+        Client client,
+        IReadOnlyDictionary<string, string> parameters,
+        string? proofKeyThumbprint,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(client);
+        ArgumentNullException.ThrowIfNull(parameters);
+
+        string? Get(string name) => parameters.TryGetValue(name, out var value) && value.Length > 0 ? value : null;
+
+        if (context.Tenant.Status != TenantStatus.Active)
+        {
+            return Result.Failure<PushedRequest>(OAuthError.InvalidClient("tenant suspended"));
+        }
+
+        // RFC 9126, section 2.1: a pushed request cannot point to another pushed request.
+        if (Get("request_uri") is not null)
+        {
+            return Result.Failure<PushedRequest>(OAuthError.InvalidRequest("request_uri in a pushed request"));
+        }
+
+        // The client_id in the body, when present, must name the authenticated client (RFC 9126, section 2.1).
+        if (Get("client_id") is { } clientId && !string.Equals(clientId, client.ClientId, StringComparison.Ordinal))
+        {
+            return Result.Failure<PushedRequest>(OAuthError.InvalidRequest("client_id differs from the authenticated client"));
+        }
+
+        // RFC 9449, section 10.1: a proof at PAR binds the code like dpop_jkt. With both, they must name the same key.
+        var dpopKey = Get("dpop_jkt");
+        if (proofKeyThumbprint is not null && dpopKey is not null && !string.Equals(proofKeyThumbprint, dpopKey, StringComparison.Ordinal))
+        {
+            return Result.Failure<PushedRequest>(OAuthError.InvalidDpopProof("DPoP proof key differs from dpop_jkt"));
+        }
+
+        var requestUri = RequestUriPrefix + Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(32));
+        var checkedRequest = Check(context, client, Get, TokenHash.Compute(requestUri), proofKeyThumbprint);
+        if (checkedRequest.Outcome is { } refused)
+        {
+            // The client called Heimdall directly, so the error goes back in the response, never to a redirect.
+            return Result.Failure<PushedRequest>(ToError(refused));
+        }
+
+        _store.AddRequest(checkedRequest.Request!);
+        await _store.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return Result.Success(new PushedRequest(requestUri, (int)AuthorizationRequest.PushedLifetime.TotalSeconds));
     }
 
     /// <summary>
@@ -231,9 +186,11 @@ public sealed class AuthorizationService
         }
 
         var request = await _store.FindRequestAsync(context.Tenant.Id, id, cancellationToken).ConfigureAwait(false);
-        if (request is null || request.IsExpired(_time.GetUtcNow()))
+
+        // A pushed request that /authorize has not taken yet is not resumable: only its request_uri starts it (D42).
+        if (request is null || request.RequestUriHash is not null || request.IsExpired(_time.GetUtcNow()))
         {
-            return new AuthorizeErrorPage(OAuthError.InvalidRequestCode, request is null ? "request unknown or used" : "request expired");
+            return new AuthorizeErrorPage(OAuthError.InvalidRequestCode, request is { RequestUriHash: null } ? "request expired" : "request unknown or used");
         }
 
         // Check the client again: an admin can disable it or remove the redirect URI while the user signs in.
@@ -246,6 +203,197 @@ public sealed class AuthorizationService
         return await ContinueAsync(context, client, request, stored: true, sessionId, promptNone: false, cancellationToken)
             .ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// D42: <c>/authorize</c> with a <c>request_uri</c>. One conditional statement takes the pushed request, so a second
+    /// use of the same value finds nothing. A <c>request_uri</c> that is unknown, used, expired, or of another client gets
+    /// Heimdall's error page: Heimdall cannot trust a redirect URI that it cannot find.
+    /// </summary>
+    private async Task<AuthorizeOutcome> ContinuePushedAsync(
+        RequestContext context,
+        Client client,
+        string requestUri,
+        string? sessionId,
+        CancellationToken cancellationToken)
+    {
+        if (!requestUri.StartsWith(RequestUriPrefix, StringComparison.Ordinal) || requestUri.Length > 128)
+        {
+            return new AuthorizeErrorPage(OAuthError.InvalidRequestCode, "request_uri malformed");
+        }
+
+        var request = await _store.TakePushedRequestAsync(context.Tenant.Id, TokenHash.Compute(requestUri), client.Id, _time.GetUtcNow(), cancellationToken)
+            .ConfigureAwait(false);
+        if (request is null)
+        {
+            return new AuthorizeErrorPage(OAuthError.InvalidRequestCode, "request_uri unknown, used, expired, or of another client");
+        }
+
+        // The client can lose the redirect URI in the minute after the push.
+        if (!client.IsRedirectUriAllowed(request.RedirectUri))
+        {
+            return new AuthorizeErrorPage(OAuthError.InvalidClientCode, "redirect_uri removed after the push");
+        }
+
+        return await ContinueAsync(context, client, request, stored: true, sessionId, request.PromptNone, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>The result of the checks: a refusal, or the checked request (not stored yet).</summary>
+    private readonly record struct CheckedRequest(AuthorizeOutcome? Outcome, AuthorizationRequest? Request);
+
+    /// <summary>
+    /// Every check of an authorization request after the client is known. <c>/authorize</c> and <c>/par</c> share it.
+    /// </summary>
+    /// <param name="requestUriHash">For a pushed request, the hash of its new <c>request_uri</c>.</param>
+    /// <param name="proofKeyThumbprint">
+    /// For a pushed request with a DPoP proof, its key. It binds like dpop_jkt. A browser request never has one.
+    /// </param>
+    private CheckedRequest Check(
+        RequestContext context,
+        Client client,
+        Func<string, string?> get,
+        TokenHash? requestUriHash,
+        string? proofKeyThumbprint = null)
+    {
+        string redirectUri;
+        if (get("redirect_uri") is { } requested)
+        {
+            if (!client.IsRedirectUriAllowed(requested))
+            {
+                return new(new AuthorizeErrorPage(OAuthError.InvalidRequestCode, "redirect_uri not registered (exact match)"), null);
+            }
+
+            redirectUri = requested;
+        }
+        else if (client.RedirectUris.Count == 1)
+        {
+            // RFC 6749, section 3.1.2.3: with one registered URI, the parameter may be left out.
+            redirectUri = client.RedirectUris[0];
+        }
+        else
+        {
+            return new(new AuthorizeErrorPage(OAuthError.InvalidRequestCode, "redirect_uri missing"), null);
+        }
+
+        // 2. From here on, errors go back to the client's registered redirect URI.
+        var state = get("state");
+        CheckedRequest Fail(string error, string reason) => new(ErrorRedirect(context, redirectUri, state, error, reason), null);
+
+        if (state?.Length > AuthorizationRequest.MaxClientValueLength)
+        {
+            // Do not echo an oversized state back.
+            return new(ErrorRedirect(context, redirectUri, null, OAuthError.InvalidRequestCode, "state too long"), null);
+        }
+
+        if (get("response_type") != "code")
+        {
+            return Fail("unsupported_response_type", "response_type is not code");
+        }
+
+        if (get("response_mode") is { } responseMode && responseMode != "query")
+        {
+            return Fail(OAuthError.InvalidRequestCode, "response_mode not supported");
+        }
+
+        if (get("request") is not null)
+        {
+            return Fail("request_not_supported", "request object");
+        }
+
+        if (!client.IsGrantAllowed(GrantType.AuthorizationCode))
+        {
+            return Fail(OAuthError.UnauthorizedClientCode, "authorization_code not allowed");
+        }
+
+        // D2: S256 for every client. A missing method would mean "plain" (RFC 7636), so it is refused too.
+        if (get("code_challenge_method") != "S256")
+        {
+            return Fail(OAuthError.InvalidRequestCode, "code_challenge_method is not S256");
+        }
+
+        var codeChallenge = get("code_challenge");
+        if (!Pkce.IsValidChallenge(codeChallenge))
+        {
+            return Fail(OAuthError.InvalidRequestCode, "code_challenge malformed or missing");
+        }
+
+        var scopes = ScopeParser.Parse(get("scope"));
+        if (scopes is null || scopes.Count == 0)
+        {
+            return Fail(OAuthError.InvalidScopeCode, "scope malformed or missing");
+        }
+
+        // Refuse, do not reduce: a client that asks for too much has a configuration error.
+        if (client.FilterAllowedScopes(scopes).Count != scopes.Count)
+        {
+            return Fail(OAuthError.InvalidScopeCode, "scope not allowed for client");
+        }
+
+        if (scopes.Contains("offline_access", StringComparer.Ordinal) && !client.RefreshEnabled)
+        {
+            return Fail(OAuthError.InvalidScopeCode, "offline_access without the refresh_token grant");
+        }
+
+        var prompts = (get("prompt") ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (prompts.Any(p => !SupportedPrompts.Contains(p, StringComparer.Ordinal)) || prompts.Length > 1)
+        {
+            // OpenID Connect: "none" with any other value is an error. Other values are not supported yet.
+            return Fail(OAuthError.InvalidRequestCode, "prompt not supported");
+        }
+
+        TimeSpan? maxAge = null;
+        if (get("max_age") is { } maxAgeText)
+        {
+            if (!int.TryParse(maxAgeText, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds))
+            {
+                return Fail(OAuthError.InvalidRequestCode, "max_age malformed");
+            }
+
+            maxAge = TimeSpan.FromSeconds(seconds);
+        }
+
+        var nonce = get("nonce");
+        if (nonce?.Length > AuthorizationRequest.MaxClientValueLength)
+        {
+            return Fail(OAuthError.InvalidRequestCode, "nonce too long");
+        }
+
+        // D27, RFC 9449 section 10: the thumbprint of the key that must redeem the code. At PAR, a proof gives it too.
+        var dpopKeyThumbprint = get("dpop_jkt");
+        if (dpopKeyThumbprint is not null && !KeyThumbprint.IsValid(dpopKeyThumbprint))
+        {
+            return Fail(OAuthError.InvalidRequestCode, "dpop_jkt malformed");
+        }
+
+        dpopKeyThumbprint ??= proofKeyThumbprint;
+
+        return new(null, AuthorizationRequest.Create(
+            Guid.CreateVersion7(),
+            context.Tenant.Id,
+            client.Id,
+            redirectUri,
+            string.Join(' ', scopes),
+            state,
+            nonce,
+            codeChallenge!,
+            forceLogin: prompts.Contains("login"),
+            maxAge,
+            _time.GetUtcNow(),
+            dpopKeyThumbprint,
+            promptNone: prompts.Contains("none"),
+            requestUriHash));
+    }
+
+    /// <summary>
+    /// A refusal of <see cref="Check"/> as an error of the PAR response. Its code is the code that the redirect or the
+    /// error page would carry. The reason stays for the log.
+    /// </summary>
+    private static OAuthError ToError(AuthorizeOutcome refused) => refused switch
+    {
+        AuthorizeErrorPage page => new OAuthError(page.Error, page.Reason),
+        AuthorizeRedirect redirect => new OAuthError(redirect.Parameters[0].Value, redirect.Reason ?? string.Empty),
+        _ => throw new InvalidOperationException($"Unknown refusal {refused.GetType().Name}."),
+    };
 
     /// <param name="stored">True when the request is already stored: a resume after the sign-in or consent page.</param>
     private async Task<AuthorizeOutcome> ContinueAsync(

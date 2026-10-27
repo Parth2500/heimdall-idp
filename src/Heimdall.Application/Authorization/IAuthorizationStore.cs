@@ -1,3 +1,4 @@
+using Heimdall.Domain.Common;
 using Heimdall.Domain.Tokens;
 
 namespace Heimdall.Application.Authorization;
@@ -14,6 +15,20 @@ public interface IAuthorizationStore
     Task<AuthorizationRequest?> FindRequestAsync(Guid tenantId, Guid requestId, CancellationToken cancellationToken);
 
     void RemoveRequest(AuthorizationRequest request);
+
+    /// <summary>
+    /// D42: one conditional UPDATE takes a pushed request for <c>/authorize</c>. It matches only an unexpired request
+    /// with this <c>request_uri</c> hash for this client. It clears the hash, so the same <c>request_uri</c> never works
+    /// twice, and it moves <c>expires_at</c> to <see cref="AuthorizationRequest.Lifetime"/> after <paramref name="now"/>
+    /// for the sign-in pages. Returns the request, tracked for change, or null when no row matched. A request_uri sent
+    /// with another client_id matches no row, so it cannot burn the real client's request.
+    /// </summary>
+    Task<AuthorizationRequest?> TakePushedRequestAsync(
+        Guid tenantId,
+        TokenHash requestUriHash,
+        Guid clientPk,
+        DateTimeOffset now,
+        CancellationToken cancellationToken);
 
     void AddCode(AuthorizationCode code);
 

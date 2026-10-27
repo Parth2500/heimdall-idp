@@ -36,7 +36,20 @@ public sealed class DpopTokenCheck
                 : Result.Success<string?>(null);
         }
 
-        var checkedProof = _validator.Validate(proof, new DpopRequest("POST", TokenEndpointAddress.For(context.Issuer)));
+        return await CheckProofAsync(context, proof, TokenEndpointAddress.For(context.Issuer), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Checks one proof for a POST to <paramref name="endpoint"/> and uses up its <c>jti</c>. Returns the key thumbprint,
+    /// or <c>invalid_dpop_proof</c>. PAR uses it directly (RFC 9449, section 10.1): a proof there is optional for every
+    /// client, because <c>require_dpop</c> is about the tokens that /token issues.
+    /// </summary>
+    public async Task<Result<string?>> CheckProofAsync(RequestContext context, string proof, Uri endpoint, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(proof);
+
+        var checkedProof = _validator.Validate(proof, new DpopRequest("POST", endpoint));
         if (!checkedProof.IsSuccess)
         {
             return Result.Failure<string?>(checkedProof.Error);

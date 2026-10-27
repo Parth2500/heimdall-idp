@@ -263,6 +263,32 @@ Boundary: B2. A resource server asks if a token is active now. Offline validatio
 | Elevation of privilege | A token stays active after a sign-out or a reuse. | The family read sees every revocation at once (D38). |
 | Elevation of privilege | A token of a disabled user or client stays active. | The same read checks the user's status, and the client cache checks the client's status (D38). |
 
+## `POST /oauth/v1/par` (RFC 9126, issue #18)
+
+Status: decided by Claude on 2026-10-28, under the owner's go-ahead for the Phase 2 group. Built on 2026-10-28. The owner can review D40 to D43.
+
+Boundary: B2. The client sends its authorization parameters to Heimdall directly. The browser then carries only a reference, so nobody can read or change the parameters in the browser's address.
+
+| ID | Decision | Reason |
+|---|---|---|
+| D40 | `POST /oauth/v1/par` takes the form rules of `/token`. A confidential client authenticates with `client_secret_basic`. A public client sends its `client_id` only. A DPoP proof is optional for every client. It binds the code to its key, as `dpop_jkt` does. With both, they must name the same key. | RFC 9126, section 2, and RFC 9449, section 10.1. For a public client, PAR does not prove who sent the request. It stops a change of the parameters on the way. |
+| D41 | Heimdall runs every check of `/authorize` on the pushed parameters, with the same code. It stores the request in `authorization_requests` with the SHA-256 of a new `request_uri`: `urn:ietf:params:oauth:request_uri:` and 256 random bits. The request lives 60 seconds. A refused request gets a JSON error, never a redirect. | One check path means that a pushed request can never pass a rule that a browser request fails. Only the hash is stored (D3). The browser carries the `request_uri`, so its life must be short (RFC 9126, section 2.2). |
+| D42 | `/authorize` with `request_uri` and `client_id` takes the request with one conditional statement. The statement matches only this client and an unexpired request. It clears the hash and gives the request the normal 10 minutes for the sign-in pages. Heimdall ignores every other parameter in the address. An unknown, used, expired, or foreign `request_uri` gets Heimdall's error page. | The conditional statement makes a `request_uri` single use, also under concurrent requests, as for codes. A `request_uri` sent with another `client_id` matches no row, so it cannot burn the real client's request. Heimdall cannot trust a redirect URI that it cannot find. |
+| D43 | A client can require PAR (`require_pushed_authorization_requests`). `/authorize` then refuses its requests without `request_uri` with `invalid_request` to the redirect URI. Discovery says `require_pushed_authorization_requests: false` for the server. | RFC 9126, section 6. A client that never sends parameters in the address can make that a rule. The server does not require PAR from all clients, so existing clients keep working. |
+
+| STRIDE | Threat | Mitigation |
+|---|---|---|
+| Spoofing | An attacker guesses client secrets at `/par`. | Heimdall audits each failed client authentication as `par.refused`. The per-IP failure limit of `/token` applies (D40). |
+| Spoofing | An attacker uses a stolen `request_uri` with another client. | The take statement matches only the client of the request. The real client's request stays usable (D42). |
+| Tampering | An attacker changes the scope or the redirect URI in the browser's address. | Heimdall uses only the pushed values and ignores the address (D42). |
+| Tampering | A pushed request carries another `request_uri`. | Heimdall refuses it with `invalid_request` (D41). |
+| Repudiation | A client says that it never pushed a request. | Only an authenticated or named client can push. The code that the request gives writes `code.issued` with the client. |
+| Information disclosure | The authorization parameters leak through the browser history or a proxy log. | They never enter the address. The `request_uri` is opaque, lives 60 seconds, and works once (D41, D42). |
+| Information disclosure | A database leak shows usable `request_uri` values. | Heimdall stores only their SHA-256 (D3). |
+| Denial of service | A client fills `authorization_requests` with pushed rows. | Each push counts against the client's issuance limit. The purge job deletes expired rows. |
+| Elevation of privilege | A pushed request passes a check that a browser request fails. | `/par` and `/authorize` share one check (D41). |
+| Elevation of privilege | A `request_uri` works twice, so one request gives two codes. | One conditional statement clears the hash. A concurrent second use matches no row (D42). |
+
 ## `GET /oauth/v1/userinfo`
 
 Boundary: B2 and B5. The endpoint needs an access token, as a bearer token or as a DPoP-bound token (D28). It returns the claims of the subject.

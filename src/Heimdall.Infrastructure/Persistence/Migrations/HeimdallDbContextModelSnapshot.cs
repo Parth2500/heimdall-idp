@@ -147,6 +147,10 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("require_dpop");
 
+                    b.Property<bool>("RequirePushedAuthorizationRequests")
+                        .HasColumnType("boolean")
+                        .HasColumnName("require_pushed_authorization_requests");
+
                     b.PrimitiveCollection<string[]>("ResourceAudiences")
                         .IsRequired()
                         .HasColumnType("text[]")
@@ -600,11 +604,20 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(512)")
                         .HasColumnName("nonce");
 
+                    b.Property<bool>("PromptNone")
+                        .HasColumnType("boolean")
+                        .HasColumnName("prompt_none");
+
                     b.Property<string>("RedirectUri")
                         .IsRequired()
                         .HasMaxLength(2048)
                         .HasColumnType("character varying(2048)")
                         .HasColumnName("redirect_uri");
+
+                    b.Property<byte[]>("RequestUriHash")
+                        .HasMaxLength(32)
+                        .HasColumnType("bytea")
+                        .HasColumnName("request_uri_hash");
 
                     b.Property<string>("Scope")
                         .IsRequired()
@@ -630,8 +643,10 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                     b.HasIndex("ExpiresAt")
                         .HasDatabaseName("ix_authorization_requests_expires_at");
 
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_authorization_requests_tenant_id");
+                    b.HasIndex("TenantId", "RequestUriHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_authorization_requests_tenant_id_request_uri_hash")
+                        .HasFilter("request_uri_hash IS NOT NULL");
 
                     b.ToTable("authorization_requests", null, t =>
                         {

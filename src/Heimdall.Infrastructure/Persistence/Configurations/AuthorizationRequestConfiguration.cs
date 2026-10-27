@@ -40,6 +40,12 @@ internal sealed class AuthorizationRequestConfiguration : IEntityTypeConfigurati
         builder.Property(r => r.ConsentUserId);
         builder.Property(r => r.ConsentApproved);
         builder.Property(r => r.DpopKeyThumbprint).HasMaxLength(43);
+        builder.Property(r => r.PromptNone);
+
+        // D41, D42: /authorize finds a pushed request by the hash of its request_uri. Unique, so one value can never
+        // match two rows. The plain request_uri is never stored (D3).
+        builder.Property(r => r.RequestUriHash).HasConversion(Converters.Hash).HasMaxLength(32);
+        builder.HasIndex(r => new { r.TenantId, r.RequestUriHash }).IsUnique().HasFilter("request_uri_hash IS NOT NULL");
 
         // The purge job deletes expired requests.
         builder.HasIndex(r => r.ExpiresAt);

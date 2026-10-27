@@ -57,6 +57,7 @@ internal sealed class ClientConfiguration : IEntityTypeConfiguration<Client>
         builder.Property(c => c.Status).HasConversion(new SnakeCaseEnumConverter<ClientStatus>()).HasMaxLength(32);
         builder.Property(c => c.RequireConsent);
         builder.Property(c => c.RequireDpop);
+        builder.Property(c => c.RequirePushedAuthorizationRequests).HasColumnName("require_pushed_authorization_requests");
         builder.Property(c => c.CreatedAt);
 
         builder.PrimitiveCollection(c => c.AllowedGrantTypes)

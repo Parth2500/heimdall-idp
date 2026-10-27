@@ -164,8 +164,20 @@ internal sealed class InMemoryTokenStore : ITokenStore
     }
 
     /// <summary>Sets a property as an UPDATE statement would, past the Domain methods.</summary>
-    public static void Set<T>(object entity, string property, T value) =>
-        entity.GetType().GetProperty(property)!.SetValue(entity, value);
+    public static void Set<T>(object entity, string property, T value)
+    {
+        // A get-only property has a compiler backing field, which EF Core writes the same way.
+        var info = entity.GetType().GetProperty(property)!;
+        if (info.SetMethod is not null)
+        {
+            info.SetValue(entity, value);
+            return;
+        }
+
+        entity.GetType()
+            .GetField($"<{property}>k__BackingField", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .SetValue(entity, value);
+    }
 
     private void Change<T>(object entity, string property, T value)
     {

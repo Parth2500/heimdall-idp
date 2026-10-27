@@ -12,6 +12,7 @@ All paths are relative to the tenant's issuer, for example `https://acme.example
 | `/oauth/v1/token` | `POST` | Issues tokens. |
 | `/oauth/v1/userinfo` | `GET`, `POST` | Returns the user's claims. |
 | `/oauth/v1/revoke` | `POST` | Revokes a refresh token family. |
+| `/oauth/v1/par` | `POST` | Stores an authorization request and returns a `request_uri` (RFC 9126). |
 | `/oauth/v1/introspect` | `POST` | Says if a token is active now (RFC 7662). Confidential clients only. |
 | `/oauth/v1/logout` | `GET`, `POST` | Ends the Heimdall session (RP-Initiated Logout 1.0). |
 
@@ -42,7 +43,9 @@ Returns the discovery document (OpenID Connect Discovery 1.0). It lists only wha
   "backchannel_logout_supported": true,
   "backchannel_logout_session_supported": true,
   "introspection_endpoint": "https://acme.example.com/oauth/v1/introspect",
-  "introspection_endpoint_auth_methods_supported": ["client_secret_basic"]
+  "introspection_endpoint_auth_methods_supported": ["client_secret_basic"],
+  "pushed_authorization_request_endpoint": "https://acme.example.com/oauth/v1/par",
+  "require_pushed_authorization_requests": false
 }
 ```
 
@@ -186,6 +189,18 @@ Revokes a refresh token family (RFC 7009). The form and client authentication ru
 Response: `200` with an empty body, for any token, after successful client authentication. An error only for a malformed request (`400`) or failed client authentication (`401`).
 
 CORS: client origins of public clients only.
+
+## `POST /oauth/v1/par`
+
+Stores an authorization request (RFC 9126). The form rules and the client authentication are the same as at `/token`. See [Pushed authorization requests](par.md).
+
+- Parameters: every parameter of `/authorize`, except `request_uri`.
+- `DPoP` header: optional. It binds the code to its key.
+- Response: `201` with `{"request_uri": "urn:ietf:params:oauth:request_uri:...", "expires_in": 60}` and `Cache-Control: no-store`.
+- Errors: JSON, as at `/token`. A request that `/authorize` would refuse gets the same error code here.
+- CORS: client origins of public clients, with the `DPoP` header.
+
+Then send the browser to `/oauth/v1/authorize?client_id=...&request_uri=...`. Heimdall ignores every other parameter there.
 
 ## `POST /oauth/v1/introspect`
 

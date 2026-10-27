@@ -193,6 +193,7 @@ AccountPages.Map(app);
 app.MapPost(TokenEndpoint.Path, TokenEndpoint.HandleAsync);
 app.MapPost(RevokeEndpoint.Path, RevokeEndpoint.HandleAsync);
 app.MapPost(IntrospectionEndpoint.Path, IntrospectionEndpoint.HandleAsync);
+app.MapPost(PushedAuthorizationEndpoint.Path, PushedAuthorizationEndpoint.HandleAsync);
 app.MapGet(WellKnownEndpoints.DiscoveryPath, WellKnownEndpoints.DiscoveryAsync);
 app.MapGet(WellKnownEndpoints.JwksPath, WellKnownEndpoints.JwksAsync);
 SessionEndpoints.Map(app);

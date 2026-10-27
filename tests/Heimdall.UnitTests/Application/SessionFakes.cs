@@ -71,6 +71,23 @@ internal sealed class InMemoryAuthorizationStore : IAuthorizationStore
 
     public void RemoveRequest(AuthorizationRequest request) => _removed.Add(request);
 
+    public int Takes { get; private set; }
+
+    /// <summary>The conditions of the conditional UPDATE in <c>EfAuthorizationStore</c>.</summary>
+    public Task<AuthorizationRequest?> TakePushedRequestAsync(Guid tenantId, TokenHash requestUriHash, Guid clientPk, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        Takes++;
+        var request = Requests.SingleOrDefault(r =>
+            r.TenantId == tenantId && r.RequestUriHash == requestUriHash && r.ClientPk == clientPk && r.ExpiresAt > now);
+        if (request is not null)
+        {
+            InMemoryTokenStore.Set(request, nameof(AuthorizationRequest.RequestUriHash), (TokenHash?)null);
+            InMemoryTokenStore.Set(request, nameof(AuthorizationRequest.ExpiresAt), now + AuthorizationRequest.Lifetime);
+        }
+
+        return Task.FromResult(request);
+    }
+
     public void AddCode(AuthorizationCode code) => _codes.Add(code);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken)

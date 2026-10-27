@@ -133,6 +133,12 @@ public sealed class Client
     /// </summary>
     public bool RequireDpop { get; private set; }
 
+    /// <summary>
+    /// RFC 9126, section 6 (<c>require_pushed_authorization_requests</c>, D43): <c>/authorize</c> takes this client's
+    /// requests only through PAR, so no authorization parameter travels in the browser's address.
+    /// </summary>
+    public bool RequirePushedAuthorizationRequests { get; private set; }
+
     public ClientTokenOverrides TokenOverrides { get; private set; }
 
     public ClientStatus Status { get; private set; }
@@ -356,6 +362,9 @@ public sealed class Client
         ArgumentNullException.ThrowIfNull(overrides);
         TokenOverrides = overrides;
     }
+
+    /// <summary>Turns the PAR requirement on or off (D43).</summary>
+    public void RequirePushedRequests(bool required) => RequirePushedAuthorizationRequests = required;
 
     public void Approve()
     {

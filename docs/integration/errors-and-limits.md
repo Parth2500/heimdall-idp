@@ -25,7 +25,7 @@ These errors come back to your `redirect_uri` as query parameters, with `state` 
 | `invalid_scope` | `scope` is missing, malformed, or has a scope that your client does not have. Or it has `offline_access` without the `refresh_token` grant. | Ask only for registered scopes. |
 | `unauthorized_client` | Your client does not have the `authorization_code` grant. | Ask the operator. |
 | `request_not_supported` | You sent `request`. | Remove it. |
-| `request_uri_not_supported` | You sent `request_uri`. | Remove it. PAR is not supported yet. |
+| `invalid_request` (error page) | The `request_uri` is unknown, used, expired, or was pushed by another client. | Push the request again, then use the new `request_uri` within 60 seconds, once. See [Pushed authorization requests](par.md). |
 | `access_denied` | The user refused consent. | Show a message. Do not retry at once. |
 | `login_required` | `prompt=none` and the user has no valid Heimdall session. | Send the user to `/authorize` without `prompt=none`. |
 | `consent_required` | `prompt=none` and your client needs consent. | Send the user to `/authorize` without `prompt=none`. |

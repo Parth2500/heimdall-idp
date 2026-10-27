@@ -80,6 +80,7 @@ One `INSERT ... ON CONFLICT DO NOTHING` statement records a proof. One affected 
 | `allowed_audiences` | text[] | D22. Absolute URIs, https except loopback, no query or fragment. Check: not empty when `allowed_grant_types` has `client_credentials`. |
 | `post_logout_redirect_uris` | text[] | D32. The redirect URI rules apply. Matching is by exact string. Empty means that Heimdall never redirects after a sign-out of this client. |
 | `backchannel_logout_uri` | text, null | D34, D35. The redirect URI rules apply. Null means that the client gets no back-channel logout. |
+| `require_pushed_authorization_requests` | boolean | D43. `/authorize` refuses a request of this client without `request_uri`. |
 | `resource_audiences` | text[] | D37. The audiences that the client serves as a resource server, for introspection. The audience rules of D22 apply. Check: empty unless the client is `confidential`. |
 | `require_consent` | bool | |
 | `status` | text | `pending`, `active`, `disabled`. A client is `pending` until an admin approves it. |
@@ -115,7 +116,9 @@ Heimdall stores the pending `/authorize` request here while the user signs in an
 | `max_age_seconds` | integer, null | The OpenID Connect `max_age`. Check: not negative. |
 | `created_at`, `expires_at` | timestamptz | `expires_at` is `created_at` plus 10 minutes. |
 | `consent_user_id`, `consent_approved` | uuid null, boolean null | The consent decision for this request and the user who made it. Check: both null or both set. |
-| `dpop_key_thumbprint` | text, null | The request's `dpop_jkt` (D27). Check: null or 43 characters. Heimdall copies it to the code. |
+| `dpop_key_thumbprint` | text, null | The request's `dpop_jkt` (D27), or the key of the DPoP proof at `/par` (D40). Check: null or 43 characters. Heimdall copies it to the code. |
+| `prompt_none` | boolean | `prompt=none`. A pushed request needs it, because `/authorize` does not see the parameters again. |
+| `request_uri_hash` | bytea, null | The SHA-256 of the `request_uri` of a pushed request (D41). **Unique with `tenant_id`** where not null. `/authorize` clears it when it takes the request (D42). |
 
 Heimdall deletes the row in the same transaction that inserts the code. If two requests resume the same row, the second `DELETE` matches no row, and that transaction rolls back. One stored request gives one code.
 
@@ -285,6 +288,16 @@ WHERE  id = @family_id AND revoked_at IS NULL;
 After a successful rotation, the application checks that the user is active and that the scope is not wider. It inserts the new token, sets `replaced_by_id`, and moves `idle_expires_at` to `LEAST(@now + idle, absolute_expires_at)`. All of this runs in one transaction. A disabled user gets `invalid_grant`, and Heimdall revokes the family with the reason `user_disabled`.
 
 **Revoke a family** (`/revoke`, logout, admin) is the second statement above with another `revoked_reason`. The statement is idempotent. `/revoke` uses the reason `user_logout`.
+
+**Take a pushed request** (`/authorize` with `request_uri`, D42).
+```sql
+UPDATE authorization_requests
+SET    request_uri_hash = NULL, expires_at = @now + interval '10 minutes'
+WHERE  tenant_id = @tenant AND request_uri_hash = @hash
+  AND  client_pk = @client AND expires_at > @now
+RETURNING *;
+```
+The client condition is in the statement, so a `request_uri` sent with another `client_id` does not use up the request. A concurrent second use waits on the row lock, then finds the hash cleared and matches no row.
 
 **End a session** (`/oauth/v1/logout`, `/session/v1/logout`, D33). Three statements in one transaction:
 ```sql

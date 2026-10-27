@@ -116,4 +116,35 @@ public class AuthorizationRequestTests
         Assert.Null(request.ConsentDecisionOf(alice));
         Assert.False(request.ConsentDecisionOf(bob));
     }
+
+    // ---- Pushed requests (D41)
+
+    [Fact]
+    public void Pushed_request_lives_one_minute()
+    {
+        var request = AuthorizationRequest.Create(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "https://app.example.com/cb", "openid", null, null,
+            "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", false, null, Now, requestUriHash: TokenHash.Compute("urn:x"));
+
+        Assert.Equal(Now + AuthorizationRequest.PushedLifetime, request.ExpiresAt);
+        Assert.Equal(TokenHash.Compute("urn:x"), request.RequestUriHash);
+    }
+
+    [Fact]
+    public void Browser_request_lives_ten_minutes_and_has_no_request_uri()
+    {
+        var request = AuthorizationRequest.Create(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "https://app.example.com/cb", "openid", null, null,
+            "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", false, null, Now, promptNone: true);
+
+        Assert.Equal(Now + AuthorizationRequest.Lifetime, request.ExpiresAt);
+        Assert.Null(request.RequestUriHash);
+        Assert.True(request.PromptNone);
+    }
+
+    [Fact]
+    public void Prompt_none_with_login_is_refused() =>
+        Assert.Throws<DomainException>(() => AuthorizationRequest.Create(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "https://app.example.com/cb", "openid", null, null,
+            "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", forceLogin: true, null, Now, promptNone: true));
 }

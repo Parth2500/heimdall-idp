@@ -55,7 +55,10 @@ internal static class WellKnownEndpoints
             BackchannelLogoutSessionSupported: true,
             // RFC 8414, section 2: the introspection endpoint and its one client method (D36).
             IntrospectionEndpoint: issuer + Endpoints.IntrospectionEndpoint.Path,
-            IntrospectionEndpointAuthMethodsSupported: ["client_secret_basic"]);
+            IntrospectionEndpointAuthMethodsSupported: ["client_secret_basic"],
+            // RFC 9126, section 5. A client can require PAR for itself (D43). The server does not require it of all.
+            PushedAuthorizationRequestEndpoint: issuer + PushedAuthorizationEndpoint.Path,
+            RequirePushedAuthorizationRequests: false);
 
         return WriteCacheableAsync(context, JsonSerializer.SerializeToUtf8Bytes(document, Json), keyOptions.JwksCacheLifetime);
     }
@@ -114,7 +117,9 @@ internal static class WellKnownEndpoints
         [property: JsonPropertyName("backchannel_logout_supported")] bool BackchannelLogoutSupported,
         [property: JsonPropertyName("backchannel_logout_session_supported")] bool BackchannelLogoutSessionSupported,
         [property: JsonPropertyName("introspection_endpoint")] string IntrospectionEndpoint,
-        [property: JsonPropertyName("introspection_endpoint_auth_methods_supported")] string[] IntrospectionEndpointAuthMethodsSupported);
+        [property: JsonPropertyName("introspection_endpoint_auth_methods_supported")] string[] IntrospectionEndpointAuthMethodsSupported,
+        [property: JsonPropertyName("pushed_authorization_request_endpoint")] string PushedAuthorizationRequestEndpoint,
+        [property: JsonPropertyName("require_pushed_authorization_requests")] bool RequirePushedAuthorizationRequests);
 
     private sealed record JwkSet([property: JsonPropertyName("keys")] IReadOnlyList<RsaPublicJwk> Keys);
 }

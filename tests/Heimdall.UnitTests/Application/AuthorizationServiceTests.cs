@@ -265,13 +265,274 @@ public class AuthorizationServiceTests
         AssertErrorRedirect(await Authorize(Valid(("request", "eyJ..."))), "request_not_supported", "request object");
     }
 
+    // ---- Pushed authorization requests (RFC 9126, D40 to D43)
+
+    private const string OtherJkt = "NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs";
+
+    private Task<Result<PushedRequest>> Push(Dictionary<string, string> parameters, Client? client = null, string? proofKey = null) =>
+        _service.PushAsync(Context, client ?? _spa, parameters, proofKey, CancellationToken.None);
+
+    private static Dictionary<string, string> WithRequestUri(string requestUri, string clientId = "spa") =>
+        new() { ["client_id"] = clientId, ["request_uri"] = requestUri };
+
     [Fact]
-    public async Task Request_uri_is_refused()
+    public async Task Push_stores_the_checked_request_for_a_minute()
     {
-        AssertErrorRedirect(
-            await Authorize(Valid(("request_uri", "urn:ietf:params:oauth:request_uri:x"))),
-            "request_uri_not_supported",
-            "request_uri");
+        var result = await Push(Valid(("prompt", "login")));
+
+        Assert.True(result.IsSuccess);
+        Assert.StartsWith(AuthorizationService.RequestUriPrefix, result.Value.RequestUri, StringComparison.Ordinal);
+        Assert.Equal(AuthorizationService.RequestUriPrefix.Length + 43, result.Value.RequestUri.Length);
+        Assert.Equal(60, result.Value.ExpiresIn);
+
+        var stored = Assert.Single(_store.Requests);
+        Assert.Equal(TokenHash.Compute(result.Value.RequestUri), stored.RequestUriHash);
+        Assert.Equal(Now.AddSeconds(60), stored.ExpiresAt);
+        Assert.Equal(Callback, stored.RedirectUri);
+        Assert.Equal("af0ifjsldkj", stored.State);
+        Assert.True(stored.ForceLogin);
+        Assert.False(stored.PromptNone);
+    }
+
+    [Fact]
+    public async Task Each_push_gets_a_new_request_uri()
+    {
+        var first = await Push(Valid());
+        var second = await Push(Valid());
+
+        Assert.NotEqual(first.Value.RequestUri, second.Value.RequestUri);
+    }
+
+    [Fact]
+    public async Task Pushed_request_gives_a_code_once()
+    {
+        var requestUri = (await Push(Valid())).Value.RequestUri;
+        var session = SignedIn();
+
+        var outcome = await Authorize(WithRequestUri(requestUri), session);
+
+        Assert.Equal(43, CodeOf(outcome).Length);
+        Assert.Equal("af0ifjsldkj", ((AuthorizeRedirect)outcome).Parameters[1].Value);
+        Assert.Empty(_store.Requests);
+        AssertPage(await Authorize(WithRequestUri(requestUri), session), OAuthError.InvalidRequestCode, "request_uri unknown, used, expired, or of another client");
+    }
+
+    [Fact]
+    public async Task Pushed_request_waits_for_the_sign_in_and_resumes_by_its_id()
+    {
+        var requestUri = (await Push(Valid())).Value.RequestUri;
+
+        var login = Assert.IsType<AuthorizeLogin>(await Authorize(WithRequestUri(requestUri)));
+
+        // D42: taken once. The hash is gone, and the request lives for the sign-in pages.
+        var stored = Assert.Single(_store.Requests);
+        Assert.Null(stored.RequestUriHash);
+        Assert.Equal(Now + AuthorizationRequest.Lifetime, stored.ExpiresAt);
+        Assert.Equal(stored.Id, login.RequestId);
+        Assert.Equal(43, CodeOf(await Resume(login.RequestId.ToString(), SignedIn())).Length);
+    }
+
+    [Fact]
+    public async Task Pushed_request_cannot_be_resumed_before_authorize_takes_it()
+    {
+        await Push(Valid());
+
+        AssertPage(await Resume(_store.Requests[0].Id.ToString(), SignedIn()), OAuthError.InvalidRequestCode, "request unknown or used");
+    }
+
+    [Fact]
+    public async Task Parameters_in_the_address_change_nothing()
+    {
+        AddClient("evil", ["https://evil.example.com/cb"]);
+        var requestUri = (await Push(Valid())).Value.RequestUri;
+        var parameters = WithRequestUri(requestUri);
+        parameters["redirect_uri"] = "https://evil.example.com/cb";
+        parameters["scope"] = "openid profile offline_access";
+        parameters["state"] = "changed";
+
+        var redirect = Assert.IsType<AuthorizeRedirect>(await Authorize(parameters, SignedIn()));
+
+        Assert.Equal(Callback, redirect.RedirectUri);
+        Assert.Equal("af0ifjsldkj", redirect.Parameters[1].Value);
+        Assert.Equal("openid profile", Assert.Single(_store.Codes).Scope);
+    }
+
+    [Fact]
+    public async Task Request_uri_expires_after_a_minute()
+    {
+        var requestUri = (await Push(Valid())).Value.RequestUri;
+        _time.Advance(AuthorizationRequest.PushedLifetime);
+
+        AssertPage(await Authorize(WithRequestUri(requestUri), SignedIn()), OAuthError.InvalidRequestCode, "request_uri unknown, used, expired, or of another client");
+    }
+
+    [Fact]
+    public async Task Request_uri_of_another_client_finds_nothing_and_does_not_burn_it()
+    {
+        AddClient("other");
+        var requestUri = (await Push(Valid())).Value.RequestUri;
+
+        AssertPage(await Authorize(WithRequestUri(requestUri, "other"), SignedIn()), OAuthError.InvalidRequestCode, "request_uri unknown, used, expired, or of another client");
+        Assert.Equal(43, CodeOf(await Authorize(WithRequestUri(requestUri), SignedIn())).Length);
+    }
+
+    [Theory]
+    [InlineData("https://evil.example.com/request")]
+    [InlineData("urn:ietf:params:oauth:request_uri")]
+    public async Task Request_uri_that_Heimdall_never_issues_is_refused_before_the_store(string requestUri)
+    {
+        AssertPage(await Authorize(WithRequestUri(requestUri)), OAuthError.InvalidRequestCode, "request_uri malformed");
+        Assert.Equal(0, _store.Takes);
+    }
+
+    [Fact]
+    public async Task Request_uri_of_128_characters_reaches_the_store()
+    {
+        var requestUri = AuthorizationService.RequestUriPrefix + new string('a', 128 - AuthorizationService.RequestUriPrefix.Length);
+
+        AssertPage(await Authorize(WithRequestUri(requestUri)), OAuthError.InvalidRequestCode, "request_uri unknown, used, expired, or of another client");
+        Assert.Equal(1, _store.Takes);
+    }
+
+    [Fact]
+    public async Task Push_with_an_empty_client_id_uses_the_authenticated_client() =>
+        Assert.True((await Push(Valid(("client_id", "")))).IsSuccess);
+
+    [Fact]
+    public async Task Oversized_request_uri_is_refused_before_the_store()
+    {
+        AssertPage(await Authorize(WithRequestUri(AuthorizationService.RequestUriPrefix + new string('a', 100))), OAuthError.InvalidRequestCode, "request_uri malformed");
+        Assert.Equal(0, _store.Takes);
+    }
+
+    [Fact]
+    public async Task Request_uri_still_needs_a_known_client()
+    {
+        var requestUri = (await Push(Valid())).Value.RequestUri;
+
+        AssertPage(await Authorize(WithRequestUri(requestUri, "nobody")), OAuthError.InvalidClientCode, "unknown client");
+    }
+
+    [Fact]
+    public async Task Redirect_uri_removed_after_the_push_is_refused()
+    {
+        var client = AddClient("shrinking", [Callback, "https://app.example.com/other"]);
+        var requestUri = (await Push(Valid(("client_id", "shrinking")), client)).Value.RequestUri;
+        typeof(Client).GetField("_redirectUris", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .SetValue(client, new List<string> { "https://app.example.com/other" });
+
+        AssertPage(await Authorize(WithRequestUri(requestUri, "shrinking"), SignedIn()), OAuthError.InvalidClientCode, "redirect_uri removed after the push");
+    }
+
+    [Fact]
+    public async Task Pushed_prompt_none_without_a_session_is_login_required()
+    {
+        var requestUri = (await Push(Valid(("prompt", "none")))).Value.RequestUri;
+
+        AssertErrorRedirect(await Authorize(WithRequestUri(requestUri)), "login_required", "prompt=none without a usable session");
+    }
+
+    [Theory]
+    [InlineData("scope", "openid admin", OAuthError.InvalidScopeCode)]
+    [InlineData("redirect_uri", "https://evil.example.com/cb", OAuthError.InvalidRequestCode)]
+    [InlineData("response_type", "token", "unsupported_response_type")]
+    [InlineData("code_challenge_method", "plain", OAuthError.InvalidRequestCode)]
+    [InlineData("request", "eyJ...", "request_not_supported")]
+    public async Task Push_refuses_what_authorize_refuses_and_stores_nothing(string name, string value, string error)
+    {
+        var result = await Push(Valid((name, value)));
+
+        Assert.Equal(error, result.Error!.Code);
+        Assert.Empty(_store.Requests);
+    }
+
+    [Fact]
+    public async Task Push_keeps_the_reason_for_the_log()
+    {
+        Assert.Equal("scope not allowed for client", (await Push(Valid(("scope", "openid admin")))).Error!.AuditDetail);
+        Assert.Equal("redirect_uri not registered (exact match)", (await Push(Valid(("redirect_uri", "https://evil.example.com/cb")))).Error!.AuditDetail);
+    }
+
+    [Fact]
+    public async Task Push_cannot_carry_a_request_uri()
+    {
+        var result = await Push(Valid(("request_uri", AuthorizationService.RequestUriPrefix + "x")));
+
+        Assert.Equal(new OAuthError(OAuthError.InvalidRequestCode, "request_uri in a pushed request"), result.Error);
+    }
+
+    [Fact]
+    public async Task Push_client_id_must_name_the_authenticated_client()
+    {
+        AddClient("other");
+
+        var result = await Push(Valid(("client_id", "other")));
+
+        Assert.Equal(new OAuthError(OAuthError.InvalidRequestCode, "client_id differs from the authenticated client"), result.Error);
+    }
+
+    [Fact]
+    public async Task Push_without_a_client_id_uses_the_authenticated_client()
+    {
+        Assert.True((await Push(Valid(("client_id", null)))).IsSuccess);
+        Assert.Equal(_spa.Id, Assert.Single(_store.Requests).ClientPk);
+    }
+
+    [Fact]
+    public async Task Push_for_a_suspended_tenant_is_invalid_client()
+    {
+        _tenant.Suspend();
+
+        Assert.Equal(OAuthError.InvalidClientCode, (await Push(Valid())).Error!.Code);
+    }
+
+    [Fact]
+    public async Task Proof_at_the_push_binds_the_code_like_dpop_jkt()
+    {
+        await Push(Valid(), proofKey: DpopJkt);
+
+        Assert.Equal(DpopJkt, Assert.Single(_store.Requests).DpopKeyThumbprint);
+    }
+
+    [Fact]
+    public async Task Proof_and_dpop_jkt_of_the_same_key_are_accepted()
+    {
+        Assert.True((await Push(Valid(("dpop_jkt", DpopJkt)), proofKey: DpopJkt)).IsSuccess);
+    }
+
+    [Fact]
+    public async Task Proof_and_dpop_jkt_of_two_keys_are_refused()
+    {
+        var result = await Push(Valid(("dpop_jkt", DpopJkt)), proofKey: OtherJkt);
+
+        Assert.Equal(new OAuthError(OAuthError.InvalidDpopProofCode, "DPoP proof key differs from dpop_jkt"), result.Error);
+        Assert.Empty(_store.Requests);
+    }
+
+    [Fact]
+    public async Task Browser_request_ignores_no_proof_key()
+    {
+        // At /authorize a proof cannot exist. Only dpop_jkt binds the code there.
+        CodeOf(await Authorize(Valid(), SignedIn()));
+
+        Assert.Null(Assert.Single(_store.Codes).DpopKeyThumbprint);
+    }
+
+    [Fact]
+    public async Task Client_that_requires_par_gets_an_error_without_a_request_uri()
+    {
+        _spa.RequirePushedRequests(true);
+
+        AssertErrorRedirect(await Authorize(Valid(), SignedIn()), OAuthError.InvalidRequestCode, "client requires pushed authorization requests");
+    }
+
+    [Fact]
+    public async Task Client_that_requires_par_signs_in_with_a_request_uri()
+    {
+        _spa.RequirePushedRequests(true);
+        var requestUri = (await Push(Valid())).Value.RequestUri;
+
+        Assert.Equal(43, CodeOf(await Authorize(WithRequestUri(requestUri), SignedIn())).Length);
     }
 
     [Fact]

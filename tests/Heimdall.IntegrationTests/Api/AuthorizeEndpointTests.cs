@@ -222,7 +222,6 @@ public sealed class AuthorizeEndpointTests
         { "code_challenge", null, "invalid_request" },
         { "scope", "openid admin", "invalid_scope" },
         { "scope", null, "invalid_scope" },
-        { "request_uri", "urn:ietf:params:oauth:request_uri:abc", "request_uri_not_supported" },
         { "response_mode", "fragment", "invalid_request" },
         { "prompt", "consent", "invalid_request" },
         { "max_age", "-1", "invalid_request" },
