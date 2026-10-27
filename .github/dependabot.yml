@@ -9,6 +9,13 @@ updates:
       opentelemetry:
         patterns:
           - "OpenTelemetry*"
+      # ASP.NET Core, EF Core, and Microsoft.Extensions ship one patch release together each month. One PR keeps them
+      # at one version and stays under the limit of open PRs.
+      dotnet:
+        patterns:
+          - "Microsoft.AspNetCore.*"
+          - "Microsoft.EntityFrameworkCore*"
+          - "Microsoft.Extensions.*"
   - package-ecosystem: github-actions
     directory: /
     schedule:
