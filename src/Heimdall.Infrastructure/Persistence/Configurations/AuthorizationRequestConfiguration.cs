@@ -41,6 +41,7 @@ internal sealed class AuthorizationRequestConfiguration : IEntityTypeConfigurati
         builder.Property(r => r.ConsentApproved);
         builder.Property(r => r.DpopKeyThumbprint).HasMaxLength(43);
         builder.Property(r => r.PromptNone);
+        builder.Property(r => r.ForceConsent);
 
         // D41, D42: /authorize finds a pushed request by the hash of its request_uri. Unique, so one value can never
         // match two rows. The plain request_uri is never stored (D3).

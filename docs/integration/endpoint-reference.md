@@ -45,13 +45,15 @@ Returns the discovery document (OpenID Connect Discovery 1.0). It lists only wha
   "introspection_endpoint": "https://acme.example.com/oauth/v1/introspect",
   "introspection_endpoint_auth_methods_supported": ["client_secret_basic"],
   "pushed_authorization_request_endpoint": "https://acme.example.com/oauth/v1/par",
-  "require_pushed_authorization_requests": false
+  "require_pushed_authorization_requests": false,
+  "scopes_supported": ["openid", "email", "offline_access"],
+  "claims_supported": ["sub", "iss", "aud", "exp", "iat", "auth_time", "nonce", "sid", "email", "email_verified"]
 }
 ```
 
 - Caching: `Cache-Control: public, max-age=600` by default, and a strong `ETag`. Send `If-None-Match` to get `304`.
 - CORS: every origin may read it.
-- The document has no `scopes_supported` or `claims_supported`. Your registration lists your scopes.
+- `scopes_supported` and `claims_supported` list only what Heimdall itself knows: `openid`, `email`, `offline_access`, and the claims of its tokens and `/userinfo`. Your registration lists your own API scopes.
 
 ## `GET /.well-known/jwks.json`
 

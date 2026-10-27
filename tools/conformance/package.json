@@ -1,0 +1,12 @@
+{
+  "name": "heimdall-conformance",
+  "private": true,
+  "type": "module",
+  "description": "Runs OpenID Foundation conformance plans against a local Heimdall (issue #20).",
+  "scripts": {
+    "plan": "node run-plan.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.59.1"
+  }
+}

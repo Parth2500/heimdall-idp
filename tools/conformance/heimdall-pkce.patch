@@ -1,0 +1,25 @@
+diff --git a/src/main/java/net/openid/conformance/openid/AbstractOIDCCServerTest.java b/src/main/java/net/openid/conformance/openid/AbstractOIDCCServerTest.java
+index 2309043..8b268ab 100644
+--- a/src/main/java/net/openid/conformance/openid/AbstractOIDCCServerTest.java
++++ b/src/main/java/net/openid/conformance/openid/AbstractOIDCCServerTest.java
+@@ -541,7 +541,10 @@ public abstract class AbstractOIDCCServerTest extends AbstractRedirectServerTest
+ 	}
+ 
+ 	protected ConditionSequence createAuthorizationRequestSequence() {
+-		return new CreateAuthorizationRequestSteps(formPost);
++		// Local patch for Heimdall (heimdall-idp #20): Heimdall requires PKCE S256 from every client (its D2, OAuth 2.1).
++		// Subclasses extend this sequence through super, so every authorization request gets a challenge.
++		return new CreateAuthorizationRequestSteps(formPost)
++			.then(new net.openid.conformance.sequence.client.SetupPkceAndAddToAuthorizationRequest());
+ 	}
+ 
+ 	protected void createAuthorizationRedirect() {
+@@ -628,6 +631,8 @@ public abstract class AbstractOIDCCServerTest extends AbstractRedirectServerTest
+ 
+ 	protected void createAuthorizationCodeRequest() {
+ 		callAndStopOnFailure(CreateTokenEndpointRequestForAuthorizationCodeGrant.class);
++		// Local patch for Heimdall (heimdall-idp #20): the verifier of the PKCE challenge above.
++		callAndStopOnFailure(net.openid.conformance.condition.client.AddCodeVerifierToTokenEndpointRequest.class, "RFC7636-4.5");
+ 		if (addTokenEndpointClientAuthentication != null) {
+ 			mapClientAuthKeys("token_endpoint_request_form_parameters", "token_endpoint_request_headers");
+ 			call(sequence(addTokenEndpointClientAuthentication));

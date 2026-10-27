@@ -123,9 +123,10 @@ public sealed class ConsentService
 
         var now = _time.GetUtcNow();
         var request = await _store.FindRequestAsync(context.Tenant.Id, id, cancellationToken).ConfigureAwait(false);
-        if (request is null || request.IsExpired(now))
+        // A pushed request that /authorize has not taken has no consent page yet (D42).
+        if (request is null || request.RequestUriHash is not null || request.IsExpired(now))
         {
-            return Fail(OAuthError.InvalidRequest(request is null ? "request unknown or used" : "request expired"));
+            return Fail(OAuthError.InvalidRequest(request is { RequestUriHash: null } ? "request expired" : "request unknown or used"));
         }
 
         // The same session rules as the resume step: prompt=login and max_age apply to the consent page too.
@@ -135,7 +136,8 @@ public sealed class ConsentService
         }
 
         var client = await _clients.FindByPkAsync(context.Tenant.Id, request.ClientPk, cancellationToken).ConfigureAwait(false);
-        if (client is not { Status: ClientStatus.Active, RequireConsent: true })
+        // prompt=consent asks for the page also when the client does not require it.
+        if (client is not { Status: ClientStatus.Active } || !(client.RequireConsent || request.ForceConsent))
         {
             return Fail(OAuthError.InvalidRequest("client inactive or needs no consent"));
         }

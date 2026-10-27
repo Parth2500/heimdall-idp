@@ -591,6 +591,10 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
+                    b.Property<bool>("ForceConsent")
+                        .HasColumnType("boolean")
+                        .HasColumnName("force_consent");
+
                     b.Property<bool>("ForceLogin")
                         .HasColumnType("boolean")
                         .HasColumnName("force_login");

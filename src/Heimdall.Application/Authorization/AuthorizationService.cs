@@ -32,7 +32,7 @@ public sealed class AuthorizationService
     /// <summary>RFC 9126, section 2.2: the URN form of a <c>request_uri</c>. 256 random bits follow it.</summary>
     public const string RequestUriPrefix = "urn:ietf:params:oauth:request_uri:";
 
-    private static readonly string[] SupportedPrompts = ["none", "login"];
+    private static readonly string[] SupportedPrompts = ["none", "login", "consent"];
 
     private readonly IClientStore _clients;
     private readonly IAuthorizationStore _store;
@@ -334,11 +334,17 @@ public sealed class AuthorizationService
             return Fail(OAuthError.InvalidScopeCode, "offline_access without the refresh_token grant");
         }
 
+        // OpenID Connect Core, section 3.1.2.1: a space-separated list. "none" with any other value is an error.
+        // "select_account" needs the account picker (#41), so it is not supported yet.
         var prompts = (get("prompt") ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (prompts.Any(p => !SupportedPrompts.Contains(p, StringComparer.Ordinal)) || prompts.Length > 1)
+        if (prompts.Any(p => !SupportedPrompts.Contains(p, StringComparer.Ordinal)) || prompts.Distinct(StringComparer.Ordinal).Count() != prompts.Length)
         {
-            // OpenID Connect: "none" with any other value is an error. Other values are not supported yet.
             return Fail(OAuthError.InvalidRequestCode, "prompt not supported");
+        }
+
+        if (prompts.Contains("none") && prompts.Length > 1)
+        {
+            return Fail(OAuthError.InvalidRequestCode, "prompt=none with another value");
         }
 
         TimeSpan? maxAge = null;
@@ -381,7 +387,8 @@ public sealed class AuthorizationService
             _time.GetUtcNow(),
             dpopKeyThumbprint,
             promptNone: prompts.Contains("none"),
-            requestUriHash));
+            requestUriHash,
+            forceConsent: prompts.Contains("consent")));
     }
 
     /// <summary>
@@ -414,9 +421,10 @@ public sealed class AuthorizationService
                 : await ShowPageAsync(request, stored, new AuthorizeLogin(request.Id), cancellationToken).ConfigureAwait(false);
         }
 
-        if (client.RequireConsent)
+        if (client.RequireConsent || request.ForceConsent)
         {
             // Persisted consent is a Phase 3 item. Until then, the user decides for each request on the consent page.
+            // prompt=consent asks for the page also when the client does not require it.
             if (promptNone)
             {
                 return ErrorRedirect(context, request.RedirectUri, request.State, "consent_required", "client requires consent");

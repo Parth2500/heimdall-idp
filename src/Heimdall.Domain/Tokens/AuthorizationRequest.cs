@@ -42,9 +42,11 @@ public sealed class AuthorizationRequest
         DateTimeOffset createdAt,
         string? dpopKeyThumbprint,
         bool promptNone,
-        TokenHash? requestUriHash)
+        TokenHash? requestUriHash,
+        bool forceConsent)
     {
         Id = id;
+        ForceConsent = forceConsent;
         PromptNone = promptNone;
         RequestUriHash = requestUriHash;
         TenantId = tenantId;
@@ -97,6 +99,12 @@ public sealed class AuthorizationRequest
     public bool PromptNone { get; }
 
     /// <summary>
+    /// <c>prompt=consent</c> (OpenID Connect Core, section 3.1.2.1): the user decides on the consent page for this request,
+    /// also for a client that does not require consent. A client asks for it with <c>offline_access</c> (section 11).
+    /// </summary>
+    public bool ForceConsent { get; }
+
+    /// <summary>
     /// The SHA-256 of the <c>request_uri</c> of a pushed request (D41), or null. It is null for a request from
     /// <c>/authorize</c>, and for a pushed request after <c>/authorize</c> took it once (D42).
     /// </summary>
@@ -128,16 +136,17 @@ public sealed class AuthorizationRequest
         DateTimeOffset now,
         string? dpopKeyThumbprint = null,
         bool promptNone = false,
-        TokenHash? requestUriHash = null)
+        TokenHash? requestUriHash = null,
+        bool forceConsent = false)
     {
         Guard.NotEmpty(id, nameof(id));
         Guard.NotEmpty(tenantId, nameof(tenantId));
         Guard.NotEmpty(clientPk, nameof(clientPk));
 
-        if (promptNone && forceLogin)
+        if (promptNone && (forceLogin || forceConsent))
         {
             // OpenID Connect Core, section 3.1.2.1: none with any other value is an error.
-            throw new DomainException("prompt=none cannot be combined with prompt=login.");
+            throw new DomainException("prompt=none cannot be combined with another prompt value.");
         }
 
         if (!Pkce.IsValidChallenge(codeChallenge))
@@ -169,7 +178,8 @@ public sealed class AuthorizationRequest
             now,
             dpopKeyThumbprint is null ? null : KeyThumbprint.Require(dpopKeyThumbprint, nameof(dpopKeyThumbprint)),
             promptNone,
-            requestUriHash);
+            requestUriHash,
+            forceConsent);
     }
 
     public bool IsExpired(DateTimeOffset now) => now >= ExpiresAt;

@@ -36,6 +36,8 @@ public sealed class WellKnownEndpointTests
         Assert.Equal(tenant.Issuer + "/oauth/v1/revoke", root.GetProperty("revocation_endpoint").GetString());
         Assert.Equal(["authorization_code", "refresh_token", "client_credentials"], root.GetProperty("grant_types_supported").EnumerateArray().Select(e => e.GetString()));
         Assert.Equal(["S256"], root.GetProperty("code_challenge_methods_supported").EnumerateArray().Select(e => e.GetString()));
+        Assert.Equal(["openid", "email", "offline_access"], root.GetProperty("scopes_supported").EnumerateArray().Select(e => e.GetString()));
+        Assert.Contains("sid", root.GetProperty("claims_supported").EnumerateArray().Select(e => e.GetString()));
         Assert.True(root.GetProperty("authorization_response_iss_parameter_supported").GetBoolean());
         Assert.Equal(tenant.Issuer + "/oauth/v1/userinfo", root.GetProperty("userinfo_endpoint").GetString());
         Assert.True(response.Headers.CacheControl?.Public);

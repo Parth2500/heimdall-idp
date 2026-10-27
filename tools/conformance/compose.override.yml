@@ -1,0 +1,19 @@
+# Overrides for the suite's docker-compose-prebuilt.yml (see README.md). Compose resolves the paths from the suite clone in .local/conformance-suite.
+services:
+  mongodb:
+    # A named volume: a bind mount fails under rootless Podman with SELinux.
+    volumes:
+      - mongo-data:/data/db
+  server:
+    # The suite with heimdall-pkce.patch (Heimdall requires PKCE S256 from every client, D2).
+    image: localhost/conformance-suite-heimdall:pkce
+    extra_hosts:
+      # The suite reaches Heimdall on the host under its issuer name.
+      - "acme.localhost:host-gateway"
+  nginx:
+    # A certificate for the suite's host name, so Heimdall's back-channel calls pass a normal TLS check.
+    volumes:
+      - ../conformance/suite.crt:/etc/ssl/certs/nginx-selfsigned.crt:ro,Z
+      - ../conformance/suite.key:/etc/ssl/private/nginx-selfsigned.key:ro,Z
+volumes:
+  mongo-data:

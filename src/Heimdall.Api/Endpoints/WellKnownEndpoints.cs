@@ -58,7 +58,11 @@ internal static class WellKnownEndpoints
             IntrospectionEndpointAuthMethodsSupported: ["client_secret_basic"],
             // RFC 9126, section 5. A client can require PAR for itself (D43). The server does not require it of all.
             PushedAuthorizationRequestEndpoint: issuer + PushedAuthorizationEndpoint.Path,
-            RequirePushedAuthorizationRequests: false);
+            RequirePushedAuthorizationRequests: false,
+            // OpenID Connect Discovery 1.0, section 3 (RECOMMENDED): the scopes and claims that Heimdall itself knows. A
+            // client's own API scopes are in its registration, not here, because they differ for each client.
+            ScopesSupported: ["openid", "email", "offline_access"],
+            ClaimsSupported: ["sub", "iss", "aud", "exp", "iat", "auth_time", "nonce", "sid", "email", "email_verified"]);
 
         return WriteCacheableAsync(context, JsonSerializer.SerializeToUtf8Bytes(document, Json), keyOptions.JwksCacheLifetime);
     }
@@ -119,7 +123,9 @@ internal static class WellKnownEndpoints
         [property: JsonPropertyName("introspection_endpoint")] string IntrospectionEndpoint,
         [property: JsonPropertyName("introspection_endpoint_auth_methods_supported")] string[] IntrospectionEndpointAuthMethodsSupported,
         [property: JsonPropertyName("pushed_authorization_request_endpoint")] string PushedAuthorizationRequestEndpoint,
-        [property: JsonPropertyName("require_pushed_authorization_requests")] bool RequirePushedAuthorizationRequests);
+        [property: JsonPropertyName("require_pushed_authorization_requests")] bool RequirePushedAuthorizationRequests,
+        [property: JsonPropertyName("scopes_supported")] string[] ScopesSupported,
+        [property: JsonPropertyName("claims_supported")] string[] ClaimsSupported);
 
     private sealed record JwkSet([property: JsonPropertyName("keys")] IReadOnlyList<RsaPublicJwk> Keys);
 }

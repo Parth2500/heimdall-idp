@@ -605,13 +605,43 @@ public class AuthorizationServiceTests
     }
 
     [Theory]
-    [InlineData("consent")]
-    [InlineData("select_account")]
-    [InlineData("none login")]
+    [InlineData("select_account")] // Needs the account picker (#41).
     [InlineData("login login")]
-    public async Task Unsupported_or_combined_prompt_is_refused(string prompt)
+    [InlineData("consent unknown")]
+    public async Task Unsupported_or_repeated_prompt_is_refused(string prompt)
     {
         AssertErrorRedirect(await Authorize(Valid(("prompt", prompt))), OAuthError.InvalidRequestCode, "prompt not supported");
+    }
+
+    [Theory]
+    [InlineData("none login")]
+    [InlineData("none consent")]
+    public async Task Prompt_none_with_another_value_is_refused(string prompt)
+    {
+        AssertErrorRedirect(await Authorize(Valid(("prompt", prompt))), OAuthError.InvalidRequestCode, "prompt=none with another value");
+    }
+
+    [Fact]
+    public async Task Prompt_consent_shows_the_consent_page_for_a_client_that_needs_no_consent()
+    {
+        // OpenID Connect Core, section 11: a client that asks for offline_access sends prompt=consent.
+        var outcome = await Authorize(Valid(("prompt", "consent")), SignedIn());
+
+        var consent = Assert.IsType<AuthorizeConsent>(outcome);
+        var stored = Assert.Single(_store.Requests);
+        Assert.Equal(stored.Id, consent.RequestId);
+        Assert.True(stored.ForceConsent);
+    }
+
+    [Fact]
+    public async Task Prompt_login_consent_asks_for_both()
+    {
+        var outcome = await Authorize(Valid(("prompt", "login consent")), SignedIn(Now.AddMinutes(-1)));
+
+        Assert.IsType<AuthorizeLogin>(outcome);
+        var stored = Assert.Single(_store.Requests);
+        Assert.True(stored.ForceLogin);
+        Assert.True(stored.ForceConsent);
     }
 
     [Theory]
