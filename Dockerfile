@@ -19,7 +19,7 @@ COPY ui/ ./
 RUN npx ng build account
 
 # ---- Server build ----
-FROM mcr.microsoft.com/dotnet/sdk:10.0.402@sha256:747cbade5bfd918a175ac32f8f1d931edec2c7d0d5397a3de72eaef1ac1f66d2 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0.403@sha256:de4fe90a98845d75910b9769662465c84de1a934665c431279d1382b2bddc02b AS build
 WORKDIR /repo
 # Restore first, from the project files only, so a code change does not repeat it.
 COPY global.json Directory.Build.props Heimdall.slnx dotnet-tools.json ./
