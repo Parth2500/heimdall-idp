@@ -81,7 +81,7 @@ public sealed class AccessTokenValidatorProperties : IDisposable
     {
         var header = Gen.Select(
             Gen.Frequency((3, Gen.Const<JsonNode?>("RS256")), (1, ClaimValue)),
-            Gen.Frequency((3, Gen.OneOfConst<JsonNode?>("at+jwt", "application/at+jwt", "AT+JWT")), (1, ClaimValue)),
+            Gen.Frequency((3, Gen.OneOf<JsonNode?>("at+jwt", "application/at+jwt", "AT+JWT")), (1, ClaimValue)),
             Gen.Frequency((3, Gen.Const<JsonNode?>("kid")), (1, ClaimValue)),
             Gen.Frequency((5, Gen.Const<JsonNode?>((JsonNode?)null)), (1, AnyJson)));
 

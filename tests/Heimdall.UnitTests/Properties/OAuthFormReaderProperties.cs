@@ -8,7 +8,7 @@ namespace Heimdall.UnitTests.Properties;
 
 public class OAuthFormReaderProperties
 {
-    private static readonly Gen<string?> ContentType = Gen.OneOfConst<string?>(
+    private static readonly Gen<string?> ContentType = Gen.OneOf<string?>(
         null,
         "",
         "application/x-www-form-urlencoded",

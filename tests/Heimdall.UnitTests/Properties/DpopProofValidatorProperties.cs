@@ -41,7 +41,7 @@ public sealed class DpopProofValidatorProperties : IDisposable
     [Fact]
     public void Signed_proofs_with_any_header_or_claim_values_never_throw()
     {
-        var member = Gen.OneOfConst("typ", "alg", "jwk", "crit", "kty", "crv", "x", "y", "n", "e", "jti", "htm", "htu", "iat", "ath");
+        var member = Gen.OneOf("typ", "alg", "jwk", "crit", "kty", "crv", "x", "y", "n", "e", "jti", "htm", "htu", "iat", "ath");
 
         Gen.Select(member, Value, Gen.Bool).Sample((name, value, inHeader) =>
         {
@@ -95,11 +95,11 @@ public sealed class DpopProofValidatorProperties : IDisposable
     [Fact]
     public void Any_htu_matches_only_the_same_endpoint()
     {
-        var host = Gen.OneOfConst("acme.example.com", "ACME.example.com", "other.example.com");
-        var path = Gen.OneOfConst("/oauth/v1/token", "/oauth/v1/token/", "/oauth/v1/Token", "/oauth/v1/revoke");
-        var suffix = Gen.OneOfConst("", "?a=1", "#f", ":443", ":8443");
+        var host = Gen.OneOf("acme.example.com", "ACME.example.com", "other.example.com");
+        var path = Gen.OneOf("/oauth/v1/token", "/oauth/v1/token/", "/oauth/v1/Token", "/oauth/v1/revoke");
+        var suffix = Gen.OneOf("", "?a=1", "#f", ":443", ":8443");
 
-        Gen.Select(Gen.OneOfConst("https", "http"), host, path, suffix).Sample((scheme, h, p, s) =>
+        Gen.Select(Gen.OneOf("https", "http"), host, path, suffix).Sample((scheme, h, p, s) =>
         {
             var htu = s.StartsWith(':') ? $"{scheme}://{h}{s}{p}" : $"{scheme}://{h}{p}{s}";
             var payload = Payload();
