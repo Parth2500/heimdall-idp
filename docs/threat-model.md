@@ -163,7 +163,7 @@ Grants: `authorization_code`, `client_credentials`, `refresh_token`. Boundary: B
 | Spoofing | An attacker claims the `client_id` of a public client. | Heimdall does not authenticate public clients. It binds the code to the client and to the PKCE verifier instead (D2). |
 | Spoofing | Confused deputy: an attacker redeems a code that Heimdall issued to a different client. | The stored `client_id` of the code must equal the calling client. The `redirect_uri` must equal the value sent to `/authorize`, if the client sent one. |
 | Spoofing | An attacker learns which clients exist from error messages or response time. | Heimdall uses uniform errors (D5). For an unknown `client_id`, it still compares against a dummy hash, so the response time is the same. |
-| Spoofing | An attacker replays a stolen refresh token from another machine. | Rotation and family revocation on reuse. See "Refresh flow". DPoP adds sender-constraining in Phase 2. |
+| Spoofing | An attacker replays a stolen refresh token from another machine. | Rotation and family revocation on reuse. See "Refresh flow". With DPoP, a refresh token works only with a proof from the bound key (D24). |
 | Spoofing | An attacker poses as Heimdall to the client (mix-up). | TLS and HSTS (D1). The `iss` parameter in the authorization response (D9). |
 | **Tampering** | A request repeats a parameter, such as `grant_type`, `code`, or `client_id`. | Heimdall rejects a request with a repeated parameter. It accepts only `application/x-www-form-urlencoded`. |
 | Tampering | A client sends credentials in the query string. Proxies and logs capture them. | Heimdall reads parameters from the POST body and the `Authorization` header only. It rejects the query string. |
@@ -195,7 +195,7 @@ Boundary: B2. A refresh token is opaque and single-use. It belongs to a family. 
 
 | STRIDE | Threat | Mitigation |
 |---|---|---|
-| Spoofing | An attacker uses a stolen refresh token. | Each use returns a new refresh token and marks the old one as used (`ReplacedByTokenHash`). Reuse of a used token revokes the whole family at once, in the same transaction as the check. Confidential clients also authenticate. DPoP protects public clients in Phase 2. |
+| Spoofing | An attacker uses a stolen refresh token. | Each use returns a new refresh token and marks the old one as used (`used_at`, and `replaced_by_id` names the next token). Reuse of a used token revokes the whole family at once, in the same transaction as the check. Confidential clients also authenticate. DPoP binds the family of a public client to its key (D24). |
 | Spoofing | A client presents a token that Heimdall issued to a different client. | The family's client must equal the calling client. The check is part of the rotation statement, so the wrong client cannot use or burn the token. |
 | Tampering | The real client and an attacker present the same token at the same time. Two retries can also cause this. | Rotation is one atomic conditional update on `used_at IS NULL`. One caller wins. Heimdall treats the other caller as reuse. |
 | Tampering | A client asks for more scope on refresh. | The requested scope must be a subset of the original grant. |

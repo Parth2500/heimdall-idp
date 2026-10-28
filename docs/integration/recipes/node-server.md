@@ -44,7 +44,8 @@ function configuration(): Promise<oidc.Configuration> {
       new URL(settings.issuer),
       settings.clientId,
       undefined,
-      // Heimdall supports client_secret_basic only. The library default is different.
+      // Huginn uses a client secret, so it must send it in the Basic header. The library default (client_secret_post)
+      // does not work with Heimdall. A client with private_key_jwt uses oidc.PrivateKeyJwt instead.
       oidc.ClientSecretBasic(settings.clientSecret),
     )
     .catch((error: unknown) => {

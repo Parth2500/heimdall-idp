@@ -39,7 +39,7 @@ tests/Heimdall.IntegrationTests   PostgreSQL via Testcontainers; skipped without
 docs/threat-model.md         Phase 0 deliverable
 docs/schema-design.md        Phase 0 deliverable (schema, atomic SQL, constraints)
 docs/domain-model.md         Rules that each Domain entity enforces. Update it with each Domain change.
-docs/frontend-design.md      Angular account pages and demo SPA (decisions U1 to U16).
+docs/frontend-design.md      Angular account pages and demo SPA (decisions U1 to U17).
 docs/documentation.md        Client documentation home. Pages in docs/integration/. Update them when client-visible behavior changes.
 docs/diagrams/               Mermaid diagrams. Update them in the same commit as a design change.
 docs/decisions/              One record for each change to a recorded decision (DR-001...). Write it in the same commit.
