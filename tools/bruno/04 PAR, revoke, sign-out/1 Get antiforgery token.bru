@@ -1,0 +1,29 @@
+meta {
+  name: Get antiforgery token
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{issuer}}/session/v1/csrf
+  body: none
+  auth: none
+}
+
+docs {
+  The account pages call this first. Each POST to the session API must send the token in X-XSRF-TOKEN (double submit).
+  Bruno keeps the cookies for the next requests.
+}
+
+script:post-response {
+  const cookies = [].concat(res.getHeader("set-cookie") || []);
+  const xsrf = cookies.map((c) => c.split(";")[0]).find((c) => c.startsWith("__Host-XSRF-TOKEN="));
+  bru.setVar("xsrf", xsrf ? decodeURIComponent(xsrf.substring("__Host-XSRF-TOKEN=".length)) : "");
+}
+
+tests {
+  test("sets the antiforgery cookies", function () {
+    expect(res.getStatus()).to.equal(204);
+    expect(bru.getVar("xsrf")).to.not.equal("");
+  });
+}

@@ -1,0 +1,29 @@
+meta {
+  name: Reuse the old refresh token
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{issuer}}/oauth/v1/token
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  grant_type: refresh_token
+  refresh_token: {{usedRefreshToken}}
+  client_id: {{spaClientId}}
+}
+
+docs {
+  A used refresh token is a sign of theft. Heimdall revokes the whole family at once, with no grace window, and raises a
+  security alert.
+}
+
+tests {
+  test("is invalid_grant", function () {
+    expect(res.getStatus()).to.equal(400);
+    expect(res.getBody().error).to.equal("invalid_grant");
+  });
+}

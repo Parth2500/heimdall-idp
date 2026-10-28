@@ -1,0 +1,28 @@
+meta {
+  name: Revoke the refresh token
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{issuer}}/oauth/v1/revoke
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  token: {{refreshToken}}
+  token_type_hint: refresh_token
+  client_id: {{spaClientId}}
+}
+
+docs {
+  RFC 7009. Heimdall revokes the token's family. The answer is 200 also for an unknown token or a token of another
+  client, so a caller learns nothing.
+}
+
+tests {
+  test("is 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

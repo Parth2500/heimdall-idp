@@ -1,0 +1,27 @@
+meta {
+  name: Userinfo after the reuse
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{issuer}}/oauth/v1/userinfo
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+docs {
+  The access token has not expired, but its family was revoked. /userinfo refuses it at once (D44). A resource server
+  that checks the JWT offline still accepts it until exp.
+}
+
+tests {
+  test("is invalid_token", function () {
+    expect(res.getStatus()).to.equal(401);
+    expect(res.getHeader("www-authenticate")).to.contain("invalid_token");
+  });
+}

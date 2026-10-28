@@ -1,0 +1,35 @@
+meta {
+  name: RP-initiated sign-out
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{issuer}}/oauth/v1/logout?id_token_hint={{idToken}}&client_id={{spaClientId}}&post_logout_redirect_uri=https://demo.localhost:4300/&state=bye
+  body: none
+  auth: none
+}
+
+params:query {
+  id_token_hint: {{idToken}}
+  client_id: {{spaClientId}}
+  post_logout_redirect_uri: https://demo.localhost:4300/
+  state: bye
+}
+
+settings {
+  encodeUrl: true
+  followRedirects: false
+}
+
+docs {
+  OpenID Connect RP-Initiated Logout 1.0. The ID token names the current session, so Heimdall ends it at once and shows
+  no confirm page (D30). The post-logout URI must be registered exactly (D32).
+}
+
+tests {
+  test("returns to the registered URI with the state", function () {
+    expect(res.getStatus()).to.equal(302);
+    expect(res.getHeader("location")).to.equal("https://demo.localhost:4300/?state=bye");
+  });
+}

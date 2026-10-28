@@ -1,0 +1,48 @@
+meta {
+  name: Redeem the code
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{issuer}}/oauth/v1/token
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  grant_type: authorization_code
+  code: {{code}}
+  code_verifier: {{codeVerifier}}
+  redirect_uri: {{spaRedirectUri}}
+  client_id: {{spaClientId}}
+}
+
+docs {
+  A public client sends no secret. The verifier proves that this caller started the request. One conditional
+  statement redeems the code, so a second redemption fails and revokes the family.
+}
+
+script:post-response {
+  const body = res.getBody();
+  bru.setVar("accessToken", body.access_token);
+  bru.setVar("refreshToken", body.refresh_token);
+  bru.setVar("idToken", body.id_token);
+}
+
+tests {
+  test("issues an access token, a refresh token, and an ID token", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().token_type).to.equal("Bearer");
+    expect(res.getBody().refresh_token).to.be.a("string");
+    expect(res.getBody().id_token).to.be.a("string");
+  });
+
+  test("the ID token has the nonce", function () {
+    const CryptoJS = require("crypto-js");
+    const part = res.getBody().id_token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(CryptoJS.enc.Base64.parse(part.padEnd(part.length + ((4 - (part.length % 4)) % 4), "=")).toString(CryptoJS.enc.Utf8));
+    expect(payload.nonce).to.equal(bru.getVar("nonce"));
+    expect(payload.iss).to.equal(bru.getEnvVar("issuer"));
+  });
+}

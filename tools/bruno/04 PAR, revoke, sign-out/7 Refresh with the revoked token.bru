@@ -1,0 +1,24 @@
+meta {
+  name: Refresh with the revoked token
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{issuer}}/oauth/v1/token
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  grant_type: refresh_token
+  refresh_token: {{refreshToken}}
+  client_id: {{spaClientId}}
+}
+
+tests {
+  test("is invalid_grant", function () {
+    expect(res.getStatus()).to.equal(400);
+    expect(res.getBody().error).to.equal("invalid_grant");
+  });
+}

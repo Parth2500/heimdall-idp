@@ -1,0 +1,69 @@
+meta {
+  name: Authorize
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{issuer}}/oauth/v1/authorize?response_type=code&client_id={{spaClientId}}&redirect_uri={{spaRedirectUri}}&scope=openid email offline_access&state={{state}}&nonce={{nonce}}&code_challenge={{codeChallenge}}&code_challenge_method=S256
+  body: none
+  auth: none
+}
+
+params:query {
+  response_type: code
+  client_id: {{spaClientId}}
+  redirect_uri: {{spaRedirectUri}}
+  scope: openid email offline_access
+  state: {{state}}
+  nonce: {{nonce}}
+  code_challenge: {{codeChallenge}}
+  code_challenge_method: S256
+}
+
+settings {
+  encodeUrl: true
+  followRedirects: false
+}
+
+docs {
+  The session cookie is valid, so Heimdall shows no page and redirects to the client with the code. Bruno does not
+  follow the redirect: the script reads the code from the Location header. The script makes a new PKCE verifier,
+  state, and nonce for each run.
+}
+
+script:pre-request {
+  const CryptoJS = require("crypto-js");
+  const base64url = (words) => CryptoJS.enc.Base64.stringify(words).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const verifier = base64url(CryptoJS.lib.WordArray.random(32));
+  bru.setVar("codeVerifier", verifier);
+  bru.setVar("codeChallenge", base64url(CryptoJS.SHA256(verifier)));
+  bru.setVar("state", base64url(CryptoJS.lib.WordArray.random(16)));
+  bru.setVar("nonce", base64url(CryptoJS.lib.WordArray.random(16)));
+}
+
+script:post-response {
+  const location = res.getHeader("location") || "";
+  const query = location.includes("?") ? location.substring(location.indexOf("?") + 1) : "";
+  const params = {};
+  for (const pair of query.split("&")) {
+    const [key, value] = pair.split("=");
+    if (key) params[decodeURIComponent(key)] = decodeURIComponent(value || "");
+  }
+  bru.setVar("code", params.code || "");
+  bru.setVar("returnedState", params.state || "");
+  bru.setVar("returnedIss", params.iss || "");
+}
+
+tests {
+  test("redirects to the registered URI with a code", function () {
+    expect(res.getStatus()).to.equal(302);
+    expect(res.getHeader("location")).to.match(new RegExp("^" + bru.getEnvVar("spaRedirectUri").replace(/[.?]/g, "\\$&") + "\\?"));
+    expect(bru.getVar("code")).to.not.equal("");
+  });
+
+  test("returns the same state and the issuer (RFC 9207)", function () {
+    expect(bru.getVar("returnedState")).to.equal(bru.getVar("state"));
+    expect(bru.getVar("returnedIss")).to.equal(bru.getEnvVar("issuer"));
+  });
+}

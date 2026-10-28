@@ -1,0 +1,12 @@
+vars {
+  issuer: https://acme.localhost:7200
+  serviceClientId: demo-service
+  audience: https://api.acme.localhost
+  spaClientId: demo-spa
+  spaRedirectUri: https://demo.localhost:4300/callback
+  userEmail: alice@acme.localhost
+}
+vars:secret [
+  serviceClientSecret,
+  userPassword
+]

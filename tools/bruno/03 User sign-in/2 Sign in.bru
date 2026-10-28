@@ -1,0 +1,33 @@
+meta {
+  name: Sign in
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{issuer}}/session/v1/login
+  body: json
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{xsrf}}
+}
+
+body:json {
+  {
+    "email": "{{userEmail}}",
+    "password": "{{userPassword}}"
+  }
+}
+
+docs {
+  The login API of the account pages. A success sets the session cookie (D11 to D13). A failure is always
+  invalid_credentials. The sign-in limit is 5 attempts each minute for each IP.
+}
+
+tests {
+  test("sets the session cookie", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

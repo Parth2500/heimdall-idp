@@ -1,0 +1,34 @@
+meta {
+  name: Refresh
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{issuer}}/oauth/v1/token
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  grant_type: refresh_token
+  refresh_token: {{refreshToken}}
+  client_id: {{spaClientId}}
+}
+
+docs {
+  Each refresh rotates the token. Save the new token before you use it: the old one is now used.
+}
+
+script:post-response {
+  bru.setVar("usedRefreshToken", bru.getVar("refreshToken"));
+  bru.setVar("refreshToken", res.getBody().refresh_token);
+  bru.setVar("accessToken", res.getBody().access_token);
+}
+
+tests {
+  test("returns a new refresh token", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().refresh_token).to.not.equal(bru.getVar("usedRefreshToken"));
+  });
+}

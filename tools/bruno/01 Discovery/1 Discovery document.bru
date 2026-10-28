@@ -1,0 +1,26 @@
+meta {
+  name: Discovery document
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{issuer}}/.well-known/openid-configuration
+  body: none
+  auth: none
+}
+
+docs {
+  OpenID Connect Discovery 1.0. Heimdall lists only what it supports.
+}
+
+tests {
+  test("lists this tenant as the issuer", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().issuer).to.equal(bru.getEnvVar("issuer"));
+  });
+
+  test("allows only PKCE S256 (D2)", function () {
+    expect(res.getBody().code_challenge_methods_supported).to.eql(["S256"]);
+  });
+}

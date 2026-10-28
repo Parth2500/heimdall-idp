@@ -140,6 +140,10 @@ You need Docker for PostgreSQL.
    CREATE ROLE heimdall_platform_login LOGIN PASSWORD '<password>' IN ROLE heimdall_platform;
    ```
 
+## Manual tests with Bruno
+
+`tools/bruno` is a Bruno collection for each endpoint: discovery, JWKS, `client_credentials`, introspection, the session API, `/authorize` with PKCE and with PAR, `/userinfo`, refresh and reuse, `/revoke`, and sign-out. It needs no browser. See [tools/bruno/README.md](tools/bruno/README.md).
+
 ## Container image
 
 The `Dockerfile` builds the account pages and the server into one image. It also builds the migration bundle as a separate target.

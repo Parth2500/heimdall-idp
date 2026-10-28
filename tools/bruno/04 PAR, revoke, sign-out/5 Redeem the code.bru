@@ -1,0 +1,31 @@
+meta {
+  name: Redeem the code
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{issuer}}/oauth/v1/token
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  grant_type: authorization_code
+  code: {{code}}
+  code_verifier: {{codeVerifier}}
+  redirect_uri: {{spaRedirectUri}}
+  client_id: {{spaClientId}}
+}
+
+script:post-response {
+  bru.setVar("refreshToken", res.getBody().refresh_token);
+  bru.setVar("idToken", res.getBody().id_token);
+}
+
+tests {
+  test("issues the tokens", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().refresh_token).to.be.a("string");
+  });
+}

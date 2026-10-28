@@ -1,0 +1,31 @@
+meta {
+  name: JWKS
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{issuer}}/.well-known/jwks.json
+  body: none
+  auth: none
+}
+
+docs {
+  The public signing keys of the tenant. A resource server caches them for the max-age.
+}
+
+tests {
+  test("has public RSA keys only", function () {
+    expect(res.getStatus()).to.equal(200);
+    const keys = res.getBody().keys;
+    expect(keys.length).to.be.above(0);
+    for (const key of keys) {
+      expect(key.kty).to.equal("RSA");
+      expect(key).to.not.have.property("d");
+    }
+  });
+
+  test("can be cached", function () {
+    expect(res.getHeader("cache-control")).to.contain("max-age");
+  });
+}

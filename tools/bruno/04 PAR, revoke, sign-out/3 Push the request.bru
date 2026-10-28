@@ -1,0 +1,49 @@
+meta {
+  name: Push the request
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{issuer}}/oauth/v1/par
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  response_type: code
+  client_id: {{spaClientId}}
+  redirect_uri: {{spaRedirectUri}}
+  scope: openid email offline_access
+  state: {{state}}
+  nonce: {{nonce}}
+  code_challenge: {{codeChallenge}}
+  code_challenge_method: S256
+}
+
+docs {
+  RFC 9126. The client sends the parameters to Heimdall directly. The browser then carries only the request_uri, which
+  lives 60 seconds and works once (D41, D42). A public client sends only its client_id.
+}
+
+script:pre-request {
+  const CryptoJS = require("crypto-js");
+  const base64url = (words) => CryptoJS.enc.Base64.stringify(words).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const verifier = base64url(CryptoJS.lib.WordArray.random(32));
+  bru.setVar("codeVerifier", verifier);
+  bru.setVar("codeChallenge", base64url(CryptoJS.SHA256(verifier)));
+  bru.setVar("state", base64url(CryptoJS.lib.WordArray.random(16)));
+  bru.setVar("nonce", base64url(CryptoJS.lib.WordArray.random(16)));
+}
+
+script:post-response {
+  bru.setVar("requestUri", res.getBody().request_uri);
+}
+
+tests {
+  test("returns a request_uri for 60 seconds", function () {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().request_uri).to.match(/^urn:ietf:params:oauth:request_uri:/);
+    expect(res.getBody().expires_in).to.equal(60);
+  });
+}

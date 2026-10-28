@@ -1,0 +1,26 @@
+meta {
+  name: Sign out
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{issuer}}/session/v1/logout
+  body: none
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{xsrf}}
+}
+
+docs {
+  Ends the session, revokes its families, and queues the back-channel logouts, in one transaction (D33).
+}
+
+tests {
+  test("names the signed-out page", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().redirect_to).to.contain("/account/signed-out");
+  });
+}

@@ -1,0 +1,38 @@
+meta {
+  name: Authorize with the request_uri
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{issuer}}/oauth/v1/authorize?client_id={{spaClientId}}&request_uri={{requestUri}}
+  body: none
+  auth: none
+}
+
+params:query {
+  client_id: {{spaClientId}}
+  request_uri: {{requestUri}}
+}
+
+settings {
+  encodeUrl: true
+  followRedirects: false
+}
+
+docs {
+  Heimdall takes the pushed request with one conditional statement and ignores every other parameter in the address.
+}
+
+script:post-response {
+  const location = res.getHeader("location") || "";
+  const match = location.match(/[?&]code=([^&]+)/);
+  bru.setVar("code", match ? decodeURIComponent(match[1]) : "");
+}
+
+tests {
+  test("redirects with a code", function () {
+    expect(res.getStatus()).to.equal(302);
+    expect(bru.getVar("code")).to.not.equal("");
+  });
+}

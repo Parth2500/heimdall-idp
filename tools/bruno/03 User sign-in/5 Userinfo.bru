@@ -1,0 +1,26 @@
+meta {
+  name: Userinfo
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{issuer}}/oauth/v1/userinfo
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+docs {
+  The email scope releases email and email_verified. Heimdall reads the token's family and user on each call (D44).
+}
+
+tests {
+  test("returns the user's claims", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().email).to.equal(bru.getEnvVar("userEmail"));
+  });
+}
