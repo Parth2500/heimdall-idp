@@ -131,7 +131,7 @@ You need Docker for PostgreSQL.
    ```
    Heimdall finds the tenant from the host name, so the request must use `acme.localhost`. It refuses plain HTTP.
 
-   The login API for the future Angular page is under `/session/v1` (`csrf`, `login`, `logout`, `me`, `consent`). It needs the antiforgery header, so test it with the integration tests, not plain `curl`.
+   The login API for the Angular account pages is under `/session/v1` (`csrf`, `login`, `logout`, `me`, `consent`). It needs the antiforgery header, so test it with the integration tests, not plain `curl`. In Development, its OpenAPI 3.1 document is at `https://acme.localhost:7200/openapi/v1.json`, and the Scalar page at `https://acme.localhost:7200/scalar/`. A generator can make a client from the document. The OAuth and OpenID Connect endpoints are not in it: discovery and the RFCs describe them.
 
    The local `heimdall` database user is a superuser, so it bypasses row-level security. The integration tests use restricted logins instead. To run locally with the same restriction, create the logins once, then use them in `ConnectionStrings:Heimdall` and `ConnectionStrings:HeimdallPlatform`. Keep the superuser for migrations and `seed-dev`.
    ```sql

@@ -38,6 +38,7 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddHeimdallApiDocumentation(builder.Environment);
 builder.Services.AddHeimdallTelemetry(builder.Configuration);
 
 builder.Services.AddOptions<SigningKeyOptions>()
@@ -200,6 +201,7 @@ SessionEndpoints.Map(app);
 AuthorizeEndpoint.Map(app);
 LogoutEndpoint.Map(app);
 UserInfoApiEndpoint.Map(app);
+app.MapHeimdallApiDocumentation();
 
 await app.RunAsync();
 return 0;

@@ -28,6 +28,7 @@ namespace Heimdall.IntegrationTests.Api;
 internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
 {
     private readonly PostgresFixture _postgres;
+    private readonly string _environment;
 
     static HeimdallApiFactory()
     {
@@ -37,9 +38,10 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
         Environment.SetEnvironmentVariable("DOTNET_hostBuilder__reloadConfigOnChange", "false");
     }
 
-    public HeimdallApiFactory(PostgresFixture postgres, FakeTimeProvider? time = null)
+    public HeimdallApiFactory(PostgresFixture postgres, FakeTimeProvider? time = null, string environment = "Development")
     {
         _postgres = postgres;
+        _environment = environment;
         Time = time ?? new FakeTimeProvider(DateTimeOffset.UtcNow);
     }
 
@@ -49,7 +51,7 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseEnvironment("Development");
+        builder.UseEnvironment(_environment);
         builder.ConfigureAppConfiguration(configuration => configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["ConnectionStrings:Heimdall"] = _postgres.ConnectionString,

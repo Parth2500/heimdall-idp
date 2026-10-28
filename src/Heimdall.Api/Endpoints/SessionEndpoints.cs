@@ -42,13 +42,45 @@ internal static partial class SessionEndpoints
 
     public static void Map(WebApplication app)
     {
-        var group = app.MapGroup(Prefix);
-        group.MapGet("/csrf", Csrf);
-        group.MapPost("/login", LoginAsync).RequireRateLimiting(RateLimits.LoginPolicy);
-        group.MapPost("/logout", LogoutAsync);
-        group.MapGet("/me", MeAsync);
-        group.MapGet("/consent", ConsentPromptAsync);
-        group.MapPost("/consent", ConsentDecisionAsync);
+        // The metadata describes the handlers for the OpenAPI document (#22). The handlers read their bodies themselves,
+        // so the framework cannot infer the shapes.
+        var group = app.MapGroup(Prefix).WithTags("Session");
+        group.MapGet("/csrf", Csrf)
+            .WithSummary("Sets the antiforgery cookies. Call it before any POST.")
+            .Produces(StatusCodes.Status204NoContent);
+        group.MapPost("/login", LoginAsync).RequireRateLimiting(RateLimits.LoginPolicy)
+            .WithSummary("Signs the user in and sets the session cookie.")
+            .Accepts<LoginBody>("application/json")
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces<ErrorBody>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorBody>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorBody>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorBody>(StatusCodes.Status415UnsupportedMediaType)
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .Produces<ErrorBody>(StatusCodes.Status503ServiceUnavailable);
+        group.MapPost("/logout", LogoutAsync)
+            .WithSummary("Ends the session (D33). The answer names where the page sends the browser.")
+            .Accepts<LogoutBody>("application/json")
+            .Produces<LogoutResultBody>()
+            .Produces<ErrorBody>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorBody>(StatusCodes.Status403Forbidden);
+        group.MapGet("/me", MeAsync)
+            .WithSummary("Returns the signed-in user.")
+            .Produces<MeBody>()
+            .Produces<ErrorBody>(StatusCodes.Status401Unauthorized);
+        group.MapGet("/consent", ConsentPromptAsync)
+            .WithSummary("Returns what the consent page shows for a stored request.")
+            .Produces<ConsentPromptBody>()
+            .Produces<ErrorBody>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorBody>(StatusCodes.Status401Unauthorized);
+        group.MapPost("/consent", ConsentDecisionAsync)
+            .WithSummary("Records the user's decision for a stored request. The page then calls /oauth/v1/authorize/resume.")
+            .Accepts<ConsentBody>("application/json")
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces<ErrorBody>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorBody>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorBody>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorBody>(StatusCodes.Status415UnsupportedMediaType);
     }
 
     /// <summary>Issues the antiforgery tokens. The page calls it before the login form.</summary>
