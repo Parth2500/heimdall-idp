@@ -159,6 +159,8 @@ docker build -t heimdall-migrate --target migrate .
 
 ## Operations
 
+The [operations runbook](docs/operations.md) covers the database roles, migrations, key rotation and emergency key removal, the background jobs, and every configuration section. Short forms of the main procedures:
+
 Emergency removal of a stolen signing key (see `docs/threat-model.md`, JWKS):
 ```
 dotnet run --project src/Heimdall.Api -- remove-key <tenant host> <kid>
