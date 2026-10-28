@@ -2,7 +2,7 @@
 
 [Documentation home](../../documentation.md)
 
-> **Status: not yet tested against Heimdall.** This recipe follows the Heimdall rules and the documented behavior of the Microsoft handlers. Test it before you depend on it, and report any change that it needs.
+> **Status: the OpenID Connect part is tested.** Heimdall's integration tests run the Microsoft OpenID Connect handler against Heimdall: sign-in with and without PAR, the saved refresh token, and RP-initiated logout (`AspNetCoreOidcInteropTests`). The JWT bearer part is not tested yet. Test it before you depend on it, and report any change that it needs.
 
 This recipe connects an ASP.NET Core server app to Heimdall as a confidential client. It uses `Microsoft.AspNetCore.Authentication.OpenIdConnect`.
 

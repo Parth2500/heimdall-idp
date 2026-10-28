@@ -44,7 +44,7 @@ Each recipe uses a client that signs in with Heimdall today, or it says that it 
 
 - [Angular single-page app](integration/recipes/angular-spa.md) with `angular-auth-oidc-client`. Source: the demo SPA in `ui/projects/demo`.
 - [Node.js server](integration/recipes/node-server.md) with `openid-client` and `jose`. Source: the Huginn chat app.
-- [ASP.NET Core](integration/recipes/aspnet-core.md) with the Microsoft OpenID Connect and JWT bearer handlers. Not yet tested against Heimdall.
+- [ASP.NET Core](integration/recipes/aspnet-core.md) with the Microsoft OpenID Connect and JWT bearer handlers. The integration tests run the OpenID Connect handler against Heimdall. The JWT bearer part is not tested yet.
 
 ## What Heimdall supports
 
@@ -72,6 +72,8 @@ Each recipe uses a client that signs in with Heimdall today, or it says that it 
 | Silent renew in a hidden iframe | Not supported, by design. Heimdall pages refuse to load in a frame. Use refresh tokens. |
 
 Heimdall puts only what it supports in the discovery document. If a feature is not in discovery, do not use it.
+
+Heimdall runs the OpenID Foundation conformance suite locally. See [Conformance results](conformance.md) for each result and the reason for each result that is not a pass.
 
 ## Report a security problem
 
