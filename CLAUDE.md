@@ -42,6 +42,9 @@ docs/domain-model.md         Rules that each Domain entity enforces. Update it w
 docs/frontend-design.md      Angular account pages and demo SPA (decisions U1 to U16).
 docs/documentation.md        Client documentation home. Pages in docs/integration/. Update them when client-visible behavior changes.
 docs/diagrams/               Mermaid diagrams. Update them in the same commit as a design change.
+docs/decisions/              One record for each change to a recorded decision (DR-001...). Write it in the same commit.
+docs/operations.md           Operations runbook. Update it with each new configuration section or job.
+CHANGELOG.md                 Changes for client developers and operators, by phase and date.
 ```
 Dependencies point inward only. Domain must never import EF Core.
 

@@ -31,6 +31,7 @@ Heimdall is a custom OAuth 2.1 and OpenID Connect identity provider. It is a por
 - [Domain model](docs/domain-model.md): the rules that each entity enforces, with references to the decisions.
 - [Front-end design](docs/frontend-design.md): the Angular account pages and the demo SPA (decisions U1 to U16).
 - [Conformance results](docs/conformance.md): the OpenID Foundation conformance suite against Heimdall, and the reason for each result that is not a pass.
+- [Decision records](docs/decisions/README.md): one record for each change to a decision, with the reason. The [changelog](CHANGELOG.md) lists the changes by phase.
 - [Diagrams](docs/diagrams/README.md): architecture, flows, data model, key rotation.
 - [Mockups](docs/mockups/README.md): static HTML mockups of a proposed new look for the account pages, the emails and an account portal. Proposed, not approved.
 
