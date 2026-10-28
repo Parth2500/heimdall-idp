@@ -23,7 +23,10 @@ internal sealed class ClientConfiguration : IEntityTypeConfiguration<Client>
             t.HasCheckConstraint(
                 "ck_clients_auth_method",
                 "(type = 'public' AND token_endpoint_auth_method = 'none') " +
-                "OR (type = 'confidential' AND token_endpoint_auth_method = 'client_secret_basic')");
+                "OR (type = 'confidential' AND token_endpoint_auth_method IN ('client_secret_basic', 'private_key_jwt'))");
+            t.HasCheckConstraint(
+                "ck_clients_jwks",
+                "(token_endpoint_auth_method = 'private_key_jwt') = (jwks IS NOT NULL)");
             t.HasCheckConstraint(
                 "ck_clients_client_credentials_confidential",
                 "NOT ('client_credentials' = ANY (allowed_grant_types)) OR type = 'confidential'");
@@ -54,6 +57,8 @@ internal sealed class ClientConfiguration : IEntityTypeConfiguration<Client>
         builder.Property(c => c.TokenEndpointAuthMethod)
             .HasConversion(new SnakeCaseEnumConverter<TokenEndpointAuthMethod>())
             .HasMaxLength(32);
+        // ClientJwksRules.MaxLength in the Domain.
+        builder.Property(c => c.Jwks).HasMaxLength(16 * 1024);
         builder.Property(c => c.Status).HasConversion(new SnakeCaseEnumConverter<ClientStatus>()).HasMaxLength(32);
         builder.Property(c => c.RequireConsent);
         builder.Property(c => c.RequireDpop);

@@ -42,7 +42,7 @@ public class AuthorizationCodeGrantTests
 
     public AuthorizationCodeGrantTests()
     {
-        _grant = new AuthorizationCodeGrant(new ClientAuthenticator(_clients, _time), new DpopTokenCheck(_dpop, _dpopReplay), _tokens, _signer, _audit, _alerts, _time);
+        _grant = new AuthorizationCodeGrant(new ClientAuthenticator(_clients, new FakeClientAssertionValidator(), new InMemoryClientAssertionReplayStore(), _time), new DpopTokenCheck(_dpop, _dpopReplay), _tokens, _signer, _audit, _alerts, _time);
         _spa = AddPublicClient("spa");
     }
 

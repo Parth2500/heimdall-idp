@@ -10,7 +10,8 @@ namespace Heimdall.Application.Authorization;
 /// <param name="ClientSecret">From the Basic header, or null for a public client.</param>
 /// <param name="Parameters">The form parameters: every authorization parameter of the request.</param>
 /// <param name="DpopProof">The DPoP header, or null.</param>
-public sealed record PushRequest(string? ClientId, string? ClientSecret, IReadOnlyDictionary<string, string> Parameters, string? DpopProof);
+public sealed record PushRequest(
+    string? ClientId, string? ClientSecret, IReadOnlyDictionary<string, string> Parameters, string? DpopProof, string? ClientAssertion = null);
 
 /// <summary>
 /// <c>POST /oauth/v1/par</c> (RFC 9126, D40 to D43). The client authenticates as at <c>/token</c>, then
@@ -48,7 +49,7 @@ public sealed class PushedAuthorization
         // D40: a confidential client proves itself with its secret, a public client names itself (RFC 9126, section 2).
         // PAR stops a change of the parameters in the browser for both. Only the confidential one is authenticated.
         var authentication = await _authenticator
-            .AuthenticateAsync(context.Tenant.Id, request.ClientId, request.ClientSecret, cancellationToken)
+            .AuthenticateAsync(context.Tenant.Id, context.Issuer, request.ClientId, request.ClientSecret, request.ClientAssertion, cancellationToken)
             .ConfigureAwait(false);
         if (!authentication.IsSuccess)
         {

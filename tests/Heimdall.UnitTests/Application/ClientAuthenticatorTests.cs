@@ -10,14 +10,33 @@ public class ClientAuthenticatorTests
     private static readonly DateTimeOffset Now = new(2026, 10, 18, 12, 0, 0, TimeSpan.Zero);
     private static readonly Guid TenantId = Guid.CreateVersion7();
 
+    private const string Issuer = "https://acme.example.com";
+    private const string Jwks = """{"keys":[{"kty":"EC","kid":"k1","crv":"P-256","x":"x","y":"y"}]}""";
+
     private readonly InMemoryClientStore _store = new();
     private readonly FakeTimeProvider _time = new(Now);
+    private readonly FakeClientAssertionValidator _assertions = new();
+    private readonly InMemoryClientAssertionReplayStore _replay = new();
     private readonly ClientAuthenticator _authenticator;
 
     public ClientAuthenticatorTests()
     {
-        _authenticator = new ClientAuthenticator(_store, _time);
+        _authenticator = new ClientAuthenticator(_store, _assertions, _replay, _time);
     }
+
+    /// <summary>A private_key_jwt client, and a fake validator that reads its client_id and accepts the assertion.</summary>
+    private Client KeyClient(string clientId = "billing-service", bool approve = true)
+    {
+        var client = Confidential(clientId, approve);
+        client.UsePrivateKeyJwt(Jwks);
+        _store.Add(client, ("old-secret-of-the-client", null));
+        _assertions.Reader = _ => clientId;
+        _assertions.Validator = (_, _, _) => Result.Success(new ClientAssertion("jti-1", Now.AddMinutes(1)));
+        return client;
+    }
+
+    private Task<Result<Client>> AuthenticateWithAssertion(string? clientId, string? secret = null, string assertion = "a.b.c") =>
+        _authenticator.AuthenticateAsync(TenantId, Issuer, clientId, secret, assertion, CancellationToken.None);
 
     private static Client Confidential(string clientId = "billing-service", bool approve = true)
     {
@@ -218,5 +237,103 @@ public class ClientAuthenticatorTests
         await Authenticate("no-such-client", "s3cret-value-1");
 
         Assert.Equal(2, _store.Queries);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("billing-service")]
+    public async Task Private_key_jwt_client_with_a_valid_assertion_is_authenticated(string? bodyClientId)
+    {
+        var client = KeyClient();
+
+        var result = await AuthenticateWithAssertion(bodyClientId);
+
+        Assert.Same(client, result.Value);
+        var validated = Assert.Single(_assertions.Validated);
+        Assert.Equal(("billing-service", Issuer), (validated.ClientId, validated.Issuer));
+        Assert.Contains((TenantId, client.Id, "jti-1"), _replay.Used);
+    }
+
+    [Fact]
+    public async Task Assertion_used_twice_is_refused()
+    {
+        KeyClient();
+        Assert.True((await AuthenticateWithAssertion(null)).IsSuccess);
+
+        var replay = await AuthenticateWithAssertion(null);
+
+        AssertInvalidClient(replay);
+        Assert.Equal("assertion replayed", replay.Error!.AuditDetail);
+    }
+
+    [Fact]
+    public async Task Private_key_jwt_client_with_its_old_secret_is_refused()
+    {
+        // D47: one method for each client. A secret that was valid before the change gives nothing.
+        KeyClient();
+
+        var result = await Authenticate("billing-service", "old-secret-of-the-client");
+
+        AssertInvalidClient(result);
+        Assert.Equal("private_key_jwt client sent no assertion", result.Error!.AuditDetail);
+    }
+
+    [Fact]
+    public async Task Secret_client_with_an_assertion_is_refused_before_any_check()
+    {
+        _store.Add(Confidential(), ("s3cret-value-1", null));
+        _assertions.Reader = _ => "billing-service";
+
+        var result = await AuthenticateWithAssertion(null);
+
+        AssertInvalidClient(result);
+        Assert.Equal("client does not use private_key_jwt", result.Error!.AuditDetail);
+        Assert.Empty(_assertions.Validated);
+    }
+
+    [Theory]
+    [InlineData("other-client", null, "client_id differs from the assertion")]
+    [InlineData(null, "a-secret", "secret and assertion in one request")]
+    public async Task Mixed_or_conflicting_credentials_are_refused(string? bodyClientId, string? secret, string reason)
+    {
+        KeyClient();
+
+        var result = await AuthenticateWithAssertion(bodyClientId, secret);
+
+        AssertInvalidClient(result);
+        Assert.Equal(reason, result.Error!.AuditDetail);
+        Assert.Empty(_replay.Used);
+    }
+
+    [Fact]
+    public async Task Unreadable_assertion_or_unknown_client_is_refused()
+    {
+        _assertions.Reader = _ => null;
+        Assert.Equal("assertion unreadable", (await AuthenticateWithAssertion(null)).Error!.AuditDetail);
+
+        _assertions.Reader = _ => "nobody";
+        Assert.Equal("unknown client", (await AuthenticateWithAssertion(null)).Error!.AuditDetail);
+    }
+
+    [Fact]
+    public async Task Invalid_assertion_is_refused_and_not_recorded()
+    {
+        KeyClient();
+        _assertions.Validator = (_, _, _) => Result.Failure<ClientAssertion>(OAuthError.InvalidClient("aud is not the issuer"));
+
+        var result = await AuthenticateWithAssertion(null);
+
+        Assert.Equal("aud is not the issuer", result.Error!.AuditDetail);
+        Assert.Empty(_replay.Used);
+    }
+
+    [Fact]
+    public async Task Disabled_private_key_jwt_client_is_refused_after_the_checks()
+    {
+        KeyClient(approve: false);
+
+        var result = await AuthenticateWithAssertion(null);
+
+        Assert.Equal("client status Pending", result.Error!.AuditDetail);
     }
 }

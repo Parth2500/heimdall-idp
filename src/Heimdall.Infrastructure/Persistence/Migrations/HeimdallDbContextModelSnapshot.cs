@@ -19,7 +19,7 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.13")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -123,6 +123,11 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("Jwks")
+                        .HasMaxLength(16384)
+                        .HasColumnType("character varying(16384)")
+                        .HasColumnName("jwks");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -207,13 +212,15 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
 
                     b.ToTable("clients", null, t =>
                         {
-                            t.HasCheckConstraint("ck_clients_auth_method", "(type = 'public' AND token_endpoint_auth_method = 'none') OR (type = 'confidential' AND token_endpoint_auth_method = 'client_secret_basic')");
+                            t.HasCheckConstraint("ck_clients_auth_method", "(type = 'public' AND token_endpoint_auth_method = 'none') OR (type = 'confidential' AND token_endpoint_auth_method IN ('client_secret_basic', 'private_key_jwt'))");
 
                             t.HasCheckConstraint("ck_clients_client_credentials_audience", "NOT ('client_credentials' = ANY (allowed_grant_types)) OR cardinality(allowed_audiences) > 0");
 
                             t.HasCheckConstraint("ck_clients_client_credentials_confidential", "NOT ('client_credentials' = ANY (allowed_grant_types)) OR type = 'confidential'");
 
                             t.HasCheckConstraint("ck_clients_grant_types", "cardinality(allowed_grant_types) > 0 AND allowed_grant_types <@ ARRAY['authorization_code', 'client_credentials', 'refresh_token']::text[]");
+
+                            t.HasCheckConstraint("ck_clients_jwks", "(token_endpoint_auth_method = 'private_key_jwt') = (jwks IS NOT NULL)");
 
                             t.HasCheckConstraint("ck_clients_lifetimes", "(access_token_seconds IS NULL OR access_token_seconds BETWEEN 1 AND 34560000) AND (refresh_idle_seconds IS NULL OR refresh_idle_seconds BETWEEN 1 AND 34560000) AND (refresh_absolute_seconds IS NULL OR refresh_absolute_seconds BETWEEN 1 AND 34560000)");
 
@@ -922,6 +929,32 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Heimdall.Infrastructure.Persistence.ClientAssertionRecord", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<byte[]>("AssertionHash")
+                        .HasColumnType("bytea")
+                        .HasColumnName("assertion_hash");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.HasKey("TenantId", "AssertionHash")
+                        .HasName("pk_client_assertions");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_client_assertions_expires_at");
+
+                    b.ToTable("client_assertions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_client_assertions_hash_length", "octet_length(assertion_hash) = 32");
+                        });
+                });
+
             modelBuilder.Entity("Heimdall.Infrastructure.Persistence.ClientSecretRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1191,6 +1224,16 @@ namespace Heimdall.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_backchannel_logouts_clients_tenant_id_client_pk");
+                });
+
+            modelBuilder.Entity("Heimdall.Infrastructure.Persistence.ClientAssertionRecord", b =>
+                {
+                    b.HasOne("Heimdall.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_client_assertions_tenants_tenant_id");
                 });
 
             modelBuilder.Entity("Heimdall.Infrastructure.Persistence.ClientSecretRecord", b =>

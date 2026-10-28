@@ -49,7 +49,7 @@ internal sealed partial class PurgeJob : BackgroundService
                 await using (scope.ConfigureAwait(false))
                 {
                     var result = await scope.ServiceProvider.GetRequiredService<DataPurger>().RunOnceAsync(stoppingToken).ConfigureAwait(false);
-                    LogPurged(_logger, result.Families, result.Codes, result.Requests, result.Sessions, result.LoginThrottles, result.DpopProofs, result.BackchannelLogouts);
+                    LogPurged(_logger, result.Families, result.Codes, result.Requests, result.Sessions, result.LoginThrottles, result.DpopProofs, result.BackchannelLogouts, result.ClientAssertions);
                 }
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
@@ -60,8 +60,8 @@ internal sealed partial class PurgeJob : BackgroundService
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Purge pass deleted {Families} families, {Codes} codes, {Requests} requests, {Sessions} sessions, {LoginThrottles} login throttles, {DpopProofs} DPoP proofs, {BackchannelLogouts} back-channel logouts.")]
-    private static partial void LogPurged(ILogger logger, int families, int codes, int requests, int sessions, int loginThrottles, int dpopProofs, int backchannelLogouts);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Purge pass deleted {Families} families, {Codes} codes, {Requests} requests, {Sessions} sessions, {LoginThrottles} login throttles, {DpopProofs} DPoP proofs, {BackchannelLogouts} back-channel logouts, {ClientAssertions} client assertions.")]
+    private static partial void LogPurged(ILogger logger, int families, int codes, int requests, int sessions, int loginThrottles, int dpopProofs, int backchannelLogouts, int clientAssertions);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "The purge job pass failed.")]
     private static partial void LogFailed(ILogger logger, Exception exception);

@@ -2,13 +2,14 @@
 
 These files run the OpenID Foundation conformance suite against a local Heimdall (issue #20). The results are in [docs/conformance.md](../../docs/conformance.md).
 
-The suite runs locally, because the hosted suite cannot reach a development server. Heimdall requires PKCE `S256` from every client (D2). The suite's OpenID Connect modules send no PKCE, so this setup patches the suite to send it. Because of the patch, a result here is not an official OpenID certification.
+The suite runs locally, because the hosted suite cannot reach a development server. Heimdall requires PKCE `S256` from every client (D2). The suite's OpenID Connect modules send no PKCE, so this setup patches the suite to send it. A second patch makes its `private_key_jwt` assertions name the issuer in `aud`, which Heimdall requires (D48). Because of the patches, a result here is not an official OpenID certification.
 
 ## Files
 
 | File | Purpose |
 |---|---|
 | `heimdall-pkce.patch` | Adds PKCE `S256` to every authorization request of the suite's OpenID Connect server modules. |
+| `heimdall-aud-issuer.patch` | Makes the suite's `private_key_jwt` assertions name the issuer in `aud`, not the token endpoint URL (D48). |
 | `compose.override.yml` | Runs the patched suite image, maps `acme.localhost` to the host, and gives nginx a certificate for its host name. |
 | `register-clients.sh` | Registers `conformance-1` and `conformance-2` in the development database. It writes the secrets and the plan configuration to `.local/conformance/`. |
 | `run-plan.mjs` | Runs one plan. Playwright plays the user: it signs in, allows consent, confirms a sign-out, and uploads a screenshot for a review step. |
@@ -22,7 +23,7 @@ All paths are relative to the repository root. Podman runs rootless (see the REA
 git clone https://gitlab.com/openid/conformance-suite.git .local/conformance-suite
 cd .local/conformance-suite
 git checkout 23353b36957d6466010de767c812d2c91ed37638
-git apply ../../tools/conformance/heimdall-pkce.patch
+git apply ../../tools/conformance/heimdall-pkce.patch ../../tools/conformance/heimdall-aud-issuer.patch
 podman run --rm -v ../m2:/root/.m2:Z -v .:/usr/src/mymaven:Z -w /usr/src/mymaven docker.io/library/maven:3-eclipse-temurin-21 mvn -B -q clean package -DskipTests=true
 sed 's|^FROM eclipse-temurin:21|FROM docker.io/library/eclipse-temurin:21|' Dockerfile > Dockerfile.local
 podman build -f Dockerfile.local -t localhost/conformance-suite-heimdall:pkce .
@@ -52,6 +53,10 @@ export CHROMIUM_PATH=~/.cache/ms-playwright/chromium_headless_shell-<build>/chro
 node run-plan.mjs oidcc-basic-certification-test-plan '{"server_metadata":"discovery","client_registration":"static_client"}' ../../.local/conformance/config.json
 node run-plan.mjs oidcc-config-certification-test-plan '{}' ../../.local/conformance/config.json
 node run-plan.mjs oidcc-backchannel-rp-initiated-logout-certification-test-plan '{"client_registration":"static_client","response_type":"code"}' ../../.local/conformance/config.json
+```
+For `private_key_jwt`, run `register-clients.sh private-key-jwt`, restart Heimdall, and use the other config file:
+```
+node run-plan.mjs oidcc-test-plan '{"client_registration":"static_client","response_type":"code","client_auth_type":"private_key_jwt","response_mode":"default"}' ../../.local/conformance/config-pkjwt.json
 ```
 The RP-initiated logout plan serves no back-channel endpoint. Run `register-clients.sh without-backchannel` and restart Heimdall first:
 ```

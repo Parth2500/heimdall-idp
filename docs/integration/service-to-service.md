@@ -6,7 +6,7 @@ Use the `client_credentials` grant when a service calls an API for itself, with 
 
 ## Requirements
 
-- A confidential client with the `client_credentials` grant.
+- A confidential client with the `client_credentials` grant. It authenticates with a client secret (the Basic header below) or with a private key ([Authenticate with a private key](private-key-jwt.md)).
 - At least one registered audience: the API that the service calls.
 - The API scopes that the service needs, for example `orders.read`.
 

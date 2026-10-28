@@ -12,7 +12,7 @@ namespace Heimdall.Application.Tokens;
 /// <param name="ClientId">From the Basic header.</param>
 /// <param name="ClientSecret">From the Basic header. A public client has none, and it is refused (D36).</param>
 /// <param name="Token">The <c>token</c> parameter.</param>
-public sealed record IntrospectionRequest(string? ClientId, string? ClientSecret, string? Token);
+public sealed record IntrospectionRequest(string? ClientId, string? ClientSecret, string? Token, string? ClientAssertion = null);
 
 /// <summary>
 /// An introspection answer (RFC 7662, section 2.2, D39). An inactive answer has only <see cref="Active"/>, so it shows
@@ -78,7 +78,7 @@ public sealed class TokenIntrospection
         ArgumentNullException.ThrowIfNull(request);
 
         var authentication = await _authenticator
-            .AuthenticateAsync(context.Tenant.Id, request.ClientId, request.ClientSecret, cancellationToken)
+            .AuthenticateAsync(context.Tenant.Id, context.Issuer, request.ClientId, request.ClientSecret, request.ClientAssertion, cancellationToken)
             .ConfigureAwait(false);
 
         // D36: a public client passes ClientAuthenticator with its client_id alone. That proves nothing here.

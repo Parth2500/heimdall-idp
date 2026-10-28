@@ -47,10 +47,18 @@ internal static partial class PushedAuthorizationEndpoint
             return;
         }
 
-        var parameters = parsed.Form!.ToDictionary(p => p.Key, p => p.Value.ToString(), StringComparer.Ordinal);
+        // The client credentials are not authorization parameters, so they are not stored with the request.
+        var parameters = parsed.Form!
+            .Where(p => p.Key is not ("client_assertion" or "client_assertion_type"))
+            .ToDictionary(p => p.Key, p => p.Value.ToString(), StringComparer.Ordinal);
         var result = await pushed.PushAsync(
             requestContext,
-            new PushRequest(parsed.ClientId, parsed.ClientSecret, parameters, dpopHeaders.Count == 1 ? dpopHeaders[0] ?? string.Empty : null),
+            new PushRequest(
+                parsed.ClientId,
+                parsed.ClientSecret,
+                parameters,
+                dpopHeaders.Count == 1 ? dpopHeaders[0] ?? string.Empty : null,
+                parsed.ClientAssertion),
             context.RequestAborted).ConfigureAwait(false);
 
         if (!result.IsSuccess)

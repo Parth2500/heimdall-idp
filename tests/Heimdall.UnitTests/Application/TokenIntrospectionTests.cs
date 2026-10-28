@@ -39,7 +39,7 @@ public class TokenIntrospectionTests
 
     public TokenIntrospectionTests()
     {
-        _service = new TokenIntrospection(new ClientAuthenticator(_clients, _time), _clients, _validator, _tokens, _audit, _time);
+        _service = new TokenIntrospection(new ClientAuthenticator(_clients, new FakeClientAssertionValidator(), new InMemoryClientAssertionReplayStore(), _time), _clients, _validator, _tokens, _audit, _time);
         _user = User.Create(Guid.CreateVersion7(), _tenant.Id, "alice@example.com", "hash", Now.AddDays(-1));
         _userId = _user.Id;
         _tokens.Users.Add(_user);

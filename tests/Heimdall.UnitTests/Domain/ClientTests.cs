@@ -422,4 +422,73 @@ public class ClientTests
     [InlineData("api")]
     public void Resource_audience_meets_the_audience_rules(string audience) =>
         Assert.Throws<DomainException>(() => CreateClient().UpdateResourceAudiences([audience]));
+
+    private const string OneKey = """{"keys":[{"kty":"EC","kid":"k1","crv":"P-256","x":"x","y":"y"}]}""";
+
+    [Fact]
+    public void Confidential_client_can_switch_to_private_key_jwt()
+    {
+        var client = CreateClient();
+
+        client.UsePrivateKeyJwt(OneKey);
+
+        Assert.Equal(TokenEndpointAuthMethod.PrivateKeyJwt, client.TokenEndpointAuthMethod);
+        Assert.Equal(OneKey, client.Jwks);
+    }
+
+    [Fact]
+    public void Public_client_cannot_use_private_key_jwt()
+    {
+        var client = CreateClient(ClientType.Public);
+
+        Assert.Throws<DomainException>(() => client.UsePrivateKeyJwt(OneKey));
+        Assert.Equal(TokenEndpointAuthMethod.None, client.TokenEndpointAuthMethod);
+        Assert.Null(client.Jwks);
+    }
+
+    [Fact]
+    public void A_new_key_set_replaces_the_old_one()
+    {
+        var client = CreateClient();
+        client.UsePrivateKeyJwt(OneKey);
+        const string Rotated = """{"keys":[{"kty":"RSA","kid":"k2","n":"n","e":"AQAB","use":"sig"}]}""";
+
+        client.UsePrivateKeyJwt(Rotated);
+
+        Assert.Equal(Rotated, client.Jwks);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("not json")]
+    [InlineData("[]")]
+    [InlineData("""{"keys":[]}""")]
+    [InlineData("""{"keys":{}}""")]
+    [InlineData("""{"keys":["text"]}""")]
+    [InlineData("""{"keys":[{"kty":"EC","crv":"P-256","x":"x","y":"y"}]}""")]
+    [InlineData("""{"keys":[{"kty":"EC","kid":"","x":"x","y":"y"}]}""")]
+    [InlineData("""{"keys":[{"kty":"EC","kid":7}]}""")]
+    [InlineData("""{"keys":[{"kty":"oct","kid":"k1","k":"c2VjcmV0"}]}""")]
+    [InlineData("""{"keys":[{"kty":"OKP","kid":"k1","crv":"Ed25519","x":"x"}]}""")]
+    [InlineData("""{"keys":[{"kty":"EC","kid":"k1","crv":"P-256","x":"x","y":"y","d":"private"}]}""")]
+    [InlineData("""{"keys":[{"kty":"RSA","kid":"k1","n":"n","e":"AQAB","p":"private"}]}""")]
+    [InlineData("""{"keys":[{"kty":"EC","kid":"k1","use":"enc"}]}""")]
+    [InlineData("""{"keys":[{"kty":"EC","kid":"k1"},{"kty":"EC","kid":"k1"}]}""")]
+    public void Key_set_with_a_bad_shape_or_a_private_key_is_refused(string jwks)
+    {
+        Assert.Throws<DomainException>(() => CreateClient().UsePrivateKeyJwt(jwks));
+    }
+
+    [Fact]
+    public void Key_set_is_limited_in_size_and_count()
+    {
+        static string Keys(int count, int kidLength = 2) =>
+            "{\"keys\":[" + string.Join(",", Enumerable.Range(0, count).Select(i => $"{{\"kty\":\"EC\",\"kid\":\"{i.ToString(System.Globalization.CultureInfo.InvariantCulture).PadLeft(kidLength, 'k')}\"}}")) + "]}";
+
+        CreateClient().UsePrivateKeyJwt(Keys(5));
+        Assert.Throws<DomainException>(() => CreateClient().UsePrivateKeyJwt(Keys(6)));
+        CreateClient().UsePrivateKeyJwt(Keys(1, kidLength: 128));
+        Assert.Throws<DomainException>(() => CreateClient().UsePrivateKeyJwt(Keys(1, kidLength: 129)));
+        Assert.Throws<DomainException>(() => CreateClient().UsePrivateKeyJwt(OneKey + new string(' ', 16 * 1024)));
+    }
 }

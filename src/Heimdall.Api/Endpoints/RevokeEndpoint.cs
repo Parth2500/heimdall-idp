@@ -33,7 +33,7 @@ internal static partial class RevokeEndpoint
 
         var result = await revocation.RevokeAsync(
             TenantResolutionMiddleware.GetRequestContext(context),
-            new RevocationRequest(parsed.ClientId, parsed.ClientSecret, OAuthFormReader.NullIfEmpty(parsed.Form!["token"])),
+            new RevocationRequest(parsed.ClientId, parsed.ClientSecret, OAuthFormReader.NullIfEmpty(parsed.Form!["token"]), parsed.ClientAssertion),
             context.RequestAborted).ConfigureAwait(false);
 
         if (!result.IsSuccess)

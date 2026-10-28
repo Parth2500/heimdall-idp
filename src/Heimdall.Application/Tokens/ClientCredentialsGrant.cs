@@ -13,7 +13,8 @@ namespace Heimdall.Application.Tokens;
 /// <param name="Scope">The <c>scope</c> parameter, or null.</param>
 /// <param name="Resource">The <c>resource</c> parameter (RFC 8707), or null.</param>
 /// <param name="DpopProof">The DPoP header, or null.</param>
-public sealed record ClientCredentialsRequest(string? ClientId, string? ClientSecret, string? Scope, string? Resource, string? DpopProof = null);
+public sealed record ClientCredentialsRequest(
+    string? ClientId, string? ClientSecret, string? Scope, string? Resource, string? DpopProof = null, string? ClientAssertion = null);
 
 /// <summary>
 /// The <c>client_credentials</c> grant at /token. There is no user and no refresh token (OAuth 2.1).
@@ -80,7 +81,7 @@ public sealed class ClientCredentialsGrant
         }
 
         var authentication = await _authenticator
-            .AuthenticateAsync(context.Tenant.Id, request.ClientId, request.ClientSecret, cancellationToken)
+            .AuthenticateAsync(context.Tenant.Id, context.Issuer, request.ClientId, request.ClientSecret, request.ClientAssertion, cancellationToken)
             .ConfigureAwait(false);
         if (!authentication.IsSuccess)
         {

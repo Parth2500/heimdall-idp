@@ -5,7 +5,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Heimdall.Infrastructure.Purge;
 
 /// <summary>The rows that one purge pass deleted, for each table.</summary>
-public sealed record PurgeResult(int Families, int Codes, int Requests, int Sessions, int LoginThrottles, int DpopProofs, int BackchannelLogouts = 0);
+public sealed record PurgeResult(
+    int Families, int Codes, int Requests, int Sessions, int LoginThrottles, int DpopProofs, int BackchannelLogouts = 0, int ClientAssertions = 0);
 
 /// <summary>
 /// Deletes rows that no flow needs any more (docs/schema-design.md, "Purge job"). It is a platform operation across all
@@ -144,7 +145,21 @@ public sealed class DataPurger
                 cancellationToken),
             cancellationToken).ConfigureAwait(false);
 
-        return new PurgeResult(families, codes, requests, sessions, throttles, proofs, logouts);
+        // A client assertion row matters only until its exp (D49). After that the assertion fails the exp check anyway.
+        var assertions = await RepeatAsync(
+            () => db.Database.ExecuteSqlAsync(
+                $"""
+                DELETE FROM client_assertions
+                WHERE (tenant_id, assertion_hash) IN (
+                    SELECT tenant_id, assertion_hash FROM client_assertions
+                    WHERE  expires_at < {now}
+                    LIMIT  {batch}
+                    FOR UPDATE SKIP LOCKED)
+                """,
+                cancellationToken),
+            cancellationToken).ConfigureAwait(false);
+
+        return new PurgeResult(families, codes, requests, sessions, throttles, proofs, logouts, assertions);
     }
 
     private async Task<int> RepeatAsync(Func<Task<int>> deleteBatch, CancellationToken cancellationToken)

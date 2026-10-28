@@ -39,7 +39,7 @@ public class PushedAuthorizationTests
             _audit,
             _time);
         _service = new PushedAuthorization(
-            new ClientAuthenticator(_clients, _time),
+            new ClientAuthenticator(_clients, new FakeClientAssertionValidator(), new InMemoryClientAssertionReplayStore(), _time),
             new DpopTokenCheck(_proofs, _replay),
             new AuthorizationService(_clients, _store, sessions, _audit, _time),
             _audit,

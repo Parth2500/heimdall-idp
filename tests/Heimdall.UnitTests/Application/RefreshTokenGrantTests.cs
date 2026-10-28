@@ -41,7 +41,7 @@ public class RefreshTokenGrantTests
 
     public RefreshTokenGrantTests()
     {
-        _grant = new RefreshTokenGrant(new ClientAuthenticator(_clients, _time), new DpopTokenCheck(_dpop, _dpopReplay), _tokens, _users, _signer, _audit, _alerts, _time);
+        _grant = new RefreshTokenGrant(new ClientAuthenticator(_clients, new FakeClientAssertionValidator(), new InMemoryClientAssertionReplayStore(), _time), new DpopTokenCheck(_dpop, _dpopReplay), _tokens, _users, _signer, _audit, _alerts, _time);
         _spa = AddPublicClient("spa");
         _user = User.Create(Guid.CreateVersion7(), _tenant.Id, "alice@example.com", "hash", Now);
         _users.Add(_user);
@@ -222,7 +222,7 @@ public class RefreshTokenGrantTests
         // Another server revoked the family between the rotation and the revocation.
         _user.Disable();
         var revokeFirst = new RevokingTokenStore(_tokens, _family);
-        var grant = new RefreshTokenGrant(new ClientAuthenticator(_clients, _time), new DpopTokenCheck(_dpop, _dpopReplay), revokeFirst, _users, _signer, _audit, _alerts, _time);
+        var grant = new RefreshTokenGrant(new ClientAuthenticator(_clients, new FakeClientAssertionValidator(), new InMemoryClientAssertionReplayStore(), _time), new DpopTokenCheck(_dpop, _dpopReplay), revokeFirst, _users, _signer, _audit, _alerts, _time);
 
         await grant.HandleAsync(Context, new RefreshTokenRequest("spa", null, Token, null, null), CancellationToken.None);
 

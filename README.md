@@ -26,7 +26,7 @@ Heimdall is a custom OAuth 2.1 and OpenID Connect identity provider. It is a por
 ## Documents
 
 - [Client documentation](docs/documentation.md): how to connect an application or API to Heimdall. Start here if you integrate with Heimdall.
-- [Threat model](docs/threat-model.md): STRIDE for each endpoint and trust boundary, with the security decisions (D1 to D44).
+- [Threat model](docs/threat-model.md): STRIDE for each endpoint and trust boundary, with the security decisions (D1 to D49).
 - [Schema design](docs/schema-design.md): tables, constraints, and the atomic SQL statements.
 - [Domain model](docs/domain-model.md): the rules that each entity enforces, with references to the decisions.
 - [Front-end design](docs/frontend-design.md): the Angular account pages and the demo SPA (decisions U1 to U16).
@@ -71,7 +71,7 @@ dotnet tool restore
 cd tests/Heimdall.UnitTests
 dotnet stryker --project Heimdall.Domain.csproj
 dotnet stryker --project Heimdall.Application.csproj
-dotnet stryker --project Heimdall.Infrastructure.csproj -m "**/Keys/AccessTokenValidator.cs" -m "**/Keys/TenantJwsVerifier.cs" -m "**/Keys/IdTokenHintValidator.cs" -m "**/Keys/Jws.cs" -m "**/Dpop/DpopProofValidator.cs" -m "**/Logout/OutboundAddressGuard.cs"
+dotnet stryker --project Heimdall.Infrastructure.csproj -m "**/Keys/AccessTokenValidator.cs" -m "**/Keys/TenantJwsVerifier.cs" -m "**/Keys/IdTokenHintValidator.cs" -m "**/Keys/Jws.cs" -m "**/Dpop/DpopProofValidator.cs" -m "**/Keys/PublicJwk.cs" -m "**/Clients/ClientAssertionValidator.cs" -m "**/Logout/OutboundAddressGuard.cs"
 dotnet stryker --project Heimdall.Api.csproj -m "**/Endpoints/OAuthFormReader.cs"
 ```
 

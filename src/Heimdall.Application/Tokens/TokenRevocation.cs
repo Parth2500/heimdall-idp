@@ -10,7 +10,7 @@ namespace Heimdall.Application.Tokens;
 /// <param name="ClientId">From the Basic header (confidential client) or the body (public client).</param>
 /// <param name="ClientSecret">From the Basic header, or null for a public client.</param>
 /// <param name="Token">The <c>token</c> parameter.</param>
-public sealed record RevocationRequest(string? ClientId, string? ClientSecret, string? Token);
+public sealed record RevocationRequest(string? ClientId, string? ClientSecret, string? Token, string? ClientAssertion = null);
 
 /// <summary>What a revocation did. The endpoint returns 200 for each value (RFC 7009, section 2.2).</summary>
 public enum RevocationOutcome
@@ -63,7 +63,7 @@ public sealed class TokenRevocation
 
         // A suspended tenant can still revoke. Revocation only removes access, so refusing it would help no one.
         var authentication = await _authenticator
-            .AuthenticateAsync(context.Tenant.Id, request.ClientId, request.ClientSecret, cancellationToken)
+            .AuthenticateAsync(context.Tenant.Id, context.Issuer, request.ClientId, request.ClientSecret, request.ClientAssertion, cancellationToken)
             .ConfigureAwait(false);
         if (!authentication.IsSuccess)
         {

@@ -50,6 +50,8 @@ A confidential client gets no CORS access. Its server calls Heimdall, not the br
 
 Discovery and JWKS allow every origin, because they are public.
 
+A confidential client can use a key pair instead of a secret. Give the operator your public keys as a JWK Set. See [Authenticate with a private key](private-key-jwt.md).
+
 ## Rotate a client secret
 
 A client can have two valid secrets at the same time. This overlap lets you rotate a secret with no downtime:

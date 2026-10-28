@@ -89,7 +89,7 @@ Every server runs the three jobs. They are safe to run on many servers at the sa
 | Job | What it does | How servers share the work |
 |---|---|---|
 | `SigningKeyJob` | Creates, activates, and retires signing keys. | One pending key for each tenant, and `status` is a concurrency token. |
-| `PurgeJob` | Deletes expired and ended rows in batches: codes, token families with their refresh tokens, sessions, stored requests, DPoP proofs, throttle rows, back-channel logout rows. | `FOR UPDATE SKIP LOCKED`: two servers never wait for the same rows. |
+| `PurgeJob` | Deletes expired and ended rows in batches: codes, token families with their refresh tokens, sessions, stored requests, DPoP proofs, client assertions, throttle rows, back-channel logout rows. | `FOR UPDATE SKIP LOCKED`: two servers never wait for the same rows. |
 | `BackchannelLogoutJob` | Sends the signed `logout_token` to each client after a sign-out (D35). | A server takes rows with a lease. A crashed server's rows come back after the lease. |
 
 `Heimdall:Jobs:Enabled = false` stops all three loops. Use it only for a test host or for a server that must not change keys.

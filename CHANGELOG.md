@@ -17,6 +17,7 @@ This file lists the changes that matter to a client developer or an operator. Th
 - Added: the OpenAPI 3.1 document of the session API and its Scalar page, in Development only.
 - Added: the operations runbook (`docs/operations.md`) and the decision records (`docs/decisions/`).
 - Added: a Bruno collection for manual tests of each endpoint (`tools/bruno/`). It needs no browser.
+- Added: `private_key_jwt` client authentication (RFC 7523, D45 to D49) at `/token`, `/revoke`, `/introspect`, and `/par`. The operator registers the client's public keys inline. `aud` must be the issuer. Each assertion works once (DR-011).
 - Changed: CI runs each workflow only when its files change. A new workflow builds the server and migration images.
 
 #### 2026-10-26

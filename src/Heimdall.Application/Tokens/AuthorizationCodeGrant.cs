@@ -22,6 +22,7 @@ namespace Heimdall.Application.Tokens;
 /// <param name="RedirectUri">The <c>redirect_uri</c> parameter, or null.</param>
 /// <param name="Resource">The <c>resource</c> parameter (RFC 8707), or null.</param>
 /// <param name="DpopProof">The DPoP header, or null.</param>
+/// <param name="ClientAssertion">The <c>client_assertion</c> of a <c>private_key_jwt</c> client (D45), or null.</param>
 public sealed record AuthorizationCodeRequest(
     string? ClientId,
     string? ClientSecret,
@@ -29,7 +30,8 @@ public sealed record AuthorizationCodeRequest(
     string? CodeVerifier,
     string? RedirectUri,
     string? Resource,
-    string? DpopProof = null);
+    string? DpopProof = null,
+    string? ClientAssertion = null);
 
 /// <summary>
 /// The <c>authorization_code</c> grant at /token. The code is redeemed by one atomic conditional UPDATE that also checks
@@ -108,7 +110,7 @@ public sealed class AuthorizationCodeGrant
 
         // Public clients send client_id only. Confidential clients authenticate with the Basic header (D10).
         var authentication = await _authenticator
-            .AuthenticateAsync(context.Tenant.Id, request.ClientId, request.ClientSecret, cancellationToken)
+            .AuthenticateAsync(context.Tenant.Id, context.Issuer, request.ClientId, request.ClientSecret, request.ClientAssertion, cancellationToken)
             .ConfigureAwait(false);
         if (!authentication.IsSuccess)
         {

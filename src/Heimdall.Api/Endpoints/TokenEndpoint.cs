@@ -83,7 +83,8 @@ internal static partial class TokenEndpoint
                         parsed.ClientSecret,
                         OAuthFormReader.NullIfEmpty(form["scope"]),
                         OAuthFormReader.NullIfEmpty(form["resource"]),
-                        dpopProof),
+                        dpopProof,
+                        parsed.ClientAssertion),
                     context.RequestAborted).ConfigureAwait(false);
                 break;
 
@@ -97,7 +98,8 @@ internal static partial class TokenEndpoint
                         OAuthFormReader.NullIfEmpty(form["code_verifier"]),
                         OAuthFormReader.NullIfEmpty(form["redirect_uri"]),
                         OAuthFormReader.NullIfEmpty(form["resource"]),
-                        dpopProof),
+                        dpopProof,
+                        parsed.ClientAssertion),
                     context.RequestAborted).ConfigureAwait(false);
                 break;
 
@@ -110,7 +112,8 @@ internal static partial class TokenEndpoint
                         OAuthFormReader.NullIfEmpty(form["refresh_token"]),
                         OAuthFormReader.NullIfEmpty(form["scope"]),
                         OAuthFormReader.NullIfEmpty(form["resource"]),
-                        dpopProof),
+                        dpopProof,
+                        parsed.ClientAssertion),
                     context.RequestAborted).ConfigureAwait(false);
                 break;
 

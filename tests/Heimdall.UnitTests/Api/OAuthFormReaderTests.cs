@@ -1,8 +1,11 @@
 using System.Text;
 using Heimdall.Api.Endpoints;
+using Heimdall.Application.Clients;
 using Heimdall.Application.Common;
+using Heimdall.UnitTests.Application;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Heimdall.UnitTests.Api;
 
@@ -419,5 +422,64 @@ public class OAuthFormReaderTests
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
             throw new BadHttpRequestException("Request body too large.", StatusCodes.Status413PayloadTooLarge);
+    }
+
+    private const string JwtBearer = "urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer";
+
+    /// <summary>A request whose services hold a fake assertion validator that reads the given client ID.</summary>
+    private static DefaultHttpContext AssertionRequest(string body, string? assertedClientId = "billing", string? authorization = null)
+    {
+        var context = Request(body, authorization: authorization);
+        context.RequestServices = new ServiceCollection()
+            .AddSingleton<IClientAssertionValidator>(new FakeClientAssertionValidator { Reader = _ => assertedClientId })
+            .BuildServiceProvider();
+        return context;
+    }
+
+    [Theory]
+    [InlineData("", "billing")]
+    [InlineData("&client_id=billing", "billing")]
+    public async Task Client_assertion_names_the_client(string clientIdPart, string expected)
+    {
+        var form = await Read(AssertionRequest($"grant_type=client_credentials&client_assertion_type={JwtBearer}&client_assertion=a.b.c{clientIdPart}"));
+
+        Assert.Null(form.Error);
+        Assert.Equal(expected, form.ClientId);
+        Assert.Equal("a.b.c", form.ClientAssertion);
+        Assert.Null(form.ClientSecret);
+    }
+
+    [Fact]
+    public async Task Body_client_id_is_kept_for_the_authenticator_to_compare()
+    {
+        // The authenticator refuses a client_id that differs from the assertion (RFC 7521, section 4.2).
+        var form = await Read(AssertionRequest($"client_assertion_type={JwtBearer}&client_assertion=a.b.c&client_id=other"));
+
+        Assert.Equal("other", form.ClientId);
+    }
+
+    [Theory]
+    [InlineData("client_assertion=a.b.c", OAuthError.InvalidRequestCode, "client_assertion without client_assertion_type, or the reverse")]
+    [InlineData("client_assertion_type=" + JwtBearer, OAuthError.InvalidRequestCode, "client_assertion without client_assertion_type, or the reverse")]
+    [InlineData("client_assertion_type=urn%3Aother&client_assertion=a.b.c", OAuthError.InvalidClientCode, "client_assertion_type not supported")]
+    public async Task Assertion_needs_both_parameters_and_the_jwt_bearer_type(string body, string code, string reason)
+    {
+        AssertFails(await Read(AssertionRequest(body)), code, reason);
+    }
+
+    [Fact]
+    public async Task Assertion_and_Basic_header_in_one_request_are_refused()
+    {
+        var form = await Read(AssertionRequest($"client_assertion_type={JwtBearer}&client_assertion=a.b.c", authorization: Basic("billing:s3cret")));
+
+        AssertFails(form, OAuthError.InvalidRequestCode, "Basic header and client_assertion in one request");
+    }
+
+    [Fact]
+    public async Task Unreadable_assertion_is_refused()
+    {
+        var form = await Read(AssertionRequest($"client_assertion_type={JwtBearer}&client_assertion=junk", assertedClientId: null));
+
+        AssertFails(form, OAuthError.InvalidClientCode, "client_assertion unreadable");
     }
 }

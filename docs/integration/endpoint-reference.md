@@ -31,8 +31,8 @@ Returns the discovery document (OpenID Connect Discovery 1.0). It lists only wha
   "response_types_supported": ["code"],
   "response_modes_supported": ["query"],
   "grant_types_supported": ["authorization_code", "refresh_token", "client_credentials"],
-  "token_endpoint_auth_methods_supported": ["client_secret_basic", "none"],
-  "revocation_endpoint_auth_methods_supported": ["client_secret_basic", "none"],
+  "token_endpoint_auth_methods_supported": ["client_secret_basic", "private_key_jwt", "none"],
+  "revocation_endpoint_auth_methods_supported": ["client_secret_basic", "private_key_jwt", "none"],
   "code_challenge_methods_supported": ["S256"],
   "subject_types_supported": ["public"],
   "id_token_signing_alg_values_supported": ["RS256"],
@@ -43,7 +43,10 @@ Returns the discovery document (OpenID Connect Discovery 1.0). It lists only wha
   "backchannel_logout_supported": true,
   "backchannel_logout_session_supported": true,
   "introspection_endpoint": "https://acme.example.com/oauth/v1/introspect",
-  "introspection_endpoint_auth_methods_supported": ["client_secret_basic"],
+  "introspection_endpoint_auth_methods_supported": ["client_secret_basic", "private_key_jwt"],
+  "token_endpoint_auth_signing_alg_values_supported": ["RS256", "PS256", "ES256"],
+  "revocation_endpoint_auth_signing_alg_values_supported": ["RS256", "PS256", "ES256"],
+  "introspection_endpoint_auth_signing_alg_values_supported": ["RS256", "PS256", "ES256"],
   "pushed_authorization_request_endpoint": "https://acme.example.com/oauth/v1/par",
   "require_pushed_authorization_requests": false,
   "scopes_supported": ["openid", "email", "offline_access"],
@@ -98,7 +101,8 @@ Issues tokens. Rules for every request:
 - No repeated parameter. Heimdall compares parameter names without case, so `grant_type` and `GRANT_TYPE` are the same name.
 - No NUL character in a name or a value.
 - Body at most 16 KiB.
-- A confidential client authenticates with HTTP Basic (`client_secret_basic`). A public client sends `client_id` in the body (`none`).
+- A confidential client authenticates with its one registered method: HTTP Basic (`client_secret_basic`), or `client_assertion_type` and `client_assertion` in the body (`private_key_jwt`, see [Authenticate with a private key](private-key-jwt.md)). A public client sends `client_id` in the body (`none`).
+- A Basic header and a `client_assertion` in one request get `invalid_request`.
 - `client_secret` in the body is refused.
 - An optional `DPoP` header carries a DPoP proof. At most one. A client registered with `dpop_bound_access_tokens` must send it. See [DPoP](dpop.md).
 

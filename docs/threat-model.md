@@ -15,6 +15,7 @@ Each term has one meaning in this document. Do not use a synonym.
 | Client | An application that asks Heimdall for tokens. A client belongs to exactly one tenant. |
 | Public client | A client that cannot keep a secret (single-page app, mobile app). |
 | Confidential client | A client that can keep a secret (server application). |
+| Client assertion | A JWT that a confidential client signs with its private key to authenticate (`private_key_jwt`, RFC 7523). It works once. |
 | Resource server | An API that accepts Heimdall access tokens. |
 | Audience | The resource server that a token is for. It is the `aud` claim. A client asks for one with the `resource` parameter (RFC 8707). |
 | Subject | The user that an access token or ID token identifies. |
@@ -73,7 +74,7 @@ These decisions apply to every endpoint. The tables below refer to them by ID.
 | D7 | Never log secrets, codes, verifiers, refresh tokens, or client assertions. Log a correlation ID. | Logs are widely readable and kept for a long time. |
 | D8 | Sign access tokens as JWTs with `RS256` only. Do not negotiate `alg`. Put `kid` in the header. Set the lifetime to 5 minutes. Make refresh tokens opaque. | A short lifetime limits the damage from theft. A fixed `alg` stops `none` and HS256 confusion attacks. |
 | D9 | Add `iss` to the authorization response (RFC 9207). | This stops mix-up attacks. |
-| D10 | In version 1, confidential clients use `client_secret_basic`. Public clients use no authentication and PKCE. Add `private_key_jwt` in Phase 2. | Start with the smallest correct surface. |
+| D10 | Confidential clients use `client_secret_basic` or `private_key_jwt` (D45). Public clients use no authentication and PKCE. Changed on 2026-10-28 (DR-011): version 1 had `client_secret_basic` only. | Start with the smallest correct surface. Add the key method when a client needs it. |
 | D22 | Each client has a list of allowed audiences. A token has exactly one audience. The client names it with the `resource` parameter (RFC 8707). If the client has only one audience, that audience is the default. An unknown resource returns `invalid_target`. A token from a user's grant can also name the tenant's userinfo endpoint. That endpoint is the default for a client with no audience. A `client_credentials` token never names it. | A token for one API cannot be replayed at another API. A resource server cannot use its token to read user claims at `/userinfo`. |
 | D23 | CORS allows a cross-origin read of `/token`, `/revoke`, and `/userinfo` only from a client origin of the tenant. Heimdall echoes that one origin and never sends `*` or `Access-Control-Allow-Credentials`. Discovery and JWKS allow any origin. Every other path, the session API included, sends no CORS header. | A public SPA must read token responses. A wider list would let any page read responses for a stolen code or token. |
 | D24 | DPoP is optional for each request. A client registered with `dpop_bound_access_tokens` must send a DPoP proof at `/token`. A valid proof binds the access token (`cnf.jkt`, `token_type` `DPoP`). For a public client, the proof also binds the family: each refresh needs a proof from the same key. Refresh tokens of a confidential client are not bound. | Existing clients keep working, and a client that asks for DPoP cannot be downgraded. A stolen refresh token of a public client is useless without the private key. A confidential client already authenticates (RFC 9449, section 5). |
@@ -158,7 +159,7 @@ Grants: `authorization_code`, `client_credentials`, `refresh_token`. Boundary: B
 | STRIDE | Threat | Mitigation |
 |---|---|---|
 | **Spoofing** | An attacker uses a leaked or guessed secret to act as a confidential client. | Heimdall generates the secrets with high entropy and stores hashes (D3). It compares in fixed time (D4). It throttles failures for each `client_id`. During rotation, two secrets are valid at the same time. |
-| Spoofing | The `client_credentials` grant has no user and no PKCE. The secret is the only defense. | Heimdall enables this grant for each client separately. This risk is the reason to add `private_key_jwt` or mTLS later. |
+| Spoofing | The `client_credentials` grant has no user and no PKCE. The secret is the only defense. | Heimdall enables this grant for each client separately. A client can use `private_key_jwt` instead of a secret (D45). Heimdall then stores only a public key, so a database leak gives no credential. mTLS is not supported. |
 | Spoofing | An attacker claims the `client_id` of a public client. | Heimdall does not authenticate public clients. It binds the code to the client and to the PKCE verifier instead (D2). |
 | Spoofing | Confused deputy: an attacker redeems a code that Heimdall issued to a different client. | The stored `client_id` of the code must equal the calling client. The `redirect_uri` must equal the value sent to `/authorize`, if the client sent one. |
 | Spoofing | An attacker learns which clients exist from error messages or response time. | Heimdall uses uniform errors (D5). For an unknown `client_id`, it still compares against a dummy hash, so the response time is the same. |
@@ -288,6 +289,31 @@ Boundary: B2. The client sends its authorization parameters to Heimdall directly
 | Denial of service | A client fills `authorization_requests` with pushed rows. | Each push counts against the client's issuance limit. The purge job deletes expired rows. |
 | Elevation of privilege | A pushed request passes a check that a browser request fails. | `/par` and `/authorize` share one check (D41). |
 | Elevation of privilege | A `request_uri` works twice, so one request gives two codes. | One conditional statement clears the hash. A concurrent second use matches no row (D42). |
+
+## Client authentication with `private_key_jwt` (RFC 7523, issue #67)
+
+Status: decided on 2026-10-28. The owner chose the key source (D46), the `aud` rule (D48), and one method for each client (D47). Claude decided the other parts under the owner's go-ahead for Phase 2.
+
+Boundary: B2. A confidential client proves who it is with a JWT that it signs with its private key. The same rules apply at `/token`, `/revoke`, `/introspect`, and `/par`.
+
+| ID | Decision | Reason |
+|---|---|---|
+| D45 | A confidential client can authenticate with `private_key_jwt` (RFC 7523, section 2.2; OpenID Connect Core, section 9). The request sends `client_assertion_type` `urn:ietf:params:oauth:client-assertion-type:jwt-bearer` and `client_assertion`. A `client_id` in the body is optional and must name the same client. | The client keeps its private key. Heimdall stores only the public key, so a database leak, a log, or a proxy gives no credential that works. |
+| D46 | The operator registers the client's public keys inline, as a JWK Set (`jwks`). Heimdall never fetches keys from a `jwks_uri`. Each key needs a unique `kid`, `kty` `RSA` or `EC`, and no private member. A set has 1 to 5 keys. A new set replaces the old one, for a rotation. | An inline set needs no outbound call on the request path and gives no server-side request forgery. A private member means a registration mistake that would put the client's secret into the database, so Heimdall refuses it. A `jwks_uri` can come in a later phase. |
+| D47 | Each confidential client has exactly one method: `client_secret_basic` or `private_key_jwt`. A request with the other method gets `invalid_client`, also when its credential would be valid. A request with both a Basic header and an assertion gets `invalid_request` (RFC 6749, section 2.3). | The secrets of a client that moved to keys never work again, so a leaked old secret gives nothing. One method for each client also keeps the checks simple to test. |
+| D48 | An assertion is valid when: `alg` is `RS256`, `PS256`, or `ES256` and matches the key type and the key's own `alg`; `kid` names a registered key; `crit` is absent; `typ`, when present, is `JWT` or `client-authentication+jwt`; `iss` and `sub` are the `client_id`; `aud` is exactly the tenant's issuer, as one string; `jti` is present; `exp` is in the future and at most 5 minutes away; `iat` and `nbf`, when present, are not in the future. A clock difference of 60 seconds is allowed. | The `aud` rule follows draft-ietf-oauth-rfc7523bis and the 2025 fix for the audience injection attack: an assertion made for another server, or for one endpoint URL, cannot work here. A `typ` for another JWT stops a DPoP proof or an access token from being used as an assertion. A short life limits a stolen assertion and keeps the replay table small. |
+| D49 | Each assertion works once. One `INSERT ... ON CONFLICT DO NOTHING` into `client_assertions` records the SHA-256 of the client's primary key and the `jti`, until `exp` plus the clock difference. The purge job deletes the rows after that. | RFC 7523, section 3, item 7 allows a server to refuse a reused `jti`. One atomic statement means that two servers that see one assertion at the same time give one success, as for DPoP proofs (D26). |
+
+| STRIDE | Threat | Mitigation |
+|---|---|---|
+| **Spoofing** | An attacker replays a captured assertion. | The `jti` works once for each client (D49). The assertion lives at most 5 minutes (D48). |
+| Spoofing | An attacker uses an assertion that the client made for another server (audience injection). | `aud` must be exactly this tenant's issuer, as one string (D48). An endpoint URL or an array fails. |
+| Spoofing | An attacker uses a DPoP proof, an access token, or an ID token as an assertion. | The `typ` check refuses other JWT types. `iss` and `sub` must be the `client_id`, and `aud` must be the issuer, which no other Heimdall token has (D48). |
+| Spoofing | An attacker uses an old secret of a client that moved to keys. | One method for each client (D47). The secrets of a `private_key_jwt` client never work. |
+| Tampering | An attacker changes the claims of an assertion. | Heimdall checks the signature with the registered key that `kid` names. The algorithm comes from Heimdall's list, never from the assertion alone (D48). |
+| Information disclosure | The database leaks. | Heimdall stores only public keys for these clients. The replay table holds only hashes (D49). |
+| Denial of service | An attacker sends many assertions to make Heimdall verify signatures. | The per-IP failure limit of `/token` applies before any database work. The size limit (4 KB) applies before any decoding. A check tries one key, the one that `kid` names. |
+| Elevation of privilege | An operator registers a private key by mistake. | Heimdall refuses a key with a private member (D46). |
 
 ## `GET /oauth/v1/userinfo`
 

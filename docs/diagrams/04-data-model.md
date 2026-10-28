@@ -10,6 +10,7 @@ erDiagram
     tenants ||--o{ signing_keys : has
     tenants ||--o{ sessions : has
     tenants ||--o{ dpop_proofs : "has seen"
+    tenants ||--o{ client_assertions : "has seen"
     clients ||--o{ client_secrets : "has (max 2 valid)"
     clients ||--o{ authorization_requests : receives
     clients ||--o{ authorization_codes : receives
@@ -45,6 +46,8 @@ erDiagram
         uuid tenant_id FK
         text client_id UK
         text type
+        text token_endpoint_auth_method
+        text jwks
         text status
         text_array allowed_grant_types
         text_array redirect_uris
@@ -111,6 +114,11 @@ erDiagram
     dpop_proofs {
         uuid tenant_id PK
         bytea proof_hash PK
+        timestamptz expires_at
+    }
+    client_assertions {
+        uuid tenant_id PK
+        bytea assertion_hash PK
         timestamptz expires_at
     }
     consents {

@@ -11,6 +11,7 @@ using Heimdall.Application.Tokens;
 using Heimdall.Application.UserInfo;
 using Heimdall.Application.Users;
 using Heimdall.Infrastructure.Alerts;
+using Heimdall.Infrastructure.Clients;
 using Heimdall.Infrastructure.Development;
 using Heimdall.Infrastructure.Dpop;
 using Heimdall.Infrastructure.Keys;
@@ -85,6 +86,8 @@ public static class DependencyInjection
         services.AddScoped<ILogoutStore, EfLogoutStore>();
         services.AddSingleton<IDpopProofValidator, DpopProofValidator>();
         services.AddScoped<IDpopReplayStore, EfDpopReplayStore>();
+        services.AddSingleton<IClientAssertionValidator, ClientAssertionValidator>();
+        services.AddScoped<IClientAssertionReplayStore, EfClientAssertionReplayStore>();
         services.TryAddSingleton(new PurgeOptions());
         services.AddScoped<DataPurger>();
         services.AddScoped<DevelopmentSeeder>();

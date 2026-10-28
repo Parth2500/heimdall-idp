@@ -22,13 +22,15 @@ namespace Heimdall.Application.Tokens;
 /// <param name="Scope">The <c>scope</c> parameter, or null to keep the family's scope.</param>
 /// <param name="Resource">The <c>resource</c> parameter (RFC 8707), or null.</param>
 /// <param name="DpopProof">The DPoP header, or null.</param>
+/// <param name="ClientAssertion">The <c>client_assertion</c> of a <c>private_key_jwt</c> client (D45), or null.</param>
 public sealed record RefreshTokenRequest(
     string? ClientId,
     string? ClientSecret,
     string? RefreshToken,
     string? Scope,
     string? Resource,
-    string? DpopProof = null);
+    string? DpopProof = null,
+    string? ClientAssertion = null);
 
 /// <summary>
 /// The <c>refresh_token</c> grant at /token, with rotation (threat model, "Refresh flow"). Each use returns a new refresh
@@ -113,7 +115,7 @@ public sealed class RefreshTokenGrant
         }
 
         var authentication = await _authenticator
-            .AuthenticateAsync(context.Tenant.Id, request.ClientId, request.ClientSecret, cancellationToken)
+            .AuthenticateAsync(context.Tenant.Id, context.Issuer, request.ClientId, request.ClientSecret, request.ClientAssertion, cancellationToken)
             .ConfigureAwait(false);
         if (!authentication.IsSuccess)
         {

@@ -37,7 +37,7 @@ internal static partial class IntrospectionEndpoint
 
         var result = await introspection.IntrospectAsync(
             TenantResolutionMiddleware.GetRequestContext(context),
-            new IntrospectionRequest(parsed.ClientId, parsed.ClientSecret, OAuthFormReader.NullIfEmpty(parsed.Form!["token"])),
+            new IntrospectionRequest(parsed.ClientId, parsed.ClientSecret, OAuthFormReader.NullIfEmpty(parsed.Form!["token"]), parsed.ClientAssertion),
             context.RequestAborted).ConfigureAwait(false);
 
         if (!result.IsSuccess)

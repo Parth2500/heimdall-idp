@@ -102,6 +102,8 @@ public sealed class AuditAndSeedTests
 
             var authenticator = new ClientAuthenticator(
                 scope.ServiceProvider.GetRequiredService<IClientStore>(),
+                scope.ServiceProvider.GetRequiredService<IClientAssertionValidator>(),
+                scope.ServiceProvider.GetRequiredService<IClientAssertionReplayStore>(),
                 TimeProvider.System);
 
             var good = await authenticator.AuthenticateAsync(tenant.Id, DevelopmentSeeder.ClientId, first.ClientSecret, CancellationToken.None);

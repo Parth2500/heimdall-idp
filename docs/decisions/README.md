@@ -25,3 +25,4 @@ A decision record keeps the history. Each record is one change to a decision: wh
 | [DR-008](008-self-hosted-fonts-in-csp.md) | 2026-10-23 | The account pages may load fonts from Heimdall's own origin |
 | [DR-009](009-keep-pkce-for-all-and-patch-the-suite.md) | 2026-10-28 | Keep PKCE for all clients and patch the conformance suite |
 | [DR-010](010-userinfo-reads-the-family.md) | 2026-10-28 | /userinfo reads the token family (D44) |
+| [DR-011](011-private-key-jwt.md) | 2026-10-28 | Confidential clients can use private_key_jwt |

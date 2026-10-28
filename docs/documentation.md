@@ -30,6 +30,7 @@ Heimdall follows the standards. You do not need a Heimdall library. Use a certif
 - [Refresh tokens](integration/refresh-tokens.md): rotation, reuse detection, and how to store refresh tokens.
 - [DPoP](integration/dpop.md): bind tokens to a key that your client holds (RFC 9449). Supported at `/authorize`, `/token`, and `/userinfo`.
 - [Service-to-service tokens](integration/service-to-service.md): the `client_credentials` grant.
+- [Authenticate with a private key](integration/private-key-jwt.md): `private_key_jwt`, so no shared secret leaves your server.
 - [Validate access tokens](integration/validate-access-tokens.md): the checks that a resource server must do.
 - [Sign out](integration/sign-out.md): revocation, and what Heimdall does not support yet.
 - [Errors and rate limits](integration/errors-and-limits.md): error codes, status codes, and what to do for each.
@@ -59,10 +60,10 @@ Each recipe uses a client that signs in with Heimdall today, or it says that it 
 | Userinfo endpoint | Supported. It releases `sub`, `email`, and `email_verified`. |
 | Token revocation (RFC 7009) | Supported for refresh tokens. |
 | DPoP (RFC 9449) | Supported: `dpop_jkt` at `/authorize`, bound access tokens, bound refresh tokens for public clients, bound tokens at `/userinfo`, and `dpop_signing_alg_values_supported` in discovery. No `DPoP-Nonce` yet. |
-| Client authentication | `client_secret_basic` for confidential clients. `none` for public clients. |
+| Client authentication | `client_secret_basic` or `private_key_jwt` (RFC 7523) for confidential clients, one method for each client. `none` for public clients. See [Authenticate with a private key](integration/private-key-jwt.md). |
 | Implicit flow, hybrid flow, password grant | Not supported, by design (OAuth 2.1, RFC 9700). |
 | `response_mode=form_post` or `fragment` | Not supported. Heimdall returns the code in the query. |
-| `client_secret_post`, `private_key_jwt` | Not supported. |
+| `client_secret_post`, `client_secret_jwt`, mTLS (RFC 8705), `jwks_uri` for client keys | Not supported. |
 | Pushed authorization requests (RFC 9126) | Supported for every client, with an optional DPoP proof. A client can require it for itself. See [Pushed authorization requests](integration/par.md). |
 | Request objects (`request`, JAR) | Not supported. |
 | RP-initiated logout (`end_session_endpoint`) | Supported, with a confirm page when the request has no ID token of the current session. See [Sign out](integration/sign-out.md). |

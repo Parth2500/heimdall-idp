@@ -14,6 +14,9 @@ public enum TokenEndpointAuthMethod
 {
     None,
     ClientSecretBasic,
+
+    /// <summary>RFC 7523, section 2.2: a JWT that the client signs with its private key (D45).</summary>
+    PrivateKeyJwt,
 }
 
 public enum GrantType
@@ -95,8 +98,18 @@ public sealed class Client
 
     public ClientType Type { get; }
 
-    /// <summary>Derived from <see cref="Type"/>, so an invalid combination cannot exist.</summary>
-    public TokenEndpointAuthMethod TokenEndpointAuthMethod { get; }
+    /// <summary>
+    /// Derived from <see cref="Type"/>: <c>none</c> for a public client, <c>client_secret_basic</c> for a confidential
+    /// one. <see cref="UsePrivateKeyJwt"/> changes a confidential client to <c>private_key_jwt</c>. A client has exactly
+    /// one method (D47).
+    /// </summary>
+    public TokenEndpointAuthMethod TokenEndpointAuthMethod { get; private set; }
+
+    /// <summary>
+    /// The public keys of a <c>private_key_jwt</c> client, as a JWK Set (RFC 7517, section 5), or null. Registered inline,
+    /// so Heimdall never fetches keys from the client (D46).
+    /// </summary>
+    public string? Jwks { get; private set; }
 
     public IReadOnlyList<GrantType> AllowedGrantTypes => _allowedGrantTypes;
 
@@ -252,6 +265,21 @@ public sealed class Client
         }
 
         _resourceAudiences = values;
+    }
+
+    /// <summary>
+    /// Makes this client authenticate with <c>private_key_jwt</c> and its registered public keys (D45 to D47). A new
+    /// call replaces the keys, for a rotation. Secrets of the client no longer work.
+    /// </summary>
+    public void UsePrivateKeyJwt(string jwks)
+    {
+        if (Type != ClientType.Confidential)
+        {
+            throw new DomainException("Only a confidential client can use private_key_jwt.");
+        }
+
+        Jwks = ClientJwksRules.Validate(jwks);
+        TokenEndpointAuthMethod = TokenEndpointAuthMethod.PrivateKeyJwt;
     }
 
     /// <summary>Exact string match against the registered list, as for redirect URIs (D32).</summary>

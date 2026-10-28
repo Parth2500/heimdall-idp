@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text;
+using Heimdall.Application.Clients;
 using Heimdall.Application.Common;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Primitives;
@@ -94,8 +95,15 @@ internal static class OAuthFormReader
             return OAuthForm.Fail(basicError);
         }
 
-        // A public client sends client_id in the body only.
         var bodyClientId = NullIfEmpty(form["client_id"]);
+        var assertionType = NullIfEmpty(form["client_assertion_type"]);
+        var assertion = NullIfEmpty(form["client_assertion"]);
+        if (assertionType is not null || assertion is not null)
+        {
+            return ReadAssertion(context, form, basic, bodyClientId, assertionType, assertion);
+        }
+
+        // A public client sends client_id in the body only.
         if (basic.ClientId is null)
         {
             return new OAuthForm(form, bodyClientId, null, null);
@@ -108,6 +116,44 @@ internal static class OAuthFormReader
         }
 
         return new OAuthForm(form, basic.ClientId, basic.ClientSecret, null);
+    }
+
+    /// <summary>
+    /// D45: <c>private_key_jwt</c> (RFC 7523, section 2.2). The client ID comes from the body, or else from the
+    /// assertion's <c>sub</c>. That value is not verified yet: it only names the client for the rate limit check, which
+    /// takes a permit only after a success. <see cref="Heimdall.Application.Clients.ClientAuthenticator"/> verifies it.
+    /// </summary>
+    private static OAuthForm ReadAssertion(
+        HttpContext context,
+        IFormCollection form,
+        BasicCredentials basic,
+        string? bodyClientId,
+        string? assertionType,
+        string? assertion)
+    {
+        if (assertionType is null || assertion is null)
+        {
+            return OAuthForm.Fail(OAuthError.InvalidRequest("client_assertion without client_assertion_type, or the reverse"));
+        }
+
+        if (!string.Equals(assertionType, ClientAssertionTypes.JwtBearer, StringComparison.Ordinal))
+        {
+            return OAuthForm.Fail(OAuthError.InvalidClient("client_assertion_type not supported"));
+        }
+
+        // RFC 6749, section 2.3: one authentication method in a request.
+        if (basic.ClientId is not null)
+        {
+            return OAuthForm.Fail(OAuthError.InvalidRequest("Basic header and client_assertion in one request"));
+        }
+
+        var assertedId = context.RequestServices.GetRequiredService<IClientAssertionValidator>().ReadClientId(assertion);
+        if (assertedId is null)
+        {
+            return OAuthForm.Fail(OAuthError.InvalidClient("client_assertion unreadable"));
+        }
+
+        return new OAuthForm(form, bodyClientId ?? assertedId, null, null, assertion);
     }
 
     public static string? NullIfEmpty(StringValues value) => StringValues.IsNullOrEmpty(value) ? null : value.ToString();
@@ -167,8 +213,11 @@ internal static class OAuthFormReader
     }
 }
 
-/// <summary>A parsed client request: the form, the client ID, and the secret from the Basic header. Or an error.</summary>
-internal sealed record OAuthForm(IFormCollection? Form, string? ClientId, string? ClientSecret, OAuthError? Error)
+/// <summary>
+/// A parsed client request: the form, the client ID, and the secret from the Basic header or the client assertion. Or
+/// an error.
+/// </summary>
+internal sealed record OAuthForm(IFormCollection? Form, string? ClientId, string? ClientSecret, OAuthError? Error, string? ClientAssertion = null)
 {
     public static OAuthForm Fail(OAuthError error) => new(null, null, null, error);
 }

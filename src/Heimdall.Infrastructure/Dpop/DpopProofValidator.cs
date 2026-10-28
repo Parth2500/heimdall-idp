@@ -28,9 +28,6 @@ internal sealed class DpopProofValidator : IDpopProofValidator
     // A proof with an RSA-4096 key is under 2 KB. The limit stops a large value before any decoding.
     private const int MaxProofLength = 4096;
     private const int MaxJtiLength = 256;
-    private const int MinRsaBits = 2048;
-    private const int MaxRsaBits = 4096;
-    private const int P256CoordinateBytes = 32;
 
     // Members of a private JWK (RFC 7518, section 6). A public key has none of them.
     private static readonly string[] PrivateMembers = ["d", "p", "q", "dp", "dq", "qi", "oth", "k"];
@@ -88,7 +85,7 @@ internal sealed class DpopProofValidator : IDpopProofValidator
             return Fail("jwk has a private member");
         }
 
-        ProofKey? key = alg == "ES256" ? ReadEcKey(jwk) : ReadRsaKey(jwk);
+        var key = PublicJwk.Read(jwk, alg);
         if (key is null)
         {
             return Fail("jwk is not a valid key for alg");
@@ -183,85 +180,8 @@ internal sealed class DpopProofValidator : IDpopProofValidator
         Jws.IsString(header, "typ", out var typ)
         && (typ.Equals("dpop+jwt", StringComparison.OrdinalIgnoreCase) || typ.Equals("application/dpop+jwt", StringComparison.OrdinalIgnoreCase));
 
-    private static EcProofKey? ReadEcKey(JsonElement jwk)
-    {
-        if (!Jws.IsString(jwk, "kty", out var kty) || kty != "EC"
-            || !Jws.IsString(jwk, "crv", out var crv) || crv != "P-256"
-            || !Jws.IsString(jwk, "x", out var x) || Jws.Decode(x) is not { Length: P256CoordinateBytes } xBytes
-            || !Jws.IsString(jwk, "y", out var y) || Jws.Decode(y) is not { Length: P256CoordinateBytes } yBytes)
-        {
-            return null;
-        }
-
-        // x and y are base64url, so they need no JSON escaping (RFC 7638, section 3.2).
-        var thumbprint = Thumbprint($$"""{"crv":"P-256","kty":"EC","x":"{{x}}","y":"{{y}}"}""");
-        return new EcProofKey(new ECPoint { X = xBytes, Y = yBytes }, thumbprint);
-    }
-
-    private static RsaProofKey? ReadRsaKey(JsonElement jwk)
-    {
-        if (!Jws.IsString(jwk, "kty", out var kty) || kty != "RSA"
-            || !Jws.IsString(jwk, "n", out var n) || Jws.Decode(n) is not { } modulus
-            || !Jws.IsString(jwk, "e", out var e) || Jws.Decode(e) is not { } exponent)
-        {
-            return null;
-        }
-
-        // RFC 7518, section 6.3.1.1: no leading zero octet, so one key has one thumbprint.
-        var bits = modulus.Length * 8;
-        if (modulus[0] == 0 || bits < MinRsaBits || bits > MaxRsaBits)
-        {
-            return null;
-        }
-
-        return new RsaProofKey(new RSAParameters { Modulus = modulus, Exponent = exponent }, RsaPublicJwk.ComputeThumbprint(n, e));
-    }
-
-    private static string Thumbprint(string canonicalJson) =>
-        Base64Url.EncodeToString(SHA256.HashData(Encoding.UTF8.GetBytes(canonicalJson)));
-
     private static Result<DpopProof> Fail(string reason) => Result.Failure<DpopProof>(OAuthError.InvalidDpopProof(reason));
 
     private static Result<(string Jti, DateTimeOffset IssuedAt)> ClaimFail(string reason) =>
         Result.Failure<(string Jti, DateTimeOffset IssuedAt)>(OAuthError.InvalidDpopProof(reason));
-
-    private abstract class ProofKey(string thumbprint)
-    {
-        public string Thumbprint { get; } = thumbprint;
-
-        public abstract bool Verify(byte[] data, byte[] signature);
-    }
-
-    private sealed class EcProofKey(ECPoint point, string thumbprint) : ProofKey(thumbprint)
-    {
-        public override bool Verify(byte[] data, byte[] signature)
-        {
-            try
-            {
-                // ImportParameters refuses a point that is not on the curve.
-                using var ecdsa = ECDsa.Create(new ECParameters { Curve = ECCurve.NamedCurves.nistP256, Q = point });
-                return ecdsa.VerifyData(data, signature, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
-            }
-            catch (CryptographicException)
-            {
-                return false;
-            }
-        }
-    }
-
-    private sealed class RsaProofKey(RSAParameters parameters, string thumbprint) : ProofKey(thumbprint)
-    {
-        public override bool Verify(byte[] data, byte[] signature)
-        {
-            try
-            {
-                using var rsa = RSA.Create(parameters);
-                return rsa.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-            }
-            catch (CryptographicException)
-            {
-                return false;
-            }
-        }
-    }
 }

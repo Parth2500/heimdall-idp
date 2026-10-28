@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Heimdall.Api.Hosting;
+using Heimdall.Application.Clients;
 using Heimdall.Application.Dpop;
 using Heimdall.Application.Keys;
 using Heimdall.Application.UserInfo;
@@ -38,8 +39,9 @@ internal static class WellKnownEndpoints
             ["code"],
             ["query"],
             ["authorization_code", "refresh_token", "client_credentials"],
-            ["client_secret_basic", "none"],
-            ["client_secret_basic", "none"],
+            // D45: a confidential client has one of the two methods. A public client has none.
+            ["client_secret_basic", "private_key_jwt", "none"],
+            ["client_secret_basic", "private_key_jwt", "none"],
             ["S256"],
             ["public"],
             ["RS256"],
@@ -55,7 +57,11 @@ internal static class WellKnownEndpoints
             BackchannelLogoutSessionSupported: true,
             // RFC 8414, section 2: the introspection endpoint and its one client method (D36).
             IntrospectionEndpoint: issuer + Endpoints.IntrospectionEndpoint.Path,
-            IntrospectionEndpointAuthMethodsSupported: ["client_secret_basic"],
+            IntrospectionEndpointAuthMethodsSupported: ["client_secret_basic", "private_key_jwt"],
+            // RFC 8414, section 2: required with private_key_jwt. The same algorithms at each endpoint (D48).
+            TokenEndpointAuthSigningAlgValuesSupported: [.. ClientAssertionTypes.SupportedAlgorithms],
+            RevocationEndpointAuthSigningAlgValuesSupported: [.. ClientAssertionTypes.SupportedAlgorithms],
+            IntrospectionEndpointAuthSigningAlgValuesSupported: [.. ClientAssertionTypes.SupportedAlgorithms],
             // RFC 9126, section 5. A client can require PAR for itself (D43). The server does not require it of all.
             PushedAuthorizationRequestEndpoint: issuer + PushedAuthorizationEndpoint.Path,
             RequirePushedAuthorizationRequests: false,
@@ -122,6 +128,9 @@ internal static class WellKnownEndpoints
         [property: JsonPropertyName("backchannel_logout_session_supported")] bool BackchannelLogoutSessionSupported,
         [property: JsonPropertyName("introspection_endpoint")] string IntrospectionEndpoint,
         [property: JsonPropertyName("introspection_endpoint_auth_methods_supported")] string[] IntrospectionEndpointAuthMethodsSupported,
+        [property: JsonPropertyName("token_endpoint_auth_signing_alg_values_supported")] string[] TokenEndpointAuthSigningAlgValuesSupported,
+        [property: JsonPropertyName("revocation_endpoint_auth_signing_alg_values_supported")] string[] RevocationEndpointAuthSigningAlgValuesSupported,
+        [property: JsonPropertyName("introspection_endpoint_auth_signing_alg_values_supported")] string[] IntrospectionEndpointAuthSigningAlgValuesSupported,
         [property: JsonPropertyName("pushed_authorization_request_endpoint")] string PushedAuthorizationRequestEndpoint,
         [property: JsonPropertyName("require_pushed_authorization_requests")] bool RequirePushedAuthorizationRequests,
         [property: JsonPropertyName("scopes_supported")] string[] ScopesSupported,

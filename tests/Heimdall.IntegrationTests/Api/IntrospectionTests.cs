@@ -100,7 +100,12 @@ public sealed class IntrospectionTests
         var document = JsonDocument.Parse(await flow.Http.GetStringAsync(".well-known/openid-configuration")).RootElement;
 
         Assert.Equal(flow.Tenant.Issuer + "/oauth/v1/introspect", document.GetProperty("introspection_endpoint").GetString());
-        Assert.Equal(["client_secret_basic"], document.GetProperty("introspection_endpoint_auth_methods_supported").EnumerateArray().Select(e => e.GetString()));
+        Assert.Equal(
+            ["client_secret_basic", "private_key_jwt"],
+            document.GetProperty("introspection_endpoint_auth_methods_supported").EnumerateArray().Select(e => e.GetString()));
+        Assert.Equal(
+            ["RS256", "PS256", "ES256"],
+            document.GetProperty("introspection_endpoint_auth_signing_alg_values_supported").EnumerateArray().Select(e => e.GetString()));
     }
 
     [DockerFact]

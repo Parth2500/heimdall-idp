@@ -152,6 +152,18 @@ internal sealed class HeimdallApiFactory : WebApplicationFactory<Program>
         scope.ServiceProvider.GetRequiredService<IClientStore>().Invalidate(tenant.Tenant.Id);
     }
 
+    /// <summary>Switches the tenant's confidential client to private_key_jwt with these public keys (D45, D46).</summary>
+    public async Task UsePrivateKeyJwtAsync(TestTenant tenant, string jwks)
+    {
+        await using var scope = Services.CreateAsyncScope();
+        scope.ServiceProvider.GetRequiredService<TenantScope>().Set(tenant.Tenant.Id);
+        var db = scope.ServiceProvider.GetRequiredService<HeimdallDbContext>();
+        var client = await db.Clients.SingleAsync(c => c.ClientId == tenant.ClientId);
+        client.UsePrivateKeyJwt(jwks);
+        await db.SaveChangesAsync();
+        scope.ServiceProvider.GetRequiredService<IClientStore>().Invalidate(tenant.Tenant.Id);
+    }
+
     /// <summary>Adds a user to the tenant with the real hasher.</summary>
     public async Task<User> AddUserAsync(TestTenant tenant, string email, string password)
     {

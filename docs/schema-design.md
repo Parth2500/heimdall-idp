@@ -1,6 +1,6 @@
 # Heimdall Schema Design (Phase 0)
 
-This document defines the PostgreSQL schema. It uses the terms in the glossary of `docs/threat-model.md`. Decision IDs (D1 to D23) refer to that document.
+This document defines the PostgreSQL schema. It uses the terms in the glossary of `docs/threat-model.md`. Decision IDs (D1 to D49) refer to that document.
 
 The document has no C# code. The entities and the migrations are written by hand, from this design.
 
@@ -65,6 +65,16 @@ DPoP proofs that the tenant has seen (D26). A row lives only while its proof cou
 
 One `INSERT ... ON CONFLICT DO NOTHING` statement records a proof. One affected row means a new proof. No affected row means a replay. Two servers that see one proof at the same time get one of each, without a read first. The hash includes the key thumbprint, so a client cannot use up another client's `jti`. Row-level security applies, as for the other tenant-owned tables.
 
+### `client_assertions`
+`private_key_jwt` assertions that a client has used (D49). A row lives only while its assertion could still pass the `exp` check.
+
+| Column | Type | Note |
+|---|---|---|
+| `tenant_id`, `assertion_hash` | uuid, bytea | **Primary key.** `assertion_hash` is SHA-256 of the client's primary key, a colon, and the `jti`. Check: 32 bytes. |
+| `expires_at` | timestamptz | The assertion's `exp` plus the 60-second clock difference. |
+
+One `INSERT ... ON CONFLICT DO NOTHING` statement records an assertion, as for `dpop_proofs`. The hash includes the client's primary key, so one client cannot use up another client's `jti`. Row-level security applies, as for the other tenant-owned tables.
+
 ### `clients`
 | Column | Type | Note |
 |---|---|---|
@@ -73,7 +83,8 @@ One `INSERT ... ON CONFLICT DO NOTHING` statement records a proof. One affected 
 | `client_id` | text | The public identifier. **Unique with `tenant_id`.** |
 | `name` | text | |
 | `type` | text | `public`, `confidential`. |
-| `token_endpoint_auth_method` | text | `none`, `client_secret_basic` in version 1. Check: `none` for `public` and `client_secret_basic` for `confidential`. |
+| `token_endpoint_auth_method` | text | `none`, `client_secret_basic`, or `private_key_jwt` (D45, D47). Check: `none` for `public`, and `client_secret_basic` or `private_key_jwt` for `confidential`. |
+| `jwks` | text, null | D46. The public keys of a `private_key_jwt` client, as a JWK Set of at most 16384 characters. Check: set exactly when the method is `private_key_jwt`. The Domain refuses a private key member. |
 | `allowed_grant_types` | text[] | Check: not empty, only known values, and `client_credentials` only for `confidential`. A client can refresh when this list has `refresh_token`. There is no separate flag. |
 | `allowed_scopes` | text[] | |
 | `redirect_uris` | text[] | Stored exactly. Matching is by exact string, in the application, after the client is loaded. The Domain removes duplicates. |
@@ -418,6 +429,7 @@ Indexes for the job: `token_families (idle_expires_at)`, `token_families (revoke
 | `authorization_requests` | `expires_at` has passed | |
 | `login_throttles` | No failure for 24 hours, and no wait is running | The row would start again at zero anyway. |
 | `dpop_proofs` | `expires_at` has passed | None. After that time the proof fails the `iat` check anyway. |
+| `client_assertions` | `expires_at` has passed | None. After that time the assertion fails the `exp` check anyway. |
 | `backchannel_logouts` | `created_at` is more than one day ago | The delivery job deletes each row within an hour. This rule removes the rows of a server where the job did not run. |
 | `sessions` | `absolute_expires_at` or `revoked_at` is more than 7 days ago | A session that ended by its idle timeout stays until this time. The idle timeout is a tenant setting, so this rule keeps the statement on one table. |
 

@@ -1,6 +1,6 @@
 # Heimdall Domain Model
 
-This document lists the rules that the Domain layer (`src/Heimdall.Domain`) enforces. Each rule refers to a decision in `docs/threat-model.md` (D1 to D23) or a table in `docs/schema-design.md`.
+This document lists the rules that the Domain layer (`src/Heimdall.Domain`) enforces. Each rule refers to a decision in `docs/threat-model.md` (D1 to D49) or a table in `docs/schema-design.md`.
 
 The Domain layer has no dependencies. It has no EF Core types. Each entity is created by a factory method that checks its rules. A broken rule throws `DomainException`.
 
@@ -28,6 +28,8 @@ The database enforces the most important rules a second time (unique indexes, ch
 | Rule | Reference |
 |---|---|
 | The authentication method comes from the client type: `public` uses `none`, `confidential` uses `client_secret_basic`. An invalid combination cannot exist. | D10 |
+| Only a confidential client can switch to `private_key_jwt`. The switch stores its public keys. A new key set replaces the old one. A client has one method at a time. | D45, D47 |
+| A key set has 1 to 5 keys and at most 16384 characters. Each key has a unique `kid` of 1 to 128 characters, `kty` `RSA` or `EC`, `use` `sig` when present, and no private member. A refused key set changes nothing. | D46 |
 | Only a confidential client can use `client_credentials`. | `/token`, Spoofing |
 | The `refresh_token` grant needs the `authorization_code` grant. A client can refresh only if it has the `refresh_token` grant. | Refresh flow |
 | A client with the `authorization_code` grant needs at least one redirect URI. | |

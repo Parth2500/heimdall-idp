@@ -28,7 +28,7 @@ public class ClientCredentialsGrantTests
 
     public ClientCredentialsGrantTests()
     {
-        _grant = new ClientCredentialsGrant(new ClientAuthenticator(_store, _time), new DpopTokenCheck(_dpop, _dpopReplay), _signer, _audit, _time);
+        _grant = new ClientCredentialsGrant(new ClientAuthenticator(_store, new FakeClientAssertionValidator(), new InMemoryClientAssertionReplayStore(), _time), new DpopTokenCheck(_dpop, _dpopReplay), _signer, _audit, _time);
     }
 
     private RequestContext Context => new(_tenant, "https://acme.example.com", "corr-1", IPAddress.Parse("203.0.113.7"));

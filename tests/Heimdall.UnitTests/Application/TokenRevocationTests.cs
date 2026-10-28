@@ -28,7 +28,7 @@ public class TokenRevocationTests
 
     public TokenRevocationTests()
     {
-        _revocation = new TokenRevocation(new ClientAuthenticator(_clients, _time), _tokens, _audit, _time);
+        _revocation = new TokenRevocation(new ClientAuthenticator(_clients, new FakeClientAssertionValidator(), new InMemoryClientAssertionReplayStore(), _time), _tokens, _audit, _time);
         _spa = AddPublicClient("spa");
         _family = StartFamily(_spa, Token);
     }
