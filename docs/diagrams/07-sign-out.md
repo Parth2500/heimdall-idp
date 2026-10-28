@@ -73,6 +73,7 @@ flowchart LR
     T --> F[Every family with the sid<br/>revoked_reason = user_logout<br/>offline_access too]
     T --> Q[backchannel_logouts rows]
     F --> R[Refresh tokens: invalid_grant at once]
-    F --> I[Access tokens: valid until exp, at most 5 minutes]
+    F --> I[Access tokens: valid offline until exp, at most 5 minutes]
+    F --> U[/userinfo and introspection: invalid_token at once]
     Q --> D[Client servers end their own sessions]
 ```

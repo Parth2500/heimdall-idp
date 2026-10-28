@@ -78,7 +78,7 @@ Starts the authorization code flow. The browser calls it, not your server.
 | `state` | No (recommended) | At most 512 characters. |
 | `nonce` | No (recommended) | At most 512 characters. Copied into the ID token. |
 | `dpop_jkt` | No | The RFC 7638 thumbprint of your DPoP key. The code then needs a DPoP proof from that key at `/token`. See [DPoP](dpop.md). |
-| `prompt` | No | `none` or `login`. One value only. |
+| `prompt` | No | `none`, `login`, `consent`, or `login consent`. `none` cannot be combined with another value. Each value at most once. |
 | `max_age` | No | Seconds, as a non-negative integer. |
 | `response_mode` | No | `query` only. |
 | `request`, `request_uri` | Not supported | Heimdall refuses them. |
@@ -160,6 +160,7 @@ Returns the user's claims (OpenID Connect Core, section 5.3).
 - A token in the query string gets `400`.
 - The token's `aud` must be `<issuer>/oauth/v1/userinfo`.
 - The token's scope must have `openid`.
+- A token whose sign-in has ended gets `401` at once: after a sign-out, a code or refresh token reuse, or `/revoke`. The user must be active.
 
 ```json
 {

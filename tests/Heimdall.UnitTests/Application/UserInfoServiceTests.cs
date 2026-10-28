@@ -2,7 +2,9 @@ using System.Net;
 using Heimdall.Application.Common;
 using Heimdall.Application.UserInfo;
 using Heimdall.Domain.Audit;
+using Heimdall.Domain.Clients;
 using Heimdall.Domain.Tenants;
+using Heimdall.Domain.Tokens;
 using Heimdall.Domain.Users;
 using Microsoft.Extensions.Time.Testing;
 
@@ -19,16 +21,22 @@ public class UserInfoServiceTests
     private readonly FakeValidator _validator = new();
     private readonly FakeDpopProofValidator _proofs = new();
     private readonly InMemoryDpopReplayStore _replay = new();
-    private readonly InMemoryUserStore _users = new();
+    private static readonly TokenLifetimes Lifetimes = new(TimeSpan.FromMinutes(5), TimeSpan.FromDays(7), TimeSpan.FromDays(30));
+
+    private readonly InMemoryTokenStore _tokens = new();
     private readonly RecordingAuditLog _audit = new();
     private readonly UserInfoService _service;
     private readonly User _user;
+    private readonly TokenFamily _family;
 
     public UserInfoServiceTests()
     {
-        _service = new UserInfoService(_validator, _proofs, _replay, _users, _audit, _time);
+        _service = new UserInfoService(_validator, _proofs, _replay, _tokens, _audit, _time);
         _user = User.Create(Guid.CreateVersion7(), _tenant.Id, "Alice@Example.com", "hash", Now);
-        _users.Add(_user);
+        _tokens.Users.Add(_user);
+        _family = TokenFamily.Start(
+            Guid.CreateVersion7(), _tenant.Id, Guid.CreateVersion7(), _user.Id, Guid.CreateVersion7(), "openid email", Lifetimes, Now);
+        _tokens.Families.Add(_family);
     }
 
     private RequestContext Context => new(_tenant, Issuer, "corr-1", IPAddress.Parse("203.0.113.7"));
@@ -39,8 +47,18 @@ public class UserInfoServiceTests
         string audience = Audience,
         string scope = "openid email",
         DateTimeOffset? expiresAt = null,
-        string? boundKey = null) =>
-        new(issuer, subject ?? _user.Id.ToString(), audience, "spa", scope.Split(' '), expiresAt ?? Now.AddMinutes(5), boundKey);
+        string? boundKey = null,
+        Guid? familyId = null,
+        bool withoutFamily = false) =>
+        new(
+            issuer,
+            subject ?? _user.Id.ToString(),
+            audience,
+            "spa",
+            scope.Split(' '),
+            expiresAt ?? Now.AddMinutes(5),
+            boundKey,
+            withoutFamily ? null : familyId ?? _family.Id);
 
     private Task<Result<UserInfoClaims>> Get(
         VerifiedAccessToken? token,
@@ -130,7 +148,51 @@ public class UserInfoServiceTests
     [Fact]
     public async Task Token_of_an_unknown_user_is_invalid_token()
     {
-        AssertInvalid(await Get(Token(subject: Guid.CreateVersion7().ToString())), "unknown user");
+        AssertInvalid(await Get(Token(subject: Guid.CreateVersion7().ToString())), "unknown family or user");
+    }
+
+    [Fact]
+    public async Task Token_without_a_family_is_invalid_token()
+    {
+        AssertInvalid(await Get(Token(withoutFamily: true)), "fid missing");
+        Assert.Equal(0, _tokens.FamilyReads);
+    }
+
+    [Fact]
+    public async Task Token_of_an_unknown_or_purged_family_is_invalid_token()
+    {
+        AssertInvalid(await Get(Token(familyId: Guid.CreateVersion7())), "unknown family or user");
+    }
+
+    [Fact]
+    public async Task Token_whose_sub_is_not_the_family_user_is_invalid_token()
+    {
+        var other = User.Create(Guid.CreateVersion7(), _tenant.Id, "bob@example.com", "hash", Now);
+        _tokens.Users.Add(other);
+
+        AssertInvalid(await Get(Token(subject: other.Id.ToString())), "unknown family or user");
+    }
+
+    [Fact]
+    public async Task Token_of_a_family_without_its_user_row_is_invalid_token()
+    {
+        _tokens.Users.Remove(_user);
+
+        AssertInvalid(await Get(Token()), "unknown family or user");
+    }
+
+    [Theory]
+    [InlineData(FamilyRevocationReason.ReuseDetected)]
+    [InlineData(FamilyRevocationReason.UserLogout)]
+    public async Task Token_of_a_revoked_family_is_invalid_token_at_once(FamilyRevocationReason reason)
+    {
+        // D44: the access token has not expired, but its family has ended. The read is one query.
+        Assert.True((await Get(Token())).IsSuccess);
+        _audit.Events.Clear();
+        _family.Revoke(reason, Now);
+
+        AssertInvalid(await Get(Token()), "family revoked");
+        Assert.Equal(2, _tokens.FamilyReads);
     }
 
     [Fact]
@@ -224,7 +286,7 @@ public class UserInfoServiceTests
         AssertInvalid(await Get(Token(boundKey: Key, expiresAt: Now), TokenScheme.Dpop, FakeDpopProofValidator.Proof(Key)), "expired");
         Assert.Empty(_proofs.Checked);
 
-        _users.Users.Remove(_user);
+        _tokens.Users.Remove(_user);
         AssertDpopRefused(await Get(Token(boundKey: Key), TokenScheme.Dpop), "proof missing");
     }
 

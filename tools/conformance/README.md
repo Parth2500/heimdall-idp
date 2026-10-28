@@ -11,7 +11,7 @@ The suite runs locally, because the hosted suite cannot reach a development serv
 | `heimdall-pkce.patch` | Adds PKCE `S256` to every authorization request of the suite's OpenID Connect server modules. |
 | `compose.override.yml` | Runs the patched suite image, maps `acme.localhost` to the host, and gives nginx a certificate for its host name. |
 | `register-clients.sh` | Registers `conformance-1` and `conformance-2` in the development database. It writes the secrets and the plan configuration to `.local/conformance/`. |
-| `run-plan.mjs` | Runs one plan. Playwright plays the user: it signs in, confirms a sign-out, and uploads a screenshot for a review step. |
+| `run-plan.mjs` | Runs one plan. Playwright plays the user: it signs in, allows consent, confirms a sign-out, and uploads a screenshot for a review step. |
 
 ## Steps
 
@@ -38,15 +38,17 @@ cat /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem suite.crt > bundle.crt
 cd .local/conformance-suite
 podman compose -f docker-compose-prebuilt.yml -f ../../tools/conformance/compose.override.yml up -d
 ```
-4. Register the clients, then start Heimdall on all interfaces, trusting the suite's certificate. The `SSL_CERT_FILE` bundle keeps every TLS check on:
+4. Register the clients, then start Heimdall on all interfaces, trusting the suite's certificate. The `SSL_CERT_FILE` bundle keeps every TLS check on. The suite signs in many times from one address, so raise the login rate limit for this local run only (the default is 5 each minute for each IP):
 ```
 tools/conformance/register-clients.sh with-backchannel
-SSL_CERT_FILE=.local/conformance/bundle.crt dotnet run --project src/Heimdall.Api --launch-profile https -- --urls "https://0.0.0.0:7200"
+SSL_CERT_FILE=.local/conformance/bundle.crt Heimdall__RateLimits__Login__PermitLimit=1000 dotnet run --project src/Heimdall.Api --launch-profile https -- --urls "https://0.0.0.0:7200"
 ```
 5. Run a plan. The user must exist in the tenant:
 ```
 cd tools/conformance && npm install --ignore-scripts
 export HEIMDALL_CONFORMANCE_EMAIL=... HEIMDALL_CONFORMANCE_PASSWORD=... NODE_EXTRA_CA_CERTS=../../.local/conformance/suite.crt
+# Optional: a Chromium that is already installed, when the Playwright version wants another browser build.
+export CHROMIUM_PATH=~/.cache/ms-playwright/chromium_headless_shell-<build>/chrome-headless-shell-linux64/chrome-headless-shell
 node run-plan.mjs oidcc-basic-certification-test-plan '{"server_metadata":"discovery","client_registration":"static_client"}' ../../.local/conformance/config.json
 node run-plan.mjs oidcc-config-certification-test-plan '{}' ../../.local/conformance/config.json
 node run-plan.mjs oidcc-backchannel-rp-initiated-logout-certification-test-plan '{"client_registration":"static_client","response_type":"code"}' ../../.local/conformance/config.json

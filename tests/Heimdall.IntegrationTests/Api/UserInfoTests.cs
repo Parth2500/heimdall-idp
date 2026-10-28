@@ -57,8 +57,11 @@ public sealed class UserInfoTests
         return new Flow(api, tenant, browser, api.ClientFor(tenant.Host));
     }
 
-    /// <summary>Runs /authorize and redeems the code. A null resource asks for the client's default audience.</summary>
-    private static async Task<Tokens> GetTokensAsync(Flow flow, string scope, string? resource)
+    /// <summary>
+    /// Runs /authorize and redeems the code. A null resource asks for the client's default audience. With
+    /// <paramref name="reuseCode"/>, it sends the code a second time, which revokes the family.
+    /// </summary>
+    private static async Task<Tokens> GetTokensAsync(Flow flow, string scope, string? resource, bool reuseCode = false)
     {
         string code;
         using (var authorize = await flow.Browser.SendAsync(HttpMethod.Get, QueryHelpers.AddQueryString("oauth/v1/authorize", new Dictionary<string, string?>
@@ -91,6 +94,12 @@ public sealed class UserInfoTests
 
         using var redeemed = await flow.Http.PostAsync("oauth/v1/token", new FormUrlEncodedContent(form));
         Assert.Equal(HttpStatusCode.OK, redeemed.StatusCode);
+        if (reuseCode)
+        {
+            using var reused = await flow.Http.PostAsync("oauth/v1/token", new FormUrlEncodedContent(form));
+            Assert.Equal(HttpStatusCode.BadRequest, reused.StatusCode);
+        }
+
         var body = JsonDocument.Parse(await redeemed.Content.ReadAsStringAsync()).RootElement;
         return new Tokens(
             body.GetProperty("access_token").GetString()!,
@@ -222,6 +231,18 @@ public sealed class UserInfoTests
             user!.Disable();
             await users.SaveChangesAsync(CancellationToken.None);
         }
+
+        using var response = await CallAsync(flow, tokens.AccessToken);
+
+        await AssertInvalidTokenAsync(response);
+    }
+
+    [DockerFact]
+    public async Task Code_reuse_stops_the_first_access_token_at_once()
+    {
+        // D44, and the conformance test oidcc-codereuse-30seconds: the reuse revokes the family, and /userinfo reads it.
+        await using var flow = await SetUpAsync();
+        var tokens = await GetTokensAsync(flow, "openid", flow.UserInfoUrl, reuseCode: true);
 
         using var response = await CallAsync(flow, tokens.AccessToken);
 

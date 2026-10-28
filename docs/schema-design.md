@@ -118,6 +118,7 @@ Heimdall stores the pending `/authorize` request here while the user signs in an
 | `consent_user_id`, `consent_approved` | uuid null, boolean null | The consent decision for this request and the user who made it. Check: both null or both set. |
 | `dpop_key_thumbprint` | text, null | The request's `dpop_jkt` (D27), or the key of the DPoP proof at `/par` (D40). Check: null or 43 characters. Heimdall copies it to the code. |
 | `prompt_none` | boolean | `prompt=none`. A pushed request needs it, because `/authorize` does not see the parameters again. |
+| `force_consent` | boolean | `prompt=consent`: the user decides on the consent page, also for a client that does not require consent. |
 | `request_uri_hash` | bytea, null | The SHA-256 of the `request_uri` of a pushed request (D41). **Unique with `tenant_id`** where not null. `/authorize` clears it when it takes the request (D42). |
 
 Heimdall deletes the row in the same transaction that inserts the code. If two requests resume the same row, the second `DELETE` matches no row, and that transaction rolls back. One stored request gives one code.

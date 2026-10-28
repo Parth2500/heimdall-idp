@@ -60,11 +60,12 @@ public class ConsentServiceTests
         return client;
     }
 
-    private AuthorizationRequest StoreRequest(Client client, bool forceLogin = false, TimeSpan? maxAge = null)
+    private AuthorizationRequest StoreRequest(
+        Client client, bool forceLogin = false, TimeSpan? maxAge = null, bool forceConsent = false, TokenHash? requestUriHash = null)
     {
         var request = AuthorizationRequest.Create(
             Guid.CreateVersion7(), _tenant.Id, client.Id, "https://chat.example.com/callback", "openid email", "state", null,
-            Challenge, forceLogin, maxAge, Now);
+            Challenge, forceLogin, maxAge, Now, requestUriHash: requestUriHash, forceConsent: forceConsent);
         _store.Requests.Add(request);
         return request;
     }
@@ -213,5 +214,26 @@ public class ConsentServiceTests
         var request = StoreRequest(AddClient("trusted", requireConsent: false));
 
         AssertError(await Decide(approve: true, request.Id.ToString()), OAuthError.InvalidRequestCode, "client inactive or needs no consent");
+    }
+
+    [Fact]
+    public async Task Prompt_consent_request_of_a_client_that_needs_no_consent_is_decided()
+    {
+        // prompt=consent asks for the page also when the client does not require consent.
+        var request = StoreRequest(AddClient("trusted", requireConsent: false), forceConsent: true);
+
+        Assert.True((await Prompt(request.Id.ToString())).IsSuccess);
+        Assert.True((await Decide(approve: true, request.Id.ToString())).IsSuccess);
+        Assert.True(request.ConsentDecisionOf(_user.Id));
+    }
+
+    [Fact]
+    public async Task Pushed_request_that_authorize_has_not_taken_is_unknown()
+    {
+        // D42: the request_id of a pushed request has no consent page until /authorize takes the request_uri.
+        var request = StoreRequest(_app, requestUriHash: TokenHash.Compute("urn:ietf:params:oauth:request_uri:x"));
+
+        AssertError(await Decide(approve: true, request.Id.ToString()), OAuthError.InvalidRequestCode, "request unknown or used");
+        Assert.Null(request.ConsentDecisionOf(_user.Id));
     }
 }

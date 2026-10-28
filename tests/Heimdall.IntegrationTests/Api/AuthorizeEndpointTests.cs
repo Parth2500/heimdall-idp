@@ -223,7 +223,7 @@ public sealed class AuthorizeEndpointTests
         { "scope", "openid admin", "invalid_scope" },
         { "scope", null, "invalid_scope" },
         { "response_mode", "fragment", "invalid_request" },
-        { "prompt", "consent", "invalid_request" },
+        { "prompt", "none login", "invalid_request" },
         { "max_age", "-1", "invalid_request" },
     };
 

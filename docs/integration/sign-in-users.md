@@ -58,7 +58,7 @@ Redirect the browser to the `authorization_endpoint` with these query parameters
 | `code_challenge_method` | Yes | `S256`. Heimdall refuses `plain` and a missing value. |
 | `state` | Recommended | From step 2. At most 512 characters. |
 | `nonce` | Recommended with `openid` | From step 2. At most 512 characters. |
-| `prompt` | No | `login` makes the user sign in again. `none` never shows a page. No other value is supported. |
+| `prompt` | No | Space-separated. `login` makes the user sign in again. `consent` shows the consent page, also when your client does not require consent. `none` never shows a page and cannot be combined with another value. `select_account` is not supported yet (#41). |
 | `max_age` | No | Seconds. If the user signed in longer ago, Heimdall asks again. |
 
 Heimdall refuses a request that repeats a parameter. Heimdall ignores parameters that it does not know.
@@ -184,7 +184,7 @@ A code works once. If anyone presents a used code again, Heimdall treats it as t
 - Heimdall revokes the family of refresh tokens that the first redemption issued. The refresh token of the first caller stops working.
 - Heimdall raises a security alert.
 
-An access token from the first redemption stays valid until it expires, because Heimdall cannot revoke a JWT.
+Heimdall's `/userinfo` and introspection refuse the access token from the first redemption at once. A resource server that checks that token offline accepts it until it expires, because Heimdall cannot recall a JWT.
 
 Do not retry a code redemption that may have succeeded. Start a new sign-in instead.
 

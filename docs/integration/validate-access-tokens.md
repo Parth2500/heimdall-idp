@@ -91,7 +91,7 @@ If an operation must run for a user, refuse tokens that have no `auth_time`.
 
 ## Revocation and logout
 
-With the checks above, an access token is valid until `exp`. A sign-out, a reuse, or `/revoke` ends the token's family at Heimdall, but a JWT that you check offline does not show it. The short lifetime (5 minutes by default) limits the risk.
+With the checks above, an access token is valid until `exp`. A sign-out, a reuse, or `/revoke` ends the token's family at Heimdall, but a JWT that you check offline does not show it. Heimdall's `/userinfo` and introspection read the family, so they refuse the token at once. The short lifetime (5 minutes by default) limits the risk.
 
 If an operation must see a revocation at once, ask Heimdall with introspection (RFC 7662). Use it only for those operations. Every call costs a round trip.
 

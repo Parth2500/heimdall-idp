@@ -147,4 +147,22 @@ public class AuthorizationRequestTests
         Assert.Throws<DomainException>(() => AuthorizationRequest.Create(
             Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "https://app.example.com/cb", "openid", null, null,
             "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", forceLogin: true, null, Now, promptNone: true));
+
+    [Fact]
+    public void Prompt_none_with_consent_is_refused() =>
+        Assert.Throws<DomainException>(() => AuthorizationRequest.Create(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "https://app.example.com/cb", "openid", null, null,
+            "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", false, null, Now, promptNone: true, forceConsent: true));
+
+    [Fact]
+    public void Prompt_consent_is_stored()
+    {
+        var request = AuthorizationRequest.Create(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "https://app.example.com/cb", "openid", null, null,
+            "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", forceLogin: true, null, Now, forceConsent: true);
+
+        Assert.True(request.ForceConsent);
+        Assert.True(request.ForceLogin);
+        Assert.False(request.PromptNone);
+    }
 }

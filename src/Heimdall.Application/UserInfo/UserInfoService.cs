@@ -1,7 +1,7 @@
 using Heimdall.Application.Audit;
 using Heimdall.Application.Common;
 using Heimdall.Application.Dpop;
-using Heimdall.Application.Users;
+using Heimdall.Application.Tokens;
 using Heimdall.Domain.Audit;
 using Heimdall.Domain.Users;
 
@@ -43,8 +43,8 @@ public sealed record UserInfoRequest(string AccessToken, TokenScheme Scheme, str
 
 /// <summary>
 /// <c>GET /oauth/v1/userinfo</c> (OpenID Connect Core, section 5.3). The caller sends an access token for the
-/// userinfo endpoint. Heimdall loads the user on each call, so a disabled user gets no data, even with a valid token.
-/// A DPoP-bound token works only with the DPoP scheme and a proof from its key (D28).
+/// userinfo endpoint. Heimdall loads the token's family and user on each call. A revoked family or a disabled user gets
+/// no data, even with a valid token (D44). A DPoP-bound token works only with the DPoP scheme and a proof from its key (D28).
 /// </summary>
 /// <remarks>
 /// Every token failure is the same <c>invalid_token</c> (D5). The reason goes to the log, not the audit log: a bad
@@ -58,7 +58,7 @@ public sealed class UserInfoService
     private readonly IAccessTokenValidator _validator;
     private readonly IDpopProofValidator _proofs;
     private readonly IDpopReplayStore _replay;
-    private readonly IUserStore _users;
+    private readonly ITokenStore _tokens;
     private readonly IAuditLog _audit;
     private readonly TimeProvider _time;
 
@@ -66,14 +66,14 @@ public sealed class UserInfoService
         IAccessTokenValidator validator,
         IDpopProofValidator proofs,
         IDpopReplayStore replay,
-        IUserStore users,
+        ITokenStore tokens,
         IAuditLog audit,
         TimeProvider time)
     {
         _validator = validator;
         _proofs = proofs;
         _replay = replay;
-        _users = users;
+        _tokens = tokens;
         _audit = audit;
         _time = time;
     }
@@ -120,10 +120,28 @@ public sealed class UserInfoService
             return Invalid("sub is not a user");
         }
 
-        var user = await _users.FindByIdAsync(context.Tenant.Id, userId, cancellationToken).ConfigureAwait(false);
-        if (user is not { Status: UserStatus.Active })
+        // Every user grant's token has a family (D29). A client_credentials token never has the userinfo audience.
+        if (token.FamilyId is not { } familyId)
         {
-            return Invalid(user is null ? "unknown user" : "user disabled");
+            return Invalid("fid missing");
+        }
+
+        // D44: one read joins the family and its user. A sign-out, a code or refresh token reuse, and /revoke all revoke
+        // the family, so the token stops here at once. A purged family is long past any access token.
+        var found = await _tokens.FindFamilyWithUserAsync(context.Tenant.Id, familyId, cancellationToken).ConfigureAwait(false);
+        if (found is not var (family, user) || family.UserId != userId)
+        {
+            return Invalid("unknown family or user");
+        }
+
+        if (family.RevokedAt is not null)
+        {
+            return Invalid("family revoked");
+        }
+
+        if (user.Status != UserStatus.Active)
+        {
+            return Invalid("user disabled");
         }
 
         // OpenID Connect Core, section 5.3: the token must come from an OpenID request.

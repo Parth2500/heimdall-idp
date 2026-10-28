@@ -20,7 +20,7 @@ These errors come back to your `redirect_uri` as query parameters, with `state` 
 
 | `error` | Cause | Action |
 |---|---|---|
-| `invalid_request` | A parameter is missing or wrong: `code_challenge`, `code_challenge_method` is not `S256`, a `response_mode` other than `query`, an unsupported `prompt`, a bad `max_age`, a `state` or `nonce` over 512 characters, or a malformed `dpop_jkt`. | Fix the request. |
+| `invalid_request` | A parameter is missing or wrong: `code_challenge`, `code_challenge_method` is not `S256`, a `response_mode` other than `query`, an unsupported or repeated `prompt` value, `prompt=none` with another value, a bad `max_age`, a `state` or `nonce` over 512 characters, or a malformed `dpop_jkt`. | Fix the request. |
 | `unsupported_response_type` | `response_type` is not `code`. | Use `code`. |
 | `invalid_scope` | `scope` is missing, malformed, or has a scope that your client does not have. Or it has `offline_access` without the `refresh_token` grant. | Ask only for registered scopes. |
 | `unauthorized_client` | Your client does not have the `authorization_code` grant. | Ask the operator. |

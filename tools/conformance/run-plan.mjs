@@ -1,6 +1,6 @@
 // Runs one OpenID conformance plan against a local Heimdall (issue #20). See README.md.
-// The suite gives the URLs that a user must visit. Playwright visits them, signs in at Heimdall, confirms a sign-out
-// when Heimdall asks, and uploads a screenshot when a module waits for a person's review.
+// The suite gives the URLs that a user must visit. Playwright visits them, signs in at Heimdall, allows consent and
+// confirms a sign-out when Heimdall asks, and uploads a screenshot when a module waits for a person's review.
 //
 // Usage: node run-plan.mjs <plan> <variant JSON> <config JSON file> [module filter]
 // Trust the suite's certificate with NODE_EXTRA_CA_CERTS=../../.local/conformance/suite.crt. TLS checks stay on.
@@ -37,6 +37,9 @@ async function visit(context, url) {
         await page.getByLabel('Email').fill(EMAIL);
         await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
         await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+      } else if (now.includes('/account/consent?')) {
+        // prompt=consent shows the consent page also for a client that needs no consent.
+        await page.getByRole('button', { name: 'Allow', exact: true }).click();
       } else if (now.includes('/account/logout')) {
         await page.getByRole('button', { name: 'Sign out' }).click();
       } else {

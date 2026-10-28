@@ -39,7 +39,7 @@ public sealed class ConsentTests
     }
 
     /// <summary>Signs in and sends /authorize for a client that requires consent. Returns the stored request ID.</summary>
-    private async Task<Setup> SetUpAsync(bool requireConsent = true)
+    private async Task<Setup> SetUpAsync(bool requireConsent = true, string? prompt = null)
     {
         var api = new HeimdallApiFactory(_postgres);
         var tenant = await api.AddTenantAsync();
@@ -61,6 +61,7 @@ public sealed class ConsentTests
             ["state"] = "xyz-state",
             ["code_challenge"] = Challenge,
             ["code_challenge_method"] = "S256",
+            ["prompt"] = prompt,
         });
         string requestId;
         using (var authorize = await browser.SendAsync(HttpMethod.Get, url))
@@ -129,6 +130,24 @@ public sealed class ConsentTests
         Assert.True(query.ContainsKey("code"));
         Assert.Equal("xyz-state", query["state"]);
         Assert.Equal(1, await AuditCountAsync(setup, AuditEventTypes.ConsentGranted));
+    }
+
+    [DockerFact]
+    public async Task Prompt_consent_asks_also_for_a_client_that_needs_no_consent()
+    {
+        // OpenID Connect Core, section 3.1.2.1. The flag round-trips through the stored request.
+        await using var setup = await SetUpAsync(requireConsent: false, prompt: "consent");
+
+        using var resumeBefore = await ResumeAsync(setup);
+        using var decision = await DecideAsync(setup, approve: true);
+        using var resume = await ResumeAsync(setup);
+
+        QueryOf(resumeBefore, out var pathBefore);
+        Assert.Equal("/account/consent", pathBefore);
+        Assert.Equal(HttpStatusCode.NoContent, decision.StatusCode);
+        var query = QueryOf(resume, out var path);
+        Assert.Equal(Callback, path);
+        Assert.True(query.ContainsKey("code"));
     }
 
     [DockerFact]
