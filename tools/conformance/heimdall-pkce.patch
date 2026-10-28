@@ -1,5 +1,5 @@
 diff --git a/src/main/java/net/openid/conformance/openid/AbstractOIDCCServerTest.java b/src/main/java/net/openid/conformance/openid/AbstractOIDCCServerTest.java
-index 2309043..8b268ab 100644
+index 2309043d3..8b268ab9e 100644
 --- a/src/main/java/net/openid/conformance/openid/AbstractOIDCCServerTest.java
 +++ b/src/main/java/net/openid/conformance/openid/AbstractOIDCCServerTest.java
 @@ -541,7 +541,10 @@ public abstract class AbstractOIDCCServerTest extends AbstractRedirectServerTest
@@ -23,3 +23,16 @@ index 2309043..8b268ab 100644
  		if (addTokenEndpointClientAuthentication != null) {
  			mapClientAuthKeys("token_endpoint_request_form_parameters", "token_endpoint_request_headers");
  			call(sequence(addTokenEndpointClientAuthentication));
+diff --git a/src/main/java/net/openid/conformance/openid/OIDCCEnsureClientAssertionWithIssAudSucceeds.java b/src/main/java/net/openid/conformance/openid/OIDCCEnsureClientAssertionWithIssAudSucceeds.java
+index 74f48a88c..208cb9fd3 100644
+--- a/src/main/java/net/openid/conformance/openid/OIDCCEnsureClientAssertionWithIssAudSucceeds.java
++++ b/src/main/java/net/openid/conformance/openid/OIDCCEnsureClientAssertionWithIssAudSucceeds.java
+@@ -50,6 +50,8 @@ public class OIDCCEnsureClientAssertionWithIssAudSucceeds extends AbstractOIDCCS
+ 	@Override
+ 	protected void createAuthorizationCodeRequest() {
+ 		callAndStopOnFailure(CreateTokenEndpointRequestForAuthorizationCodeGrant.class);
++		// Local patch for Heimdall (heimdall-idp #67): this module overrides the token request, so it needs the verifier too.
++		callAndStopOnFailure(net.openid.conformance.condition.client.AddCodeVerifierToTokenEndpointRequest.class, "RFC7636-4.5");
+ 		if (addTokenEndpointClientAuthentication != null) {
+ 			mapClientAuthKeys("token_endpoint_request_form_parameters", "token_endpoint_request_headers");
+ 			call(sequenceOf(sequence(addTokenEndpointClientAuthentication)).insertAfter(CreateClientAuthenticationAssertionClaims.class, condition(UpdateClientAuthenticationAssertionClaimsWithISSAud.class)));
