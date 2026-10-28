@@ -26,10 +26,11 @@ Heimdall is a custom OAuth 2.1 and OpenID Connect identity provider. It is a por
 ## Documents
 
 - [Client documentation](docs/documentation.md): how to connect an application or API to Heimdall. Start here if you integrate with Heimdall.
-- [Threat model](docs/threat-model.md): STRIDE for each endpoint and trust boundary, with the security decisions (D1 to D23).
+- [Threat model](docs/threat-model.md): STRIDE for each endpoint and trust boundary, with the security decisions (D1 to D44).
 - [Schema design](docs/schema-design.md): tables, constraints, and the atomic SQL statements.
 - [Domain model](docs/domain-model.md): the rules that each entity enforces, with references to the decisions.
 - [Front-end design](docs/frontend-design.md): the Angular account pages and the demo SPA (decisions U1 to U16).
+- [Conformance results](docs/conformance.md): the OpenID Foundation conformance suite against Heimdall, and the reason for each result that is not a pass.
 - [Diagrams](docs/diagrams/README.md): architecture, flows, data model, key rotation.
 - [Mockups](docs/mockups/README.md): static HTML mockups of a proposed new look for the account pages, the emails and an account portal. Proposed, not approved.
 

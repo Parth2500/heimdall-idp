@@ -30,27 +30,40 @@ async function visit(context, url) {
   const page = await context.newPage();
   try {
     await page.goto(url, { waitUntil: 'load', timeout: 20000 }).catch(() => {});
-    for (let step = 0; step < 6; step++) {
-      await page.waitForTimeout(1500);
-      const now = page.url();
-      if (now.includes('/account/login?')) {
-        await page.getByLabel('Email').fill(EMAIL);
-        await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
-        await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-      } else if (now.includes('/account/consent?')) {
-        // prompt=consent shows the consent page also for a client that needs no consent.
-        await page.getByRole('button', { name: 'Allow', exact: true }).click();
-      } else if (now.includes('/account/logout')) {
-        await page.getByRole('button', { name: 'Sign out' }).click();
-      } else {
-        break;
-      }
-    }
+    await act(page);
+  } catch (e) {
+    // One stuck page fails only its module: the suite times the module out and the plan goes on.
+    console.log('    visit: ' + e.message.split('\n')[0]);
+  }
+  try {
     // The suite asks for a screenshot of what the user saw, when the result needs a person's review.
     lastScreenshot = 'data:image/png;base64,' + (await page.screenshot()).toString('base64');
     return page.url();
   } finally {
     await page.close();
+  }
+}
+
+async function act(page) {
+  for (let step = 0; step < 6; step++) {
+    await page.waitForTimeout(1500);
+    const now = page.url();
+    let leave;
+    if (now.includes('/account/login?')) {
+      await page.getByLabel('Email').fill(EMAIL);
+      await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
+      leave = page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    } else if (now.includes('/account/consent?')) {
+      // prompt=consent shows the consent page also for a client that needs no consent.
+      leave = page.getByRole('button', { name: 'Allow', exact: true }).click();
+    } else if (now.includes('/account/logout')) {
+      leave = page.getByRole('button', { name: 'Sign out' }).click();
+    } else {
+      return;
+    }
+    // Wait until the page leaves, so that the next step does not act on a page that is going away.
+    await leave;
+    await page.waitForURL((u) => u.href !== now, { timeout: 15000 });
   }
 }
 

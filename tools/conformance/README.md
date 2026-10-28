@@ -38,10 +38,10 @@ cat /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem suite.crt > bundle.crt
 cd .local/conformance-suite
 podman compose -f docker-compose-prebuilt.yml -f ../../tools/conformance/compose.override.yml up -d
 ```
-4. Register the clients, then start Heimdall on all interfaces, trusting the suite's certificate. The `SSL_CERT_FILE` bundle keeps every TLS check on. The suite signs in many times from one address, so raise the login rate limit for this local run only (the default is 5 each minute for each IP):
+4. Register the clients, then start Heimdall on all interfaces, trusting the suite's certificate. The `SSL_CERT_FILE` bundle keeps every TLS check on. Give it as an absolute path, because the server runs in `src/Heimdall.Api`. The suite signs in many times from one address, so raise the login rate limit for this local run only (the default is 5 each minute for each IP):
 ```
 tools/conformance/register-clients.sh with-backchannel
-SSL_CERT_FILE=.local/conformance/bundle.crt Heimdall__RateLimits__Login__PermitLimit=1000 dotnet run --project src/Heimdall.Api --launch-profile https -- --urls "https://0.0.0.0:7200"
+SSL_CERT_FILE=$PWD/.local/conformance/bundle.crt Heimdall__RateLimits__Login__PermitLimit=1000 dotnet run --project src/Heimdall.Api --launch-profile https -- --urls "https://0.0.0.0:7200"
 ```
 5. Run a plan. The user must exist in the tenant:
 ```
