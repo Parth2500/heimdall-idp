@@ -1,0 +1,5 @@
+# pnpm settings for the ui/ workspace. ui/ is one package; projects/ are Angular projects, not pnpm packages.
+
+# The overrides and the reason for each are in README.md.
+overrides:
+  "@angular/build>vite": 8.3.4

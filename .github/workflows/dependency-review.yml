@@ -9,7 +9,8 @@ on:
       - "dotnet-tools.json"
       - "global.json"
       - "ui/package.json"
-      - "ui/package-lock.json"
+      - "ui/pnpm-lock.yaml"
+      - "ui/pnpm-workspace.yaml"
       - "Dockerfile"
       - ".github/workflows/**"
 

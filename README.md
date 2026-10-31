@@ -98,7 +98,7 @@ Certified client libraries sign in, refresh, revoke, and sign out against Heimda
 ```
 dotnet dev-certs https --export-path .local/heimdall-dev-ca.pem --format PEM --no-password
 cd ui
-HEIMDALL_INTEROP_EMAIL=<email> HEIMDALL_INTEROP_PASSWORD=<password> HEIMDALL_CA_FILE=../.local/heimdall-dev-ca.pem npm run interop
+HEIMDALL_INTEROP_EMAIL=<email> HEIMDALL_INTEROP_PASSWORD=<password> HEIMDALL_CA_FILE=../.local/heimdall-dev-ca.pem pnpm run interop
 ```
 Delete the `.key` file that the export also writes. Without the variables, the tests are skipped. CI does not run them yet.
 

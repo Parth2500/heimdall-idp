@@ -11,7 +11,7 @@
     "interop": "node --test interop/oidc-client-ts.interop.mjs"
   },
   "private": true,
-  "packageManager": "npm@11.19.1",
+  "packageManager": "pnpm@12.16.1",
   "dependencies": {
     "@angular/common": "^22.2.0",
     "@angular/compiler": "^22.2.0",
@@ -36,10 +36,5 @@
   },
   "engines": {
     "node": "^22.22.3 || ^24.15.0"
-  },
-  "overrides": {
-    "@angular/build": {
-      "vite": "8.3.4"
-    }
   }
 }

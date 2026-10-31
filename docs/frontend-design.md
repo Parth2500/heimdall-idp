@@ -178,8 +178,8 @@ Status: **Approved** by the owner on 2026-10-19.
 
 **Decision.**
 
-- `package-lock.json` is committed. CI installs with `npm ci --ignore-scripts`. A package that needs an install script gets a reviewed exception.
-- CI runs `npm audit --audit-level=low` and fails on a finding. Dependabot watches `ui/`.
+- `pnpm-lock.yaml` is committed. CI installs with `pnpm install --frozen-lockfile --ignore-scripts`. A package that needs an install script gets a reviewed exception. Changed on 2026-10-31 with the owner's go-ahead (DR-012): pnpm replaces npm.
+- CI runs `pnpm audit --audit-level low` and fails on a finding. Dependabot watches `ui/`.
 - Dependency review (already in CI) covers `ui/` pull requests.
 - Few dependencies. The account pages use Angular and the Angular CDK only. No component library and no CSS framework.
 - No third-party origin in the CSP (N5). Changed on 2026-10-23 with the owner's approval (U15): the pages may use font files that Heimdall serves from its own origin (`font-src 'self'`). The files are in the repository, not in an npm package. They are never loaded from a font service.
@@ -419,7 +419,7 @@ These rows go into `docs/threat-model.md` when the owner approves this design:
 | Tampering | A changed bundle file on the server or a cache. | Subresource integrity on each script (U3). |
 | Spoofing | A phishing copy of the login page on another origin. | It cannot set or send the `__Host-` cookie, and the login API refuses its `Origin`. The page shows the tenant host in the card (U16). |
 | Information disclosure | The error page prints an attacker's value from the URL. | The page shows text for a fixed list of codes only (U6). |
-| Elevation of privilege | A malicious npm package runs in the login page. | Lockfile, `npm ci --ignore-scripts`, audit in CI, few dependencies, no third-party origins (U8). |
+| Elevation of privilege | A malicious npm package runs in the login page. | Lockfile, `pnpm install --frozen-lockfile --ignore-scripts`, audit in CI, few dependencies, no third-party origins (U8). |
 | Information disclosure | XSS in the demo SPA reads stored tokens. | Tokens are in memory only (U10). |
 | Information disclosure | CORS lets another site read `/userinfo` or `/token` responses. | Only the origins of a client's registered redirect URIs. Never `*` (S4). |
 

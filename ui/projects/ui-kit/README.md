@@ -13,4 +13,4 @@ Keyboard focus is one 3px ring in the action blue, with a 2px gap. It has about 
 
 Tenant branding (Phase 3) changes token values, never a component.
 
-Tests: `npm test` in `ui/` runs `ng test ui-kit` first.
+Tests: `pnpm test` in `ui/` runs `ng test ui-kit` first.

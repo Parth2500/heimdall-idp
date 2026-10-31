@@ -11,12 +11,14 @@
 # ---- Account pages (Angular) ----
 FROM docker.io/library/node:24.22.1-bookworm-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205 AS ui
 WORKDIR /repo/ui
-COPY ui/package.json ui/package-lock.json ./
+COPY ui/package.json ui/pnpm-lock.yaml ui/pnpm-workspace.yaml ./
+# pnpm at the version that the packageManager field in package.json names.
+RUN npm install --global "$(node -p 'require("./package.json").packageManager')"
 # U8: no install scripts from dependencies.
-RUN npm ci --ignore-scripts
+RUN pnpm install --frozen-lockfile --ignore-scripts
 COPY ui/ ./
 # The account project writes to ../src/Heimdall.Api/wwwroot/account.
-RUN npx ng build account
+RUN pnpm exec ng build account
 
 # ---- Server build ----
 FROM mcr.microsoft.com/dotnet/sdk:10.0.403@sha256:de4fe90a98845d75910b9769662465c84de1a934665c431279d1382b2bddc02b AS build

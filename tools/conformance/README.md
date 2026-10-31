@@ -46,7 +46,7 @@ SSL_CERT_FILE=$PWD/.local/conformance/bundle.crt Heimdall__RateLimits__Login__Pe
 ```
 5. Run a plan. The user must exist in the tenant:
 ```
-cd tools/conformance && npm install --ignore-scripts
+cd tools/conformance && pnpm install --ignore-scripts
 export HEIMDALL_CONFORMANCE_EMAIL=... HEIMDALL_CONFORMANCE_PASSWORD=... NODE_EXTRA_CA_CERTS=../../.local/conformance/suite.crt
 # Optional: a Chromium that is already installed, when the Playwright version wants another browser build.
 export CHROMIUM_PATH=~/.cache/ms-playwright/chromium_headless_shell-<build>/chrome-headless-shell-linux64/chrome-headless-shell

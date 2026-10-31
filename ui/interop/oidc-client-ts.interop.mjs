@@ -3,7 +3,7 @@
 // token check, refresh rotation, revocation, and RP-initiated logout. This script only plays the browser.
 //
 // Run it against `dotnet run --launch-profile https` after `seed-dev` (see README, "Interop tests"):
-//   HEIMDALL_INTEROP_EMAIL=... HEIMDALL_INTEROP_PASSWORD=... HEIMDALL_CA_FILE=.local/heimdall-dev-ca.pem npm run interop
+//   HEIMDALL_INTEROP_EMAIL=... HEIMDALL_INTEROP_PASSWORD=... HEIMDALL_CA_FILE=.local/heimdall-dev-ca.pem pnpm run interop
 // Without the variables, every test is skipped.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';

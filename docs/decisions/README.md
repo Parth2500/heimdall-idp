@@ -26,3 +26,4 @@ A decision record keeps the history. Each record is one change to a decision: wh
 | [DR-009](009-keep-pkce-for-all-and-patch-the-suite.md) | 2026-10-28 | Keep PKCE for all clients and patch the conformance suite |
 | [DR-010](010-userinfo-reads-the-family.md) | 2026-10-28 | /userinfo reads the token family (D44) |
 | [DR-011](011-private-key-jwt.md) | 2026-10-28 | Confidential clients can use private_key_jwt |
+| [DR-012](012-pnpm-replaces-npm.md) | 2026-10-31 | pnpm replaces npm for the Angular workspace |
